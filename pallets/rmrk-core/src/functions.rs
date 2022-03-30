@@ -56,7 +56,9 @@ where
 	}
 }
 
-impl<T: Config> Resource<BoundedVec<u8, T::StringLimit>, T::AccountId, BoundedResource<T::ResourceSymbolLimit>> for Pallet<T>
+impl<T: Config>
+	Resource<BoundedVec<u8, T::StringLimit>, T::AccountId, BoundedResource<T::ResourceSymbolLimit>>
+	for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
@@ -82,7 +84,10 @@ where
 				thumb.is_none();
 		ensure!(!empty, Error::<T>::EmptyResource);
 
-		let res = ResourceInfo::<BoundedVec<u8, T::ResourceSymbolLimit>, BoundedVec<u8, T::StringLimit>> {
+		let res = ResourceInfo::<
+			BoundedVec<u8, T::ResourceSymbolLimit>,
+			BoundedVec<u8, T::StringLimit>,
+		> {
 			id: resource_id.clone(),
 			base,
 			src,
@@ -208,7 +213,13 @@ where
 
 		let owner_as_maybe_account = AccountIdOrCollectionNftTuple::AccountId(owner.clone());
 
-		let nft = NftInfo { owner: owner_as_maybe_account, recipient, royalty, metadata, equipped: false };
+		let nft = NftInfo {
+			owner: owner_as_maybe_account,
+			recipient,
+			royalty,
+			metadata,
+			equipped: false,
+		};
 
 		Nfts::<T>::insert(collection_id, nft_id, nft);
 		NftsByOwner::<T>::append(owner, (collection_id, nft_id));

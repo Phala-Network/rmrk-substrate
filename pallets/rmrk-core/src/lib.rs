@@ -12,9 +12,7 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use rmrk_traits::{
 	primitives::*, AccountIdOrCollectionNftTuple, Collection, CollectionInfo, Nft, NftInfo,
-	Priority, Property, 
-	ResourceInfo, 
-	Resource
+	Priority, Property, Resource, ResourceInfo,
 };
 use sp_std::result::Result;
 
@@ -131,8 +129,7 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, CollectionId>,
 			NMapKey<Blake2_128Concat, NftId>,
-			NMapKey<Blake2_128Concat, BoundedResource<T::ResourceSymbolLimit>>
-			,
+			NMapKey<Blake2_128Concat, BoundedResource<T::ResourceSymbolLimit>>,
 		),
 		ResourceOf<T, T::ResourceSymbolLimit>,
 		OptionQuery,
@@ -566,7 +563,7 @@ pub mod pallet {
 				slot,
 				license,
 				thumb,
-				parts
+				parts,
 			)?;
 
 			Self::deposit_event(Event::ResourceAdded { nft_id, resource_id });
