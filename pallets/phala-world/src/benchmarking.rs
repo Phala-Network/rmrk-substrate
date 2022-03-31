@@ -4,25 +4,17 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as PhalaWorld;
-use frame_benchmarking::{benchmarks, whitelisted_caller};
-use frame_system::Origin;
+use frame_benchmarking::{benchmarks, whitelisted_caller, impl_benchmark_test_suite};
+use frame_system::RawOrigin as SystemOrigin;
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
-	let events = frame_system::Pallet::<T>::events();
-	let system_event: <T as frame_system::Config>::Event = generic_event.into();
-	// compare to the last event record
-	let frame_system::EventRecord { event, .. } = &events[events.len() - 1];
-	assert_eq!(event, &system_event);
-}
 
 benchmarks! {
+	where_clause { where
+		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>
+	}
 	set_overlord {
 		let caller: T::AccountId = whitelisted_caller();
-		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
-	}: _(Origin::root(), caller)
-	verify {
-		assert_last_event::<T>(Event::OverlordChanged { old_overlord: None }.into());
-	}
+	}: _(SystemOrigin::Root, caller.clone())
 
-	impl_benchmark_test_suite!(PhalaWorld, crate::mock::ExtBuilder::default().build(None), crate::mock::Test);
+impl_benchmark_test_suite!(PhalaWorld, crate::mock::ExtBuilder::default().build(whitelisted_caller()), crate::mock::Test);
 }
