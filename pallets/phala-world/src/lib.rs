@@ -21,8 +21,8 @@ pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
 
 use rmrk_traits::{
-	career::CareerType, egg::EggType, primitives::*, race::RaceType, status_type::StatusType,
-	EggInfo, PreorderInfo,
+	career::CareerType, origin_of_shell::OriginOfShellType, primitives::*, race::RaceType, status_type::StatusType,
+	OriginOfShellInfo, PreorderInfo,
 };
 
 #[cfg(test)]
@@ -79,15 +79,15 @@ pub mod pallet {
 		/// Seconds per Era that will increment the Era storage value every interval
 		#[pallet::constant]
 		type SecondsPerEra: Get<u64>;
-		/// Price of Founder Egg Price
+		/// Price of Legendary Origin of Shell Price
 		#[pallet::constant]
-		type FounderEggPrice: Get<BalanceOf<Self>>;
-		/// Price of Legendary Egg Price
+		type LegendaryOriginOfShellPrice: Get<BalanceOf<Self>>;
+		/// Price of Magic Origin of Shell Price
 		#[pallet::constant]
-		type LegendaryEggPrice: Get<BalanceOf<Self>>;
-		/// Price of Normal Egg Price
+		type MagicOriginOfShellPrice: Get<BalanceOf<Self>>;
+		/// Price of Hero Origin of Shell Price
 		#[pallet::constant]
-		type NormalEggPrice: Get<BalanceOf<Self>>;
+		type HeroOriginOfShellPrice: Get<BalanceOf<Self>>;
 		/// Max mint per Race
 		#[pallet::constant]
 		type MaxMintPerRace: Get<u32>;
@@ -97,10 +97,10 @@ pub mod pallet {
 		/// Amount of food per Era
 		#[pallet::constant]
 		type FoodPerEra: Get<u8>;
-		/// Max food an Egg can be fed per day
+		/// Max food an Origin of Shell can be fed per day
 		#[pallet::constant]
 		type MaxFoodFedPerEra: Get<u16>;
-		/// Max food to feed your own Egg
+		/// Max food to feed your own Origin of Shell
 		#[pallet::constant]
 		type MaxFoodFeedSelf: Get<u8>;
 	}
@@ -114,10 +114,10 @@ pub mod pallet {
 	#[pallet::getter(fn claimed_spirits)]
 	pub type ClaimedSpirits<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
-	/// Stores all of the valid claimed Eggs from the whitelist or preorder
+	/// Stores all of the valid claimed Origin of Shells from the whitelist or preorder
 	#[pallet::storage]
-	#[pallet::getter(fn claimed_eggs)]
-	pub type ClaimedEggs<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
+	#[pallet::getter(fn claimed_origin_of_shells)]
+	pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
 	/// Preorder index that is the key to the Preorders StorageMap
 	#[pallet::storage]
@@ -129,11 +129,11 @@ pub mod pallet {
 	#[pallet::getter(fn preorders)]
 	pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, PreorderInfoOf<T>>;
 
-	/// Stores all the Eggs and the information about the Egg pertaining to Hatch times and feeding
+	/// Stores all the Origin of Shells and the information about the Origin of Shell pertaining to Hatch times and feeding
 	#[pallet::storage]
-	#[pallet::getter(fn eggs)]
-	pub type Eggs<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, EggInfo>;
+	#[pallet::getter(fn origin_of_shells)]
+	pub type OriginOfShells<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, OriginOfShellInfo>;
 
 	/// Food per Owner where an owner gets 5 food per era
 	#[pallet::storage]
@@ -155,15 +155,15 @@ pub mod pallet {
 	#[pallet::getter(fn can_claim_spirits)]
 	pub type CanClaimSpirits<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-	/// Rare Eggs can be purchased
+	/// Rare Origin of Shells can be purchased
 	#[pallet::storage]
-	#[pallet::getter(fn can_purchase_rare_eggs)]
-	pub type CanPurchaseRareEggs<T: Config> = StorageValue<_, bool, ValueQuery>;
+	#[pallet::getter(fn can_purchase_rare_origin_of_shells)]
+	pub type CanPurchaseRareOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-	/// Eggs can be preordered
+	/// Origin of Shells can be preordered
 	#[pallet::storage]
-	#[pallet::getter(fn can_preorder_eggs)]
-	pub type CanPreorderEggs<T: Config> = StorageValue<_, bool, ValueQuery>;
+	#[pallet::getter(fn can_preorder_origin_of_shells)]
+	pub type CanPreorderOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
 	/// Race Type count
 	#[pallet::storage]
@@ -175,10 +175,10 @@ pub mod pallet {
 	#[pallet::getter(fn spirit_collection_id)]
 	pub type SpiritCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
 
-	/// Egg Collection ID
+	/// Origin of Shell Collection ID
 	#[pallet::storage]
-	#[pallet::getter(fn egg_collection_id)]
-	pub type EggCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
+	#[pallet::getter(fn origin_of_shell_collection_id)]
+	pub type OriginOfShellCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
 
 	/// Race StorageMap count
 	#[pallet::storage]
@@ -220,14 +220,14 @@ pub mod pallet {
 		pub era: u64,
 		/// bool for if a Spirit is claimable
 		pub can_claim_spirits: bool,
-		/// bool for if a Rare Egg can be purchased
-		pub can_purchase_rare_eggs: bool,
-		/// bool for if an Egg can be preordered
-		pub can_preorder_eggs: bool,
+		/// bool for if a Rare Origin of Shell can be purchased
+		pub can_purchase_rare_origin_of_shells: bool,
+		/// bool for if an Origin of Shell can be preordered
+		pub can_preorder_origin_of_shells: bool,
 		/// CollectionId of Spirit Collection
 		pub spirit_collection_id: Option<CollectionId>,
-		/// CollectionId of Egg Collection
-		pub egg_collection_id: Option<CollectionId>,
+		/// CollectionId of Origin of Shell Collection
+		pub origin_of_shell_collection_id: Option<CollectionId>,
 	}
 
 	#[cfg(feature = "std")]
@@ -238,10 +238,10 @@ pub mod pallet {
 				overlord: None,
 				era: 0,
 				can_claim_spirits: false,
-				can_purchase_rare_eggs: false,
-				can_preorder_eggs: false,
+				can_purchase_rare_origin_of_shells: false,
+				can_preorder_origin_of_shells: false,
 				spirit_collection_id: None,
-				egg_collection_id: None,
+				origin_of_shell_collection_id: None,
 			}
 		}
 	}
@@ -259,15 +259,15 @@ pub mod pallet {
 			<Era<T>>::put(era);
 			let can_claim_spirits = self.can_claim_spirits;
 			<CanClaimSpirits<T>>::put(can_claim_spirits);
-			let can_purchase_rare_eggs = self.can_purchase_rare_eggs;
-			<CanPurchaseRareEggs<T>>::put(can_purchase_rare_eggs);
-			let can_preorder_eggs = self.can_preorder_eggs;
-			<CanPreorderEggs<T>>::put(can_preorder_eggs);
+			let can_purchase_rare_origin_of_shells = self.can_purchase_rare_origin_of_shells;
+			<CanPurchaseRareOriginOfShells<T>>::put(can_purchase_rare_origin_of_shells);
+			let can_preorder_origin_of_shells = self.can_preorder_origin_of_shells;
+			<CanPreorderOriginOfShells<T>>::put(can_preorder_origin_of_shells);
 			if let Some(spirit_collection_id) = self.spirit_collection_id {
 				<SpiritCollectionId<T>>::put(spirit_collection_id);
 			}
-			if let Some(egg_collection_id) = self.egg_collection_id {
-				<EggCollectionId<T>>::put(egg_collection_id);
+			if let Some(origin_of_shell_collection_id) = self.origin_of_shell_collection_id {
+				<OriginOfShellCollectionId<T>>::put(origin_of_shell_collection_id);
 			}
 			// Set max mints per race and career
 			RaceTypeLeft::<T>::insert(RaceType::Cyborg, T::MaxMintPerRace::get());
@@ -300,19 +300,19 @@ pub mod pallet {
 			serial_id: SerialId,
 			owner: T::AccountId,
 		},
-		/// Rare egg has been purchased
-		RareEggPurchased {
+		/// Rare origin_of_shell has been purchased
+		RareOriginOfShellPurchased {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
 		},
-		/// A chance to get an egg through preorder
-		EggPreordered {
+		/// A chance to get an origin_of_shell through preorder
+		OriginOfShellPreordered {
 			owner: T::AccountId,
 			preorder_id: PreorderId,
 		},
-		/// Egg minted from the preorder
-		EggMinted {
+		/// Origin of Shell minted from the preorder
+		OriginOfShellMinted {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
@@ -321,37 +321,37 @@ pub mod pallet {
 		SpiritCollectionIdSet {
 			collection_id: CollectionId,
 		},
-		/// Egg collection id was set
-		EggCollectionIdSet {
+		/// Origin of Shell collection id was set
+		OriginOfShellCollectionIdSet {
 			collection_id: CollectionId,
 		},
-		/// Egg received food from an account
-		EggFoodReceived {
+		/// Origin of Shell received food from an account
+		OriginOfShellFoodReceived {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			sender: T::AccountId,
 			owner: T::AccountId,
 		},
-		/// Egg owner has initiated the hatching sequence
-		StartedHatching {
+		/// Origin of Shell owner has initiated the incubation sequence
+		StartedIncubation {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
 		},
-		/// A top 10 fed egg of the era has updated their hatch time
+		/// A top 10 fed origin_of_shell of the era has updated their incubation time
 		HatchTimeUpdated {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
-			hatch_time: T::BlockNumber,
+			incubation_time: T::BlockNumber,
 		},
-		/// An egg has been hatched
-		EggHatched {
+		/// An origin_of_shell has been awakened
+		OriginOfShellHatched {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
 		},
-		/// Shell has been awakened from an egg being hatched and burned
+		/// Shell has been awakened from an origin_of_shell being hatched and burned
 		ShellAwakened {
 			collection_id: CollectionId,
 			nft_id: NftId,
@@ -359,21 +359,21 @@ pub mod pallet {
 			career: u8,
 			race: u8,
 		},
-		/// Egg hatching has been disabled & no other eggs can be hatched
-		EggHatchingDisabled {
+		/// Origin of Shell incubation has been disabled & no other origin_of_shells can be hatched
+		OriginOfShellIncubationDisabled {
 			collection_id: CollectionId,
-			can_hatch: bool,
+			can_awaken: bool,
 		},
 		/// Spirit Claims status has changed
 		ClaimSpiritStatusChanged {
 			status: bool,
 		},
-		/// Purchase Rare Eggs status has changed
-		PurchaseRareEggsStatusChanged {
+		/// Purchase Rare Origin of Shells status has changed
+		PurchaseRareOriginOfShellsStatusChanged {
 			status: bool,
 		},
-		/// Preorder Eggs status has changed
-		PreorderEggsStatusChanged {
+		/// Preorder Origin of Shells status has changed
+		PreorderOriginOfShellsStatusChanged {
 			status: bool,
 		},
 		OverlordChanged {
@@ -386,24 +386,24 @@ pub mod pallet {
 	pub enum Error<T> {
 		WorldClockAlreadySet,
 		SpiritClaimNotAvailable,
-		RareEggPurchaseNotAvailable,
-		PreorderEggNotAvailable,
+		RareOriginOfShellPurchaseNotAvailable,
+		PreorderOriginOfShellNotAvailable,
 		SpiritAlreadyClaimed,
 		ClaimVerificationFailed,
 		InvalidPurchase,
 		NoAvailablePreorderId,
 		RaceMintMaxReached,
 		CareerMintMaxReached,
-		CannotHatchEgg,
-		CannotSendFoodToEgg,
+		CannotHatchOriginOfShell,
+		CannotSendFoodToOriginOfShell,
 		NoFoodAvailable,
 		OverlordNotSet,
 		RequireOverlordAccount,
 		InvalidStatusType,
 		SpiritCollectionNotSet,
 		SpiritCollectionIdAlreadySet,
-		EggCollectionNotSet,
-		EggCollectionIdAlreadySet,
+		OriginOfShellCollectionNotSet,
+		OriginOfShellCollectionIdAlreadySet,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -465,61 +465,61 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Buy a rare egg of either type Legendary or Founder. Both Egg types will have a set
+		/// Buy a rare origin_of_shell of either type Magic or Legendary. Both Origin of Shell types will have a set
 		/// price. These will also be limited in quantity and on a first come, first serve basis.
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic.
-		/// - egg_type: The type of egg to be purchased.
-		/// - race: The race of the egg chosen by the user.
-		/// - career: The career of the egg chosen by the user or auto-generated based on metadata
+		/// - origin_of_shell_type: The type of origin_of_shell to be purchased.
+		/// - race: The race of the origin_of_shell chosen by the user.
+		/// - career: The career of the origin_of_shell chosen by the user or auto-generated based on metadata
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn buy_rare_egg(
+		pub fn buy_rare_origin_of_shell(
 			origin: OriginFor<T>,
-			egg_type: EggType,
+			origin_of_shell_type: OriginOfShellType,
 			race: RaceType,
 			career: CareerType,
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
-			ensure!(CanPurchaseRareEggs::<T>::get(), Error::<T>::RareEggPurchaseNotAvailable);
+			ensure!(CanPurchaseRareOriginOfShells::<T>::get(), Error::<T>::RareOriginOfShellPurchaseNotAvailable);
 			let sender = ensure_signed(origin.clone())?;
 			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
-			// Ensure egg collection is set
-			let egg_collection_id =
-				EggCollectionId::<T>::get().ok_or(Error::<T>::EggCollectionNotSet)?;
-			// Get Egg Price based on EggType
-			let egg_price = match egg_type {
-				EggType::Founder => T::FounderEggPrice::get(),
-				EggType::Legendary => T::LegendaryEggPrice::get(),
+			// Ensure origin_of_shell collection is set
+			let origin_of_shell_collection_id =
+				OriginOfShellCollectionId::<T>::get().ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			// Get Origin of Shell Price based on Origin of ShellType
+			let origin_of_shell_price = match origin_of_shell_type {
+				OriginOfShellType::Legendary => T::LegendaryOriginOfShellPrice::get(),
+				OriginOfShellType::Magic => T::MagicOriginOfShellPrice::get(),
 				_ => return Err(Error::<T>::InvalidPurchase.into()),
 			};
-			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(egg_collection_id);
+			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 			// Check if race and career types have mints left
 			Self::has_race_type_left(&race)?;
 			Self::has_career_type_left(&career)?;
 
-			// Define EggInfo for storage
-			let egg = EggInfo {
-				egg_type,
+			// Define OriginOfShellInfo for storage
+			let origin_of_shell = OriginOfShellInfo {
+				origin_of_shell_type,
 				race: race.clone(),
 				career: career.clone(),
-				start_hatching: 0,
-				hatching_duration: 0,
+				start_incubation: 0,
+				incubation_duration: 0,
 			};
 
-			// Transfer the amount for the rare Egg NFT then mint the egg
+			// Transfer the amount for the rare Origin of Shell NFT then mint the origin_of_shell
 			<T as pallet::Config>::Currency::transfer(
 				&sender,
 				&overlord,
-				egg_price,
+				origin_of_shell_price,
 				ExistenceRequirement::KeepAlive,
 			)?;
-			// Mint Egg and transfer Egg to new owner
+			// Mint Origin of Shell and transfer Origin of Shell to new owner
 			pallet_rmrk_core::Pallet::<T>::mint_nft(
 				Origin::<T>::Signed(overlord.clone()).into(),
 				sender.clone(),
-				egg_collection_id,
+				origin_of_shell_collection_id,
 				None,
 				None,
 				metadata,
@@ -527,10 +527,10 @@ pub mod pallet {
 
 			Self::decrement_race_type(race);
 			Self::decrement_career_type(career);
-			Eggs::<T>::insert(egg_collection_id, nft_id, egg);
+			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
-			Self::deposit_event(Event::RareEggPurchased {
-				collection_id: egg_collection_id,
+			Self::deposit_event(Event::RareOriginOfShellPurchased {
+				collection_id: origin_of_shell_collection_id,
 				nft_id,
 				owner: sender,
 			});
@@ -538,24 +538,24 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Users can pre-order an egg. This will enable users that are whitelisted to be
-		/// added to the queue of users that can claim eggs. Those that come after the whitelist
-		/// pre-sale will be able to win the chance to acquire an egg based on their choice of
+		/// Users can pre-order an origin_of_shell. This will enable users that are whitelisted to be
+		/// added to the queue of users that can claim origin_of_shells. Those that come after the whitelist
+		/// pre-sale will be able to win the chance to acquire an origin_of_shell based on their choice of
 		/// race and career as they will have a limited quantity.
 		///
 		/// Parameters:
-		/// - origin: The origin of the extrinsic preordering the egg
+		/// - origin: The origin of the extrinsic preordering the origin_of_shell
 		/// - race: The race that the user has chosen (limited # of races)
 		/// - career: The career that the user has chosen (limited # of careers)
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn preorder_egg(
+		pub fn preorder_origin_of_shell(
 			origin: OriginFor<T>,
 			race: RaceType,
 			career: CareerType,
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
-			ensure!(CanPreorderEggs::<T>::get(), Error::<T>::PreorderEggNotAvailable);
+			ensure!(CanPreorderOriginOfShells::<T>::get(), Error::<T>::PreorderOriginOfShellNotAvailable);
 			let sender = ensure_signed(origin)?;
 			// Check if the race and career have reached their limit
 			Self::has_race_type_left(&race)?;
@@ -575,67 +575,67 @@ pub mod pallet {
 				career: career.clone(),
 				metadata,
 			};
-			// Reserve currency for the preorder at the Normal egg price
-			<T as pallet::Config>::Currency::reserve(&sender, T::NormalEggPrice::get())?;
+			// Reserve currency for the preorder at the Hero origin_of_shell price
+			<T as pallet::Config>::Currency::reserve(&sender, T::HeroOriginOfShellPrice::get())?;
 
 			Self::decrement_race_type(race);
 			Self::decrement_career_type(career);
 			Preorders::<T>::insert(preorder_id, preorder);
 
-			Self::deposit_event(Event::EggPreordered { owner: sender, preorder_id });
+			Self::deposit_event(Event::OriginOfShellPreordered { owner: sender, preorder_id });
 
 			Ok(())
 		}
 
-		/// This is an admin only function that will be called to do a bulk minting of all egg
+		/// This is an admin only function that will be called to do a bulk minting of all origin_of_shell
 		/// owners that made selected a race and career that was available based on the quantity
-		/// available. Those that did not win an egg will have to claim their refund
+		/// available. Those that did not win an origin_of_shell will have to claim their refund
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn mint_eggs(origin: OriginFor<T>) -> DispatchResult {
+		pub fn mint_origin_of_shells(origin: OriginFor<T>) -> DispatchResult {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
 			Self::ensure_overlord(sender.clone())?;
-			// Ensure egg collection is set
-			let egg_collection_id =
-				EggCollectionId::<T>::get().ok_or(Error::<T>::EggCollectionNotSet)?;
+			// Ensure origin_of_shell collection is set
+			let origin_of_shell_collection_id =
+				OriginOfShellCollectionId::<T>::get().ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
 			// Iterate through Preorders
 			for preorder_id in Preorders::<T>::iter_keys() {
 				if let Some(preorder) = Preorders::<T>::take(preorder_id) {
-					let egg_price = T::NormalEggPrice::get();
-					// Define EggInfo for storage
-					let egg = EggInfo {
-						egg_type: EggType::Normal,
+					let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+					// Define OriginOfShellInfo for storage
+					let origin_of_shell = OriginOfShellInfo {
+						origin_of_shell_type: OriginOfShellType::Hero,
 						race: preorder.race.clone(),
 						career: preorder.career.clone(),
-						start_hatching: 0,
-						hatching_duration: 0,
+						start_incubation: 0,
+						incubation_duration: 0,
 					};
 					// Next NFT ID of Collection
-					let nft_id = pallet_rmrk_core::NextNftId::<T>::get(egg_collection_id);
+					let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 
 					// Get payment from owner's reserve
-					<T as pallet::Config>::Currency::unreserve(&preorder.owner, egg_price);
+					<T as pallet::Config>::Currency::unreserve(&preorder.owner, origin_of_shell_price);
 					<T as pallet::Config>::Currency::transfer(
 						&preorder.owner,
 						&sender,
-						egg_price,
+						origin_of_shell_price,
 						ExistenceRequirement::KeepAlive,
 					)?;
-					// Mint Egg and transfer Egg to new owner
+					// Mint Origin of Shell and transfer Origin of Shell to new owner
 					pallet_rmrk_core::Pallet::<T>::mint_nft(
 						Origin::<T>::Signed(sender.clone()).into(),
 						preorder.owner.clone(),
-						egg_collection_id,
+						origin_of_shell_collection_id,
 						None,
 						None,
 						preorder.metadata,
 					)?;
 
-					Eggs::<T>::insert(egg_collection_id, nft_id, egg);
+					OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
-					Self::deposit_event(Event::EggMinted {
-						collection_id: egg_collection_id,
+					Self::deposit_event(Event::OriginOfShellMinted {
+						collection_id: origin_of_shell_collection_id,
 						nft_id,
 						owner: preorder.owner,
 					});
@@ -645,18 +645,18 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Once users have received their eggs and the start hatching event has been triggered,
-		/// they can start the hatching process and a timer will start for the egg to hatch at
-		/// a designated time. Eggs can reduce their time by being in the top 10 of egg's fed
+		/// Once users have received their origin_of_shells and the start incubation event has been triggered,
+		/// they can start the incubation process and a timer will start for the origin_of_shell to awaken at
+		/// a designated time. Origin of Shells can reduce their time by being in the top 10 of origin_of_shell's fed
 		/// per era.
 		///
 		/// Parameters:
-		/// - origin: The origin of the extrinsic starting the hatching process
-		/// - collection_id: The collection id of the Egg RMRK NFT
-		/// - nft_id: The NFT id of the Egg RMRK NFT
+		/// - origin: The origin of the extrinsic starting the incubation process
+		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
+		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn start_hatching(
+		pub fn start_incubation(
 			origin: OriginFor<T>,
 			collection_id: CollectionId,
 			nft_id: NftId,
@@ -666,16 +666,16 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Feed another egg to the current egg being hatched. This will reduce the time left to
-		/// hatching if the egg is in the top 10 of eggs fed that era.
+		/// Feed another origin_of_shell to the current origin_of_shell being incubated. This will reduce the time left to
+		/// incubation if the origin_of_shell is in the top 10 of origin_of_shells fed that era.
 		///
 		/// Parameters:
-		/// - origin: The origin of the extrinsic feeding the egg
-		/// - collection_id: The collection id of the Egg RMRK NFT
-		/// - nft_id: The NFT id of the Egg RMRK NFT
+		/// - origin: The origin of the extrinsic feeding the origin_of_shell
+		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
+		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn feed_egg(
+		pub fn feed_origin_of_shell(
 			origin: OriginFor<T>,
 			collection_id: CollectionId,
 			nft_id: NftId,
@@ -685,17 +685,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Hatch the egg that is currently being hatched. This will trigger the end of the hatching
-		/// process and the egg will be burned. After burning, the user will receive the awakened
+		/// Hatch the origin_of_shell that is currently being hatched. This will trigger the end of the incubation
+		/// process and the origin_of_shell will be burned. After burning, the user will receive the awakened
 		/// Shell RMRK NFT
 		///
 		/// Parameters:
-		/// - origin: The origin of the extrinsic hatching the egg
-		/// - collection_id: The collection id of the Egg RMRK NFT
-		/// - nft_id: The NFT id of the Egg RMRK NFT
+		/// - origin: The origin of the extrinsic incubation the origin_of_shell
+		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
+		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn hatch_egg(
+		pub fn hatch_origin_of_shell(
 			origin: OriginFor<T>,
 			collection_id: CollectionId,
 			nft_id: NftId,
@@ -705,17 +705,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// This is an admin function to update eggs hatch times based on being in the top 10 of
-		/// fed eggs within that era
+		/// This is an admin function to update origin_of_shells incubation times based on being in the top 10 of
+		/// fed origin_of_shells within that era
 		///
 		/// Parameters:
-		/// - origin: The origin of the extrinsic updating the eggs hatch times
-		/// - collection_id: The collection id of the Egg RMRK NFT
-		/// - nft_id: The NFT id of the Egg RMRK NFT
-		/// - reduced_time: The amount of time the egg will be reduced by
+		/// - origin: The origin of the extrinsic updating the origin_of_shells incubation times
+		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
+		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
+		/// - reduced_time: The amount of time the origin_of_shell will be reduced by
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn update_hatch_time(
+		pub fn update_incubation_time(
 			origin: OriginFor<T>,
 			collection_id: CollectionId,
 			nft_id: NftId,
@@ -770,7 +770,7 @@ pub mod pallet {
 		}
 
 		/// Privileged function to set the status for one of the defined StatusTypes like
-		/// ClaimSpirits, PurchaseRareEggs, or PreorderEggs to enable functionality in Phala World
+		/// ClaimSpirits, PurchaseRareOriginOfShells, or PreorderOriginOfShells to enable functionality in Phala World
 		///
 		/// Parameters:
 		/// - `origin` - Expected Overlord admin account to set the status
@@ -788,8 +788,8 @@ pub mod pallet {
 			// Match StatusType and call helper function to set status
 			match status_type {
 				StatusType::ClaimSpirits => Self::set_claim_spirits_status(status)?,
-				StatusType::PurchaseRareEggs => Self::set_purchase_rare_eggs_status(status)?,
-				StatusType::PreorderEggs => Self::set_preorder_eggs_status(status)?,
+				StatusType::PurchaseRareOriginOfShells => Self::set_purchase_rare_origin_of_shells_status(status)?,
+				StatusType::PreorderOriginOfShells => Self::set_preorder_origin_of_shells_status(status)?,
 			}
 			Ok(Pays::No.into())
 		}
@@ -819,24 +819,24 @@ pub mod pallet {
 			Ok(Pays::No.into())
 		}
 
-		/// Privileged function to set the collection id for the Egg collection
+		/// Privileged function to set the collection id for the Origin of Shell collection
 		///
 		/// Parameters:
-		/// - `origin` - Expected Overlord admin account to set the Egg Collection ID
-		/// - `collection_id` - Collection ID of the Egg Collection
+		/// - `origin` - Expected Overlord admin account to set the Origin of Shell Collection ID
+		/// - `collection_id` - Collection ID of the Origin of Shell Collection
 		#[pallet::weight(0)]
-		pub fn set_egg_collection_id(
+		pub fn set_origin_of_shell_collection_id(
 			origin: OriginFor<T>,
 			collection_id: CollectionId,
 		) -> DispatchResultWithPostInfo {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
 			Self::ensure_overlord(sender)?;
-			// If Egg Collection ID is greater than 0 then the collection ID was already set
-			ensure!(EggCollectionId::<T>::get().is_none(), Error::<T>::EggCollectionIdAlreadySet);
-			<EggCollectionId<T>>::put(collection_id);
+			// If Origin of Shell Collection ID is greater than 0 then the collection ID was already set
+			ensure!(OriginOfShellCollectionId::<T>::get().is_none(), Error::<T>::OriginOfShellCollectionIdAlreadySet);
+			<OriginOfShellCollectionId<T>>::put(collection_id);
 
-			Self::deposit_event(Event::EggCollectionIdSet { collection_id });
+			Self::deposit_event(Event::OriginOfShellCollectionIdSet { collection_id });
 
 			Ok(Pays::No.into())
 		}
@@ -895,28 +895,28 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	/// Set Rare Eggs status for purchase with the Overlord Admin Account to allow
-	/// users to purchase either Founder or Legendary Eggs
+	/// Set Rare Origin of Shells status for purchase with the Overlord Admin Account to allow
+	/// users to purchase either Legendary or Magic Origin of Shells
 	///
 	/// Parameters:
-	/// `status`: Status to set CanPurchaseRareEggs StorageValue
-	fn set_purchase_rare_eggs_status(status: bool) -> DispatchResult {
-		<CanPurchaseRareEggs<T>>::put(status);
+	/// `status`: Status to set CanPurchaseRareOriginOfShells StorageValue
+	fn set_purchase_rare_origin_of_shells_status(status: bool) -> DispatchResult {
+		<CanPurchaseRareOriginOfShells<T>>::put(status);
 
-		Self::deposit_event(Event::PurchaseRareEggsStatusChanged { status });
+		Self::deposit_event(Event::PurchaseRareOriginOfShellsStatusChanged { status });
 
 		Ok(())
 	}
 
-	/// Set status of Preordering eggs with the Overlord Admin Account to allow
-	/// users to preorder eggs through the `preorder_egg()` function
+	/// Set status of Preordering origin_of_shells with the Overlord Admin Account to allow
+	/// users to preorder origin_of_shells through the `preorder_origin_of_shell()` function
 	///
 	/// Parameters:
-	/// - `status`: Status to set CanPreorderEggs StorageValue
-	fn set_preorder_eggs_status(status: bool) -> DispatchResult {
-		<CanPreorderEggs<T>>::put(status);
+	/// - `status`: Status to set CanPreorderOriginOfShells StorageValue
+	fn set_preorder_origin_of_shells_status(status: bool) -> DispatchResult {
+		<CanPreorderOriginOfShells<T>>::put(status);
 
-		Self::deposit_event(Event::PreorderEggsStatusChanged { status });
+		Self::deposit_event(Event::PreorderOriginOfShellsStatusChanged { status });
 
 		Ok(())
 	}

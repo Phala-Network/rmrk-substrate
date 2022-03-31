@@ -159,9 +159,9 @@ impl pallet_timestamp::Config for Test {
 
 parameter_types! {
 	pub const SecondsPerEra: u64 = 5 * BLOCK_TIME_SECONDS;
-	pub const FounderEggPrice: Balance = 1_000_000 * PHA;
-	pub const LegendaryEggPrice: Balance = 1_000 * PHA;
-	pub const NormalEggPrice: Balance = 10 * PHA;
+	pub const LegendaryOriginOfShellPrice: Balance = 1_000_000 * PHA;
+	pub const MagicOriginOfShellPrice: Balance = 1_000 * PHA;
+	pub const HeroOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
 	pub const MaxMintPerCareer: u32 = 2;
 	pub const FoodPerEra: u8 = 2;
@@ -175,9 +175,9 @@ impl Config for Test {
 	type Currency = Balances;
 	type SecondsPerEra = SecondsPerEra;
 	type Time = pallet_timestamp::Pallet<Test>;
-	type FounderEggPrice = FounderEggPrice;
-	type LegendaryEggPrice = LegendaryEggPrice;
-	type NormalEggPrice = NormalEggPrice;
+	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
+	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
+	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
 	type MaxMintPerRace = MaxMintPerRace;
 	type MaxMintPerCareer = MaxMintPerCareer;
 	type FoodPerEra = FoodPerEra;
@@ -243,10 +243,10 @@ impl ExtBuilder {
 			overlord: Some(overlord_key),
 			era: 0,
 			can_claim_spirits: false,
-			can_purchase_rare_eggs: false,
-			can_preorder_eggs: false,
+			can_purchase_rare_origin_of_shells: false,
+			can_preorder_origin_of_shells: false,
 			spirit_collection_id: None,
-			egg_collection_id: None,
+			origin_of_shell_collection_id: None,
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();

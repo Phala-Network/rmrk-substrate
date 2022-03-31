@@ -52,11 +52,11 @@ fn setup_config(enable_status_type: StatusType) {
 		Origin::signed(OVERLORD),
 		spirit_collection_id
 	));
-	let egg_collection_id = RmrkCore::collection_index();
-	// Mint Eggs Collection
+	let origin_of_shell_collection_id = RmrkCore::collection_index();
+	// Mint Origin of Shells Collection
 	mint_collection(OVERLORD);
-	// Set Egg Collection ID
-	assert_ok!(PhalaWorld::set_egg_collection_id(Origin::signed(OVERLORD), egg_collection_id));
+	// Set Origin of Shell Collection ID
+	assert_ok!(PhalaWorld::set_origin_of_shell_collection_id(Origin::signed(OVERLORD), origin_of_shell_collection_id));
 	// Initialize the Phala World Clock
 	assert_ok!(PhalaWorld::initialize_world_clock(Origin::signed(OVERLORD)));
 	match enable_status_type {
@@ -67,18 +67,18 @@ fn setup_config(enable_status_type: StatusType) {
 				StatusType::ClaimSpirits
 			));
 		},
-		StatusType::PurchaseRareEggs => {
+		StatusType::PurchaseRareOriginOfShells => {
 			assert_ok!(PhalaWorld::set_status_type(
 				Origin::signed(OVERLORD),
 				true,
-				StatusType::PurchaseRareEggs
+				StatusType::PurchaseRareOriginOfShells
 			));
 		},
-		StatusType::PreorderEggs => {
+		StatusType::PreorderOriginOfShells => {
 			assert_ok!(PhalaWorld::set_status_type(
 				Origin::signed(OVERLORD),
 				true,
-				StatusType::PreorderEggs
+				StatusType::PreorderOriginOfShells
 			));
 		},
 	}
@@ -175,75 +175,75 @@ fn auto_increment_era_works() {
 }
 
 #[test]
-fn purchase_rare_egg_works() {
+fn purchase_rare_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
-		// Set Overlord and configuration then enable purchase of rare eggs
-		setup_config(StatusType::PurchaseRareEggs);
+		// Set Overlord and configuration then enable purchase of rare origin of shells
+		setup_config(StatusType::PurchaseRareOriginOfShells);
 		// Set metadata for buyers
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		// ALICE purchases Founder Egg
-		assert_ok!(PhalaWorld::buy_rare_egg(
+		// ALICE purchases Legendary Origin of Shell
+		assert_ok!(PhalaWorld::buy_rare_origin_of_shell(
 			Origin::signed(ALICE),
-			EggType::Founder,
+			OriginOfShellType::Legendary,
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
 			alice_metadata.clone(),
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareEggPurchased {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareOriginOfShellPurchased {
 			collection_id: 1,
 			nft_id: 0,
 			owner: ALICE,
 		}));
-		// BOB tries to buy Founder Egg but not enough funds
+		// BOB tries to buy Legendary Origin of Shell but not enough funds
 		assert_noop!(
-			PhalaWorld::buy_rare_egg(
+			PhalaWorld::buy_rare_origin_of_shell(
 				Origin::signed(BOB),
-				EggType::Founder,
+				OriginOfShellType::Legendary,
 				RaceType::Cyborg,
 				CareerType::HardwareDruid,
 				bob_metadata.clone(),
 			),
 			pallet_balances::Error::<Test>::InsufficientBalance
 		);
-		// BOB purchases Legendary Egg
-		assert_ok!(PhalaWorld::buy_rare_egg(
+		// BOB purchases Magic Origin of Shell
+		assert_ok!(PhalaWorld::buy_rare_origin_of_shell(
 			Origin::signed(BOB),
-			EggType::Legendary,
+			OriginOfShellType::Magic,
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
 			bob_metadata,
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareEggPurchased {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareOriginOfShellPurchased {
 			collection_id: 1,
 			nft_id: 1,
 			owner: BOB,
 		}));
-		// CHARLIE tries to purchase Normal egg and fails
+		// CHARLIE tries to purchase Hero origin of shell and fails
 		assert_noop!(
-			PhalaWorld::buy_rare_egg(
+			PhalaWorld::buy_rare_origin_of_shell(
 				Origin::signed(CHARLIE),
-				EggType::Normal,
+				OriginOfShellType::Hero,
 				RaceType::Pandroid,
 				CareerType::HackerWizard,
 				charlie_metadata.clone(),
 			),
 			Error::<Test>::InvalidPurchase
 		);
-		// CHARLIE purchases Legendary Egg
-		assert_ok!(PhalaWorld::buy_rare_egg(
+		// CHARLIE purchases Magic Origin Of Shell
+		assert_ok!(PhalaWorld::buy_rare_origin_of_shell(
 			Origin::signed(CHARLIE),
-			EggType::Legendary,
+			OriginOfShellType::Magic,
 			RaceType::Pandroid,
 			CareerType::HackerWizard,
 			charlie_metadata,
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareEggPurchased {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareOriginOfShellPurchased {
 			collection_id: 1,
 			nft_id: 2,
 			owner: CHARLIE,
@@ -256,41 +256,41 @@ fn purchase_rare_egg_works() {
 }
 
 #[test]
-fn preorder_egg_works() {
+fn preorder_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
-		// Set Overlord and configuration then enable preorder eggs
-		setup_config(StatusType::PreorderEggs);
+		// Set Overlord and configuration then enable preorder origin of shells
+		setup_config(StatusType::PreorderOriginOfShells);
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		// BOB preorders an egg
-		assert_ok!(PhalaWorld::preorder_egg(
+		// BOB preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
 			bob_metadata
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggPreordered {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
 			owner: BOB,
 			preorder_id: 0,
 		}));
-		// ALICE preorders an egg
-		assert_ok!(PhalaWorld::preorder_egg(
+		// ALICE preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(ALICE),
 			RaceType::Pandroid,
 			CareerType::HardwareDruid,
 			alice_metadata
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggPreordered {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
 			owner: ALICE,
 			preorder_id: 1,
 		}));
-		// CHARLIE fails to preorder an egg with CareerType HardwareDruid
+		// CHARLIE fails to preorder an origin of shell with CareerType HardwareDruid
 		assert_noop!(
-			PhalaWorld::preorder_egg(
+			PhalaWorld::preorder_origin_of_shell(
 				Origin::signed(CHARLIE),
 				RaceType::Cyborg,
 				CareerType::HardwareDruid,
@@ -300,9 +300,9 @@ fn preorder_egg_works() {
 		);
 		// Reassign PreorderIndex to max value
 		PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
-		// CHARLIE preorders an egg but max value is reached
+		// CHARLIE preorders an origin of shell but max value is reached
 		assert_noop!(
-			PhalaWorld::preorder_egg(
+			PhalaWorld::preorder_origin_of_shell(
 				Origin::signed(CHARLIE),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
@@ -314,41 +314,41 @@ fn preorder_egg_works() {
 }
 
 #[test]
-fn preorder_egg_works_2() {
+fn preorder_origin_of_shell_works_2() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
-		// Set Overlord and configuration then enable preorder eggs
-		setup_config(StatusType::PreorderEggs);
+		// Set Overlord and configuration then enable preorder origin of shells
+		setup_config(StatusType::PreorderOriginOfShells);
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		// BOB preorders an egg
-		assert_ok!(PhalaWorld::preorder_egg(
+		// BOB preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
 			bob_metadata
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggPreordered {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
 			owner: BOB,
 			preorder_id: 0,
 		}));
-		// ALICE preorders an egg
-		assert_ok!(PhalaWorld::preorder_egg(
+		// ALICE preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(ALICE),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
 			alice_metadata
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggPreordered {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
 			owner: ALICE,
 			preorder_id: 1,
 		}));
-		// CHARLIE fails to preorder an egg with CareerType HardwareDruid
+		// CHARLIE fails to preorder an origin of shell with CareerType HardwareDruid
 		assert_noop!(
-			PhalaWorld::preorder_egg(
+			PhalaWorld::preorder_origin_of_shell(
 				Origin::signed(CHARLIE),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
@@ -358,9 +358,9 @@ fn preorder_egg_works_2() {
 		);
 		// Reassign PreorderIndex to max value
 		PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
-		// CHARLIE preorders an egg but max value is reached
+		// CHARLIE preorders an origin of shell but max value is reached
 		assert_noop!(
-			PhalaWorld::preorder_egg(
+			PhalaWorld::preorder_origin_of_shell(
 				Origin::signed(CHARLIE),
 				RaceType::Pandroid,
 				CareerType::HackerWizard,
@@ -372,41 +372,41 @@ fn preorder_egg_works_2() {
 }
 
 #[test]
-fn mint_preorder_egg_works() {
+fn mint_preorder_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
-		// Set Overlord and configuration then enable preorder eggs
-		setup_config(StatusType::PreorderEggs);
+		// Set Overlord and configuration then enable preorder origin of shells
+		setup_config(StatusType::PreorderOriginOfShells);
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		// BOB preorders an egg
-		assert_ok!(PhalaWorld::preorder_egg(
+		// BOB preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
 			bob_metadata
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggPreordered {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
 			owner: BOB,
 			preorder_id: 0,
 		}));
-		// CHARLIE preorders an egg
-		assert_ok!(PhalaWorld::preorder_egg(
+		// CHARLIE preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(CHARLIE),
 			RaceType::Pandroid,
 			CareerType::HardwareDruid,
 			charlie_metadata
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggPreordered {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
 			owner: CHARLIE,
 			preorder_id: 1,
 		}));
-		// ALICE fails to preorder an egg with CareerType HardwareDruid
+		// ALICE fails to preorder an origin of shell with CareerType HardwareDruid
 		assert_noop!(
-			PhalaWorld::preorder_egg(
+			PhalaWorld::preorder_origin_of_shell(
 				Origin::signed(ALICE),
 				RaceType::Cyborg,
 				CareerType::HardwareDruid,
@@ -414,8 +414,8 @@ fn mint_preorder_egg_works() {
 			),
 			Error::<Test>::CareerMintMaxReached
 		);
-		// ALICE preorders an egg succesfully
-		assert_ok!(PhalaWorld::preorder_egg(
+		// ALICE preorders an origin of shell succesfully
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(ALICE),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
@@ -423,9 +423,9 @@ fn mint_preorder_egg_works() {
 		));
 		// Reassign PreorderIndex to max value
 		PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
-		// OVERLORD preorders an egg but max value is reached
+		// OVERLORD preorders an origin of shell but max value is reached
 		assert_noop!(
-			PhalaWorld::preorder_egg(
+			PhalaWorld::preorder_origin_of_shell(
 				Origin::signed(OVERLORD),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
@@ -433,10 +433,10 @@ fn mint_preorder_egg_works() {
 			),
 			Error::<Test>::NoAvailablePreorderId
 		);
-		// Overlord mints eggs
-		assert_ok!(PhalaWorld::mint_eggs(Origin::signed(OVERLORD)));
+		// Overlord mints origin of shells
+		assert_ok!(PhalaWorld::mint_origin_of_shells(Origin::signed(OVERLORD)));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::EggMinted {
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
 			collection_id: 1,
 			nft_id: 2,
 			owner: BOB,

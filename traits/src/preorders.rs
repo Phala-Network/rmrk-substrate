@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Encode, Decode, Eq, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct PreorderInfo<AccountId, BoundedString> {
-	/// Account owner of the Egg preorder
+	/// Account owner of the Origin of Shell preorder
 	pub owner: AccountId,
 	/// Race type of the preorder
 	pub race: RaceType,

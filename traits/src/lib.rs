@@ -3,7 +3,7 @@
 pub mod base;
 pub mod career;
 pub mod collection;
-pub mod egg;
+pub mod origin_of_shell;
 pub mod nft;
 pub mod part;
 pub mod preorders;
@@ -19,7 +19,7 @@ pub use part::{EquippableList, FixedPart, PartType, SlotPart};
 pub use theme::{Theme, ThemeProperty};
 // pub use part::{PartInfo};
 pub use collection::{Collection, CollectionInfo};
-pub use egg::{Egg, EggInfo};
+pub use origin_of_shell::{OriginOfShell, OriginOfShellInfo};
 pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
 pub use preorders::PreorderInfo;
 pub use priority::Priority;

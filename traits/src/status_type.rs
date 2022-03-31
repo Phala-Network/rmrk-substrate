@@ -4,6 +4,6 @@ use scale_info::TypeInfo;
 #[derive(Encode, Decode, Debug, Clone, PartialEq, TypeInfo)]
 pub enum StatusType {
 	ClaimSpirits,
-	PurchaseRareEggs,
-	PreorderEggs,
+	PurchaseRareOriginOfShells,
+	PreorderOriginOfShells,
 }
