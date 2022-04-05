@@ -5,5 +5,6 @@ use scale_info::TypeInfo;
 pub enum StatusType {
 	ClaimSpirits,
 	PurchaseRareOriginOfShells,
+	PurchaseHeroOriginOfShells,
 	PreorderOriginOfShells,
 }

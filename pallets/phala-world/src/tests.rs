@@ -56,7 +56,10 @@ fn setup_config(enable_status_type: StatusType) {
 	// Mint Origin of Shells Collection
 	mint_collection(OVERLORD);
 	// Set Origin of Shell Collection ID
-	assert_ok!(PhalaWorld::set_origin_of_shell_collection_id(Origin::signed(OVERLORD), origin_of_shell_collection_id));
+	assert_ok!(PhalaWorld::set_origin_of_shell_collection_id(
+		Origin::signed(OVERLORD),
+		origin_of_shell_collection_id
+	));
 	// Initialize the Phala World Clock
 	assert_ok!(PhalaWorld::initialize_world_clock(Origin::signed(OVERLORD)));
 	match enable_status_type {
@@ -72,6 +75,13 @@ fn setup_config(enable_status_type: StatusType) {
 				Origin::signed(OVERLORD),
 				true,
 				StatusType::PurchaseRareOriginOfShells
+			));
+		},
+		StatusType::PurchaseHeroOriginOfShells => {
+			assert_ok!(PhalaWorld::set_status_type(
+				Origin::signed(OVERLORD),
+				true,
+				StatusType::PurchaseHeroOriginOfShells
 			));
 		},
 		StatusType::PreorderOriginOfShells => {
@@ -120,7 +130,7 @@ fn claimed_spirit_twice_fails() {
 		// Dispatch a claim spirit from ALICE's account
 		assert_ok!(PhalaWorld::claim_spirit(
 			Origin::signed(ALICE),
-			1,
+			0,
 			overlord_signature.clone(),
 			metadata.clone()
 		));
@@ -193,11 +203,9 @@ fn purchase_rare_origin_of_shell_works() {
 			alice_metadata.clone(),
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareOriginOfShellPurchased {
-			collection_id: 1,
-			nft_id: 0,
-			owner: ALICE,
-		}));
+		System::assert_last_event(MockEvent::PhalaWorld(
+			crate::Event::RareOriginOfShellPurchased { collection_id: 1, nft_id: 0, owner: ALICE },
+		));
 		// BOB tries to buy Legendary Origin of Shell but not enough funds
 		assert_noop!(
 			PhalaWorld::buy_rare_origin_of_shell(
@@ -218,11 +226,9 @@ fn purchase_rare_origin_of_shell_works() {
 			bob_metadata,
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareOriginOfShellPurchased {
-			collection_id: 1,
-			nft_id: 1,
-			owner: BOB,
-		}));
+		System::assert_last_event(MockEvent::PhalaWorld(
+			crate::Event::RareOriginOfShellPurchased { collection_id: 1, nft_id: 1, owner: BOB },
+		));
 		// CHARLIE tries to purchase Hero origin of shell and fails
 		assert_noop!(
 			PhalaWorld::buy_rare_origin_of_shell(
@@ -243,18 +249,20 @@ fn purchase_rare_origin_of_shell_works() {
 			charlie_metadata,
 		));
 		// Check if event triggered
-		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RareOriginOfShellPurchased {
-			collection_id: 1,
-			nft_id: 2,
-			owner: CHARLIE,
-		}));
+		System::assert_last_event(MockEvent::PhalaWorld(
+			crate::Event::RareOriginOfShellPurchased {
+				collection_id: 1,
+				nft_id: 2,
+				owner: CHARLIE,
+			},
+		));
 		// Check Balances of ALICE and BOB
 		assert_eq!(Balances::total_balance(&ALICE), 19_000_000 * PHA);
 		assert_eq!(Balances::total_balance(&BOB), 14_000 * PHA);
 		assert_eq!(Balances::total_balance(&CHARLIE), 149_000 * PHA);
 	});
 }
-
+/*
 #[test]
 fn preorder_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
@@ -371,7 +379,7 @@ fn preorder_origin_of_shell_works_2() {
 	});
 }
 
-#[test]
+//#[test]
 fn mint_preorder_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
 		// Set Overlord and configuration then enable preorder origin of shells
@@ -448,3 +456,4 @@ fn mint_preorder_origin_of_shell_works() {
 		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
 	});
 }
+ */

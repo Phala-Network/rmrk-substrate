@@ -159,6 +159,7 @@ impl pallet_timestamp::Config for Test {
 
 parameter_types! {
 	pub const SecondsPerEra: u64 = 5 * BLOCK_TIME_SECONDS;
+	pub const MinBalanceToClaimSpirit: Balance = 10 * PHA;
 	pub const LegendaryOriginOfShellPrice: Balance = 1_000_000 * PHA;
 	pub const MagicOriginOfShellPrice: Balance = 1_000 * PHA;
 	pub const HeroOriginOfShellPrice: Balance = 10 * PHA;
@@ -175,11 +176,11 @@ impl Config for Test {
 	type Currency = Balances;
 	type SecondsPerEra = SecondsPerEra;
 	type Time = pallet_timestamp::Pallet<Test>;
+	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
 	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
 	type MaxMintPerRace = MaxMintPerRace;
-	type MaxMintPerCareer = MaxMintPerCareer;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
@@ -244,6 +245,7 @@ impl ExtBuilder {
 			era: 0,
 			can_claim_spirits: false,
 			can_purchase_rare_origin_of_shells: false,
+			can_purchase_hero_origin_of_shells: false,
 			can_preorder_origin_of_shells: false,
 			spirit_collection_id: None,
 			origin_of_shell_collection_id: None,

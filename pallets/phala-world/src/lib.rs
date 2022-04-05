@@ -5,7 +5,7 @@ use frame_support::{
 	traits::{Currency, UnixTime},
 	transactional, BoundedVec,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_signed, Origin};
 
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -21,8 +21,9 @@ pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
 
 use rmrk_traits::{
-	career::CareerType, origin_of_shell::OriginOfShellType, primitives::*, race::RaceType, status_type::StatusType,
-	OriginOfShellInfo, PreorderInfo,
+	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
+	primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo, OriginOfShellInfo,
+	PreorderInfo,
 };
 
 #[cfg(test)]
@@ -53,7 +54,9 @@ pub mod pallet {
 		dispatch::DispatchResult,
 		pallet_prelude::*,
 		sp_runtime::traits::Zero,
-		traits::{ExistenceRequirement, ReservableCurrency},
+		traits::{
+			tokens::nonfungibles::InspectEnumerable, ExistenceRequirement, ReservableCurrency,
+		},
 	};
 	use frame_system::{pallet_prelude::*, Origin};
 
@@ -79,6 +82,9 @@ pub mod pallet {
 		/// Seconds per Era that will increment the Era storage value every interval
 		#[pallet::constant]
 		type SecondsPerEra: Get<u64>;
+		/// Minimum amount of PHA to claim a Spirit
+		#[pallet::constant]
+		type MinBalanceToClaimSpirit: Get<BalanceOf<Self>>;
 		/// Price of Legendary Origin of Shell Price
 		#[pallet::constant]
 		type LegendaryOriginOfShellPrice: Get<BalanceOf<Self>>;
@@ -91,9 +97,6 @@ pub mod pallet {
 		/// Max mint per Race
 		#[pallet::constant]
 		type MaxMintPerRace: Get<u32>;
-		/// Max mint per Career
-		#[pallet::constant]
-		type MaxMintPerCareer: Get<u32>;
 		/// Amount of food per Era
 		#[pallet::constant]
 		type FoodPerEra: Get<u8>;
@@ -108,11 +111,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	/// Stores all of the valid claimed spirits from the airdrop by serial id & bool true if claimed
-	#[pallet::storage]
-	#[pallet::getter(fn claimed_spirits)]
-	pub type ClaimedSpirits<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
 	/// Stores all of the valid claimed Origin of Shells from the whitelist or preorder
 	#[pallet::storage]
@@ -129,11 +127,30 @@ pub mod pallet {
 	#[pallet::getter(fn preorders)]
 	pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, PreorderInfoOf<T>>;
 
-	/// Stores all the Origin of Shells and the information about the Origin of Shell pertaining to Hatch times and feeding
+	/// Origin of Shells inventory
+	#[pallet::storage]
+	#[pallet::getter(fn origin_of_shells_inventory)]
+	pub type OriginOfShellsInventory<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		OriginOfShellType,
+		Blake2_128Concat,
+		RaceType,
+		NftSaleInfo,
+	>;
+
+	/// Stores all the Origin of Shells and the information about the Origin of Shell pertaining to
+	/// Hatch times and feeding
 	#[pallet::storage]
 	#[pallet::getter(fn origin_of_shells)]
-	pub type OriginOfShells<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, OriginOfShellInfo>;
+	pub type OriginOfShells<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		CollectionId,
+		Blake2_128Concat,
+		NftId,
+		OriginOfShellInfo,
+	>;
 
 	/// Food per Owner where an owner gets 5 food per era
 	#[pallet::storage]
@@ -160,6 +177,11 @@ pub mod pallet {
 	#[pallet::getter(fn can_purchase_rare_origin_of_shells)]
 	pub type CanPurchaseRareOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+	/// Origin of Shells can be purchased by whitelist
+	#[pallet::storage]
+	#[pallet::getter(fn can_purchase_hero_origin_of_shells)]
+	pub type CanPurchaseHeroOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
+
 	/// Origin of Shells can be preordered
 	#[pallet::storage]
 	#[pallet::getter(fn can_preorder_origin_of_shells)]
@@ -167,7 +189,7 @@ pub mod pallet {
 
 	/// Race Type count
 	#[pallet::storage]
-	#[pallet::getter(fn race_type_count)]
+	#[pallet::getter(fn race_type_left)]
 	pub type RaceTypeLeft<T: Config> = StorageMap<_, Twox64Concat, RaceType, u32, ValueQuery>;
 
 	/// Spirit Collection ID
@@ -180,10 +202,16 @@ pub mod pallet {
 	#[pallet::getter(fn origin_of_shell_collection_id)]
 	pub type OriginOfShellCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
 
-	/// Race StorageMap count
+	/// Career StorageMap count
+	/// Race Type count
+	#[pallet::storage]
+	#[pallet::getter(fn race_type_count)]
+	pub type RaceTypeCount<T: Config> = StorageMap<_, Twox64Concat, RaceType, u32, ValueQuery>;
+
+	/// Career StorageMap count
 	#[pallet::storage]
 	#[pallet::getter(fn career_type_count)]
-	pub type CareerTypeLeft<T: Config> = StorageMap<_, Twox64Concat, CareerType, u32, ValueQuery>;
+	pub type CareerTypeCount<T: Config> = StorageMap<_, Twox64Concat, CareerType, u32, ValueQuery>;
 
 	/// Overlord Admin account of Phala World
 	#[pallet::storage]
@@ -222,6 +250,8 @@ pub mod pallet {
 		pub can_claim_spirits: bool,
 		/// bool for if a Rare Origin of Shell can be purchased
 		pub can_purchase_rare_origin_of_shells: bool,
+		/// bool for Hero Origin of Shell purchases through whitelist
+		pub can_purchase_hero_origin_of_shells: bool,
 		/// bool for if an Origin of Shell can be preordered
 		pub can_preorder_origin_of_shells: bool,
 		/// CollectionId of Spirit Collection
@@ -239,6 +269,7 @@ pub mod pallet {
 				era: 0,
 				can_claim_spirits: false,
 				can_purchase_rare_origin_of_shells: false,
+				can_purchase_hero_origin_of_shells: false,
 				can_preorder_origin_of_shells: false,
 				spirit_collection_id: None,
 				origin_of_shell_collection_id: None,
@@ -247,7 +278,10 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T>
+	where
+		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
+	{
 		fn build(&self) {
 			if let Some(ref zero_day) = self.zero_day {
 				<ZeroDay<T>>::put(zero_day);
@@ -261,6 +295,8 @@ pub mod pallet {
 			<CanClaimSpirits<T>>::put(can_claim_spirits);
 			let can_purchase_rare_origin_of_shells = self.can_purchase_rare_origin_of_shells;
 			<CanPurchaseRareOriginOfShells<T>>::put(can_purchase_rare_origin_of_shells);
+			let can_purchase_hero_origin_of_shells = self.can_purchase_hero_origin_of_shells;
+			<CanPurchaseHeroOriginOfShells<T>>::put(can_purchase_hero_origin_of_shells);
 			let can_preorder_origin_of_shells = self.can_preorder_origin_of_shells;
 			<CanPreorderOriginOfShells<T>>::put(can_preorder_origin_of_shells);
 			if let Some(spirit_collection_id) = self.spirit_collection_id {
@@ -269,16 +305,13 @@ pub mod pallet {
 			if let Some(origin_of_shell_collection_id) = self.origin_of_shell_collection_id {
 				<OriginOfShellCollectionId<T>>::put(origin_of_shell_collection_id);
 			}
+			// Set initial config for OriginOfShellsInventory
+			self::Pallet::<T>::set_initial_origin_of_shell_inventory();
 			// Set max mints per race and career
 			RaceTypeLeft::<T>::insert(RaceType::Cyborg, T::MaxMintPerRace::get());
 			RaceTypeLeft::<T>::insert(RaceType::Pandroid, T::MaxMintPerRace::get());
 			RaceTypeLeft::<T>::insert(RaceType::AISpectre, T::MaxMintPerRace::get());
 			RaceTypeLeft::<T>::insert(RaceType::XGene, T::MaxMintPerRace::get());
-			CareerTypeLeft::<T>::insert(CareerType::HardwareDruid, T::MaxMintPerCareer::get());
-			CareerTypeLeft::<T>::insert(CareerType::HackerWizard, T::MaxMintPerCareer::get());
-			CareerTypeLeft::<T>::insert(CareerType::RoboWarrior, T::MaxMintPerCareer::get());
-			CareerTypeLeft::<T>::insert(CareerType::TradeNegotiator, T::MaxMintPerCareer::get());
-			CareerTypeLeft::<T>::insert(CareerType::Web3Monk, T::MaxMintPerCareer::get());
 		}
 	}
 
@@ -295,18 +328,23 @@ pub mod pallet {
 			time: u64,
 			era: u64,
 		},
-		/// Spirit has been claimed from the whitelist
+		/// Spirit has been claimed
 		SpiritClaimed {
-			serial_id: SerialId,
 			owner: T::AccountId,
 		},
-		/// Rare origin_of_shell has been purchased
+		/// Rare Origin of Shell has been purchased
 		RareOriginOfShellPurchased {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
 		},
-		/// A chance to get an origin_of_shell through preorder
+		/// Hero Origin of Shell has been purchased
+		HeroOriginOfShellPurchased {
+			collection_id: CollectionId,
+			nft_id: NftId,
+			owner: T::AccountId,
+		},
+		/// A chance to get an Origin of Shell through preorder
 		OriginOfShellPreordered {
 			owner: T::AccountId,
 			preorder_id: PreorderId,
@@ -359,6 +397,10 @@ pub mod pallet {
 			career: u8,
 			race: u8,
 		},
+		/// Origin of Shell inventory updated
+		OriginOfShellInventoryUpdated {
+			origin_of_shell_type: OriginOfShellType,
+		},
 		/// Origin of Shell incubation has been disabled & no other origin_of_shells can be hatched
 		OriginOfShellIncubationDisabled {
 			collection_id: CollectionId,
@@ -370,6 +412,10 @@ pub mod pallet {
 		},
 		/// Purchase Rare Origin of Shells status has changed
 		PurchaseRareOriginOfShellsStatusChanged {
+			status: bool,
+		},
+		/// Purchase Hero Origin of Shells status changed
+		PurchaseHeroOriginOfShellsStatusChanged {
 			status: bool,
 		},
 		/// Preorder Origin of Shells status has changed
@@ -387,9 +433,11 @@ pub mod pallet {
 		WorldClockAlreadySet,
 		SpiritClaimNotAvailable,
 		RareOriginOfShellPurchaseNotAvailable,
+		HeroOriginOfShellPurchaseNotAvailable,
 		PreorderOriginOfShellNotAvailable,
 		SpiritAlreadyClaimed,
-		ClaimVerificationFailed,
+		BelowMinimumBalanceThreshold,
+		WhitelistVerificationFailed,
 		InvalidPurchase,
 		NoAvailablePreorderId,
 		RaceMintMaxReached,
@@ -400,6 +448,7 @@ pub mod pallet {
 		OverlordNotSet,
 		RequireOverlordAccount,
 		InvalidStatusType,
+		WrongOriginOfShellType,
 		SpiritCollectionNotSet,
 		SpiritCollectionIdAlreadySet,
 		OriginOfShellCollectionNotSet,
@@ -414,23 +463,17 @@ pub mod pallet {
 	where
 		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 	{
-		/// Claim a spirit for users that are on the whitelist. This whitelist will consist of a
-		/// a serial id and an account id that is signed by the admin account. When a user comes
-		/// to claim their spirit, they will provide a serial id & will be validated as an
-		/// authenticated claimer
+		/// Claim a spirit for any account with at least 10 PHA in their account.
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic.
-		/// - serial_id: The serial id of the spirit to be claimed.
-		/// - signature: The signature of the account that is claiming the spirit.
-		///   //Sr25519Signature
 		/// - metadata: The metadata of the account that is claiming the spirit.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn claim_spirit(
 			origin: OriginFor<T>,
-			serial_id: SerialId,
-			signature: sr25519::Signature,
+			_mcp_id: u32, // Is this needed?
+			_signature: sr25519::Signature,
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
@@ -439,40 +482,78 @@ pub mod pallet {
 			// Has Spirit Collection been set
 			let spirit_collection_id =
 				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
-			// Has the SerialId already been claimed
+			// Check if sender already claimed a spirit
 			ensure!(
-				!ClaimedSpirits::<T>::contains_key(serial_id),
+				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() ==
+					0,
 				Error::<T>::SpiritAlreadyClaimed
 			);
-			// Check if valid SerialId to claim a spirit
+			// Check if Balance has minimum required
 			ensure!(
-				Self::verify_claim(sender.clone(), metadata.clone(), signature),
-				Error::<T>::ClaimVerificationFailed
+				<T as pallet::Config>::Currency::can_reserve(
+					&sender,
+					T::MinBalanceToClaimSpirit::get()
+				),
+				Error::<T>::BelowMinimumBalanceThreshold
 			);
+			// Get NFT ID to be minted
+			let spirit_nft_id = pallet_rmrk_core::NextNftId::<T>::get(spirit_collection_id);
 			// Mint new Spirit and transfer to sender
 			pallet_rmrk_core::Pallet::<T>::mint_nft(
-				Origin::<T>::Signed(overlord).into(),
+				Origin::<T>::Signed(overlord.clone()).into(),
 				sender.clone(),
 				spirit_collection_id,
 				None,
 				None,
 				metadata,
 			)?;
-			ClaimedSpirits::<T>::insert(serial_id, true);
+			// Freeze NFT so it cannot be transferred
+			pallet_uniques::Pallet::<T>::freeze(
+				Origin::<T>::Signed(overlord).into(),
+				spirit_collection_id,
+				spirit_nft_id,
+			)?;
 
-			Self::deposit_event(Event::SpiritClaimed { serial_id, owner: sender });
+			Self::deposit_event(Event::SpiritClaimed { owner: sender });
 
 			Ok(())
 		}
 
-		/// Buy a rare origin_of_shell of either type Magic or Legendary. Both Origin of Shell types will have a set
-		/// price. These will also be limited in quantity and on a first come, first serve basis.
+		// Buy origin of shell of any type during a certain sale interval (i.e. Rare Origin of
+		// Shells, Whitelisted Sale and Unlimited Last Day of Sale of any Origin of Shell type.
+		// Based on the StatusType passed in with the Origin of Shell Type, Race & Career, will
+		// determine if the Origin of Shell can be minted.
+		//
+		// Parameters:
+		// - origin: The origin of the extrinsic.
+		// - status_type: The status type of which sale to perform the purchase.
+		// - origin_of_shell_type: The type of origin_of_shell to be purchased.
+		// - race: The race of the origin_of_shell chosen by the user.
+		// - career: The career of the origin_of_shell chosen by the user or auto-generated based on
+		//   metadata
+		// pub fn mint_origin_of_shell(
+		// 	origin: OriginFor<T>,
+		// 	status_type: StatusType,
+		// 	origin_of_shell_type: OriginOfShellType,
+		// 	race: RaceType,
+		// 	career: CareerType,
+		// ) -> DispatchResult {
+		// 	// TODO: Refactor purchases functions
+		// 	let sender = ensure_signed(origin.clone())?;
+		//
+		// 	Ok(())
+		// }
+
+		/// Buy a rare origin_of_shell of either type Magic or Legendary. Both Origin of Shell types
+		/// will have a set price. These will also be limited in quantity and on a first come, first
+		/// serve basis.
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic.
 		/// - origin_of_shell_type: The type of origin_of_shell to be purchased.
 		/// - race: The race of the origin_of_shell chosen by the user.
-		/// - career: The career of the origin_of_shell chosen by the user or auto-generated based on metadata
+		/// - career: The career of the origin_of_shell chosen by the user or auto-generated based
+		///   on metadata
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn buy_rare_origin_of_shell(
@@ -482,12 +563,15 @@ pub mod pallet {
 			career: CareerType,
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
-			ensure!(CanPurchaseRareOriginOfShells::<T>::get(), Error::<T>::RareOriginOfShellPurchaseNotAvailable);
+			ensure!(
+				CanPurchaseRareOriginOfShells::<T>::get(),
+				Error::<T>::RareOriginOfShellPurchaseNotAvailable
+			);
 			let sender = ensure_signed(origin.clone())?;
 			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
 			// Ensure origin_of_shell collection is set
-			let origin_of_shell_collection_id =
-				OriginOfShellCollectionId::<T>::get().ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
+				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
 			// Get Origin of Shell Price based on Origin of ShellType
 			let origin_of_shell_price = match origin_of_shell_type {
 				OriginOfShellType::Legendary => T::LegendaryOriginOfShellPrice::get(),
@@ -497,7 +581,6 @@ pub mod pallet {
 			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 			// Check if race and career types have mints left
 			Self::has_race_type_left(&race)?;
-			Self::has_career_type_left(&career)?;
 
 			// Define OriginOfShellInfo for storage
 			let origin_of_shell = OriginOfShellInfo {
@@ -524,9 +607,14 @@ pub mod pallet {
 				None,
 				metadata,
 			)?;
+			// TODO: Set Origin of Shell Type, Race and Career attributes for NFT
+			//Self::set_race_and_career_attributes(origin_of_shell_collection_id, nft_id, race,
+			// career);
 
-			Self::decrement_race_type(race);
-			Self::decrement_career_type(career);
+			// TODO: Update helper methods to update OriginOfShellsInventory storage instead
+			Self::decrement_race_type_left(race.clone());
+			Self::increment_race_type(race);
+			Self::increment_career_type(career);
 			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
 			Self::deposit_event(Event::RareOriginOfShellPurchased {
@@ -538,10 +626,93 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Users can pre-order an origin_of_shell. This will enable users that are whitelisted to be
-		/// added to the queue of users that can claim origin_of_shells. Those that come after the whitelist
-		/// pre-sale will be able to win the chance to acquire an origin_of_shell based on their choice of
-		/// race and career as they will have a limited quantity.
+		/// Accounts that have been whitelisted can purchase an Origin of Shell. The only Origin of
+		/// Shell type available for this purchase are Hero
+		///
+		/// Parameters:
+		/// - origin: The origin of the extrinsic purchasing the Hero Origin of Shell
+		/// - mcp_id: MCP id from the DID protocol linked to the PHA account
+		/// - signature: The signature of the account that is claiming the spirit.
+		/// - race: The race that the user has chosen (limited # of races)
+		/// - career: The career that the user has chosen (unlimited careers)
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[transactional]
+		pub fn buy_hero_origin_of_shell(
+			origin: OriginFor<T>,
+			_mcp_id: u32, // Is this needed?
+			signature: sr25519::Signature,
+			race: RaceType,
+			career: CareerType,
+			metadata: BoundedVec<u8, T::StringLimit>,
+		) -> DispatchResult {
+			ensure!(
+				CanPreorderOriginOfShells::<T>::get(),
+				Error::<T>::HeroOriginOfShellPurchaseNotAvailable
+			);
+			let sender = ensure_signed(origin.clone())?;
+			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+			// Ensure origin_of_shell collection is set
+			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
+				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			// Check if valid whitelist account
+			ensure!(
+				Self::verify_claim(sender.clone(), metadata.clone(), signature),
+				Error::<T>::WhitelistVerificationFailed
+			);
+			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
+			// Get Hero Origin of Shell price
+			let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+			// Check if race and career types have mints left
+			Self::has_race_type_left(&race)?;
+
+			// Define OriginOfShellInfo for storage
+			let origin_of_shell = OriginOfShellInfo {
+				origin_of_shell_type: OriginOfShellType::Hero,
+				race: race.clone(),
+				career: career.clone(),
+				start_incubation: 0,
+				incubation_duration: 0,
+			};
+
+			// Transfer the amount for the rare Origin of Shell NFT then mint the origin_of_shell
+			<T as pallet::Config>::Currency::transfer(
+				&sender,
+				&overlord,
+				origin_of_shell_price,
+				ExistenceRequirement::KeepAlive,
+			)?;
+			// Mint Origin of Shell and transfer Origin of Shell to new owner
+			pallet_rmrk_core::Pallet::<T>::mint_nft(
+				Origin::<T>::Signed(overlord.clone()).into(),
+				sender.clone(),
+				origin_of_shell_collection_id,
+				None,
+				None,
+				metadata,
+			)?;
+			// TODO: Set Origin of Shell Type, Race and Career attributes for NFT
+			//Self::set_race_and_career_attributes(origin_of_shell_collection_id, nft_id, race,
+			// career);
+
+			// TODO: Update helper methods to update OriginOfShellsInventory storage instead
+			Self::decrement_race_type_left(race.clone());
+			Self::increment_race_type(race);
+			Self::increment_career_type(career);
+			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
+
+			Self::deposit_event(Event::HeroOriginOfShellPurchased {
+				collection_id: origin_of_shell_collection_id,
+				nft_id,
+				owner: sender,
+			});
+
+			Ok(())
+		}
+
+		/// Users can pre-order an Origin of Shell. This will enable users that are non-whitelisted
+		/// to be added to the queue of users that can claim Origin of Shells. Those that come after
+		/// the whitelist pre-sale will be able to win the chance to acquire an Origin of Shell
+		/// based on their choice of race and career as they will have a limited quantity.
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic preordering the origin_of_shell
@@ -555,11 +726,12 @@ pub mod pallet {
 			career: CareerType,
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
-			ensure!(CanPreorderOriginOfShells::<T>::get(), Error::<T>::PreorderOriginOfShellNotAvailable);
+			ensure!(
+				CanPreorderOriginOfShells::<T>::get(),
+				Error::<T>::PreorderOriginOfShellNotAvailable
+			);
 			let sender = ensure_signed(origin)?;
-			// Check if the race and career have reached their limit
-			Self::has_race_type_left(&race)?;
-			Self::has_career_type_left(&career)?;
+
 			// Get preorder_id for new preorder
 			let preorder_id =
 				<PreorderIndex<T>>::try_mutate(|n| -> Result<PreorderId, DispatchError> {
@@ -574,12 +746,11 @@ pub mod pallet {
 				race: race.clone(),
 				career: career.clone(),
 				metadata,
+				preorder_status: PreorderStatus::Pending,
 			};
 			// Reserve currency for the preorder at the Hero origin_of_shell price
 			<T as pallet::Config>::Currency::reserve(&sender, T::HeroOriginOfShellPrice::get())?;
 
-			Self::decrement_race_type(race);
-			Self::decrement_career_type(career);
 			Preorders::<T>::insert(preorder_id, preorder);
 
 			Self::deposit_event(Event::OriginOfShellPreordered { owner: sender, preorder_id });
@@ -587,18 +758,20 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// This is an admin only function that will be called to do a bulk minting of all origin_of_shell
-		/// owners that made selected a race and career that was available based on the quantity
-		/// available. Those that did not win an origin_of_shell will have to claim their refund
+		/// This is an admin only function that will be called to do a bulk minting of all
+		/// origin_of_shell owners that made selected a race and career that was available based on
+		/// the quantity available. Those that did not win an origin_of_shell will have to claim
+		/// their refund
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn mint_origin_of_shells(origin: OriginFor<T>) -> DispatchResult {
+		pub fn draw_winners_origin_of_shells(origin: OriginFor<T>) -> DispatchResult {
+			// TODO: Reimplement and refactor
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
 			Self::ensure_overlord(sender.clone())?;
 			// Ensure origin_of_shell collection is set
-			let origin_of_shell_collection_id =
-				OriginOfShellCollectionId::<T>::get().ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
+				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
 			// Iterate through Preorders
 			for preorder_id in Preorders::<T>::iter_keys() {
 				if let Some(preorder) = Preorders::<T>::take(preorder_id) {
@@ -612,10 +785,14 @@ pub mod pallet {
 						incubation_duration: 0,
 					};
 					// Next NFT ID of Collection
-					let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
+					let nft_id =
+						pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 
 					// Get payment from owner's reserve
-					<T as pallet::Config>::Currency::unreserve(&preorder.owner, origin_of_shell_price);
+					<T as pallet::Config>::Currency::unreserve(
+						&preorder.owner,
+						origin_of_shell_price,
+					);
 					<T as pallet::Config>::Currency::transfer(
 						&preorder.owner,
 						&sender,
@@ -632,7 +809,11 @@ pub mod pallet {
 						preorder.metadata,
 					)?;
 
-					OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
+					OriginOfShells::<T>::insert(
+						origin_of_shell_collection_id,
+						nft_id,
+						origin_of_shell,
+					);
 
 					Self::deposit_event(Event::OriginOfShellMinted {
 						collection_id: origin_of_shell_collection_id,
@@ -645,10 +826,10 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Once users have received their origin_of_shells and the start incubation event has been triggered,
-		/// they can start the incubation process and a timer will start for the origin_of_shell to awaken at
-		/// a designated time. Origin of Shells can reduce their time by being in the top 10 of origin_of_shell's fed
-		/// per era.
+		/// Once users have received their origin_of_shells and the start incubation event has been
+		/// triggered, they can start the incubation process and a timer will start for the
+		/// origin_of_shell to awaken at a designated time. Origin of Shells can reduce their time
+		/// by being in the top 10 of origin_of_shell's fed per era.
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic starting the incubation process
@@ -666,8 +847,9 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Feed another origin_of_shell to the current origin_of_shell being incubated. This will reduce the time left to
-		/// incubation if the origin_of_shell is in the top 10 of origin_of_shells fed that era.
+		/// Feed another origin_of_shell to the current origin_of_shell being incubated. This will
+		/// reduce the time left to incubation if the origin_of_shell is in the top 10 of
+		/// origin_of_shells fed that era.
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic feeding the origin_of_shell
@@ -685,9 +867,9 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Hatch the origin_of_shell that is currently being hatched. This will trigger the end of the incubation
-		/// process and the origin_of_shell will be burned. After burning, the user will receive the awakened
-		/// Shell RMRK NFT
+		/// Hatch the origin_of_shell that is currently being hatched. This will trigger the end of
+		/// the incubation process and the origin_of_shell will be burned. After burning, the user
+		/// will receive the awakened Shell RMRK NFT
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic incubation the origin_of_shell
@@ -705,8 +887,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// This is an admin function to update origin_of_shells incubation times based on being in the top 10 of
-		/// fed origin_of_shells within that era
+		/// This is an admin function to update origin_of_shells incubation times based on being in
+		/// the top 10 of fed origin_of_shells within that era
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic updating the origin_of_shells incubation times
@@ -770,7 +952,8 @@ pub mod pallet {
 		}
 
 		/// Privileged function to set the status for one of the defined StatusTypes like
-		/// ClaimSpirits, PurchaseRareOriginOfShells, or PreorderOriginOfShells to enable functionality in Phala World
+		/// ClaimSpirits, PurchaseRareOriginOfShells, or PreorderOriginOfShells to enable
+		/// functionality in Phala World
 		///
 		/// Parameters:
 		/// - `origin` - Expected Overlord admin account to set the status
@@ -788,10 +971,71 @@ pub mod pallet {
 			// Match StatusType and call helper function to set status
 			match status_type {
 				StatusType::ClaimSpirits => Self::set_claim_spirits_status(status)?,
-				StatusType::PurchaseRareOriginOfShells => Self::set_purchase_rare_origin_of_shells_status(status)?,
-				StatusType::PreorderOriginOfShells => Self::set_preorder_origin_of_shells_status(status)?,
+				StatusType::PurchaseRareOriginOfShells =>
+					Self::set_purchase_rare_origin_of_shells_status(status)?,
+				StatusType::PurchaseHeroOriginOfShells =>
+					Self::set_purchase_hero_origin_of_shells_status(status)?,
+				StatusType::PreorderOriginOfShells =>
+					Self::set_preorder_origin_of_shells_status(status)?,
 			}
 			Ok(Pays::No.into())
+		}
+
+		/// Update for the non-whitelist preorder period amount of races & giveaways available for
+		/// the Origin of Shell NFTs. This is a privileged function and can only be executed by the
+		/// Overlord account. Update the OriginOfShellInventory counts by incrementing them based on
+		/// the defined counts
+		///
+		/// Parameters:
+		/// - `origin` - Expected Overlord admin account
+		/// - `origin_of_shell_type` - Type of Origin of Shell
+		/// - `for_sale_count` - Number of Origin of Shells for sale
+		/// - `giveaway_count` - Number of Origin of Shells for giveaways
+		/// - `reserve_count` - Number of Origin of Shells to be reserved
+		#[pallet::weight(0)]
+		pub fn update_origin_of_shell_type_counts(
+			origin: OriginFor<T>,
+			origin_of_shell_type: OriginOfShellType,
+			for_sale_count: u32,
+			giveaway_count: u32,
+		) -> DispatchResult {
+			// Ensure Overlord account makes call
+			let sender = ensure_signed(origin)?;
+			Self::ensure_overlord(sender)?;
+			// Ensure they are updating the OriginOfShellType::Hero
+			ensure!(
+				origin_of_shell_type == OriginOfShellType::Hero,
+				Error::<T>::WrongOriginOfShellType
+			);
+			// Mutate the existing storage for the Hero Origin of Shells
+			Self::update_nft_sale_info(
+				origin_of_shell_type.clone(),
+				RaceType::AISpectre,
+				for_sale_count,
+				giveaway_count,
+			)?;
+			Self::update_nft_sale_info(
+				origin_of_shell_type.clone(),
+				RaceType::Cyborg,
+				for_sale_count,
+				giveaway_count,
+			)?;
+			Self::update_nft_sale_info(
+				origin_of_shell_type.clone(),
+				RaceType::Pandroid,
+				for_sale_count,
+				giveaway_count,
+			)?;
+			Self::update_nft_sale_info(
+				origin_of_shell_type.clone(),
+				RaceType::XGene,
+				for_sale_count,
+				giveaway_count,
+			)?;
+
+			Self::deposit_event(Event::OriginOfShellInventoryUpdated { origin_of_shell_type });
+
+			Ok(())
 		}
 
 		/// Privileged function to set the collection id for the Spirits collection
@@ -832,8 +1076,12 @@ pub mod pallet {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
 			Self::ensure_overlord(sender)?;
-			// If Origin of Shell Collection ID is greater than 0 then the collection ID was already set
-			ensure!(OriginOfShellCollectionId::<T>::get().is_none(), Error::<T>::OriginOfShellCollectionIdAlreadySet);
+			// If Origin of Shell Collection ID is greater than 0 then the collection ID was already
+			// set
+			ensure!(
+				OriginOfShellCollectionId::<T>::get().is_none(),
+				Error::<T>::OriginOfShellCollectionIdAlreadySet
+			);
 			<OriginOfShellCollectionId<T>>::put(collection_id);
 
 			Self::deposit_event(Event::OriginOfShellCollectionIdSet { collection_id });
@@ -843,10 +1091,13 @@ pub mod pallet {
 	}
 }
 
-impl<T: Config> Pallet<T> {
-	/// Verify the claim status of an Account that has claimed a spirit. Serialize the evidence with
-	/// the provided account and metadata and verify the against the expected results by validating
-	/// against the Overlord account used to sign and generate the whitelisted user's SerialId
+impl<T: Config> Pallet<T>
+where
+	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
+{
+	/// Verify the whitelist status of an Account that has claimed a spirit. Serialize the evidence
+	/// with the provided account and metadata and verify the against the expected results by
+	/// validating against the Overlord account used to sign and validate the whitelisted user
 	///
 	/// Parameters:
 	/// - claimer: AccountId of the account claiming the spirit
@@ -908,6 +1159,19 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	/// Set Hero Origin of Shells status for purchase with the Overlord Admin Account to allow
+	/// users to purchase Hero Origin of Shells
+	///
+	/// Parameters:
+	/// `status`: Status to set CanPurchaseOriginOfShellsWhitelist StorageValue
+	fn set_purchase_hero_origin_of_shells_status(status: bool) -> DispatchResult {
+		<CanPurchaseHeroOriginOfShells<T>>::put(status);
+
+		Self::deposit_event(Event::PurchaseHeroOriginOfShellsStatusChanged { status });
+
+		Ok(())
+	}
+
 	/// Set status of Preordering origin_of_shells with the Overlord Admin Account to allow
 	/// users to preorder origin_of_shells through the `preorder_origin_of_shell()` function
 	///
@@ -921,12 +1185,173 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	/// Set initial OriginOfShellInventory values in the StorageDoubleMap. Key1 will be of
+	/// OriginOfShellType and Key2 will be the RaceType and the Value will be NftSaleInfo struct
+	/// containing the information for the NFT sale. Initial config will look as follows:
+	/// `<Legendary>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0,
+	/// race_for_sale_count: 1, race_giveaway_count: 0, race_reserved_count: 1 }`
+	/// `<Magic>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
+	/// 15, race_giveaway_count: 0, race_reserved_count: 5 }`
+	/// `<Hero>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
+	/// 1250, race_giveaway_count: 50, race_reserved_count: 0 }`
+	fn set_initial_origin_of_shell_inventory() -> DispatchResult {
+		// 3 OriginOfShellType Hero, Magic & Legendary and 4 different RaceType Cyborg, AISpectre,
+		// XGene & Pandroid
+		// TODO Refactor
+		let legendary_nft_sale_info = NftSaleInfo {
+			race_count: 0,
+			career_count: 0,
+			race_for_sale_count: 1,
+			race_giveaway_count: 0,
+			race_reserved_count: 1,
+		};
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Legendary,
+			RaceType::AISpectre,
+			legendary_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Legendary,
+			RaceType::Cyborg,
+			legendary_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Legendary,
+			RaceType::Pandroid,
+			legendary_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Legendary,
+			RaceType::XGene,
+			legendary_nft_sale_info,
+		);
+		let magic_nft_sale_info = NftSaleInfo {
+			race_count: 0,
+			career_count: 0,
+			race_for_sale_count: 15,
+			race_giveaway_count: 0,
+			race_reserved_count: 5,
+		};
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Magic,
+			RaceType::AISpectre,
+			magic_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Magic,
+			RaceType::Cyborg,
+			magic_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Magic,
+			RaceType::Pandroid,
+			magic_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Magic,
+			RaceType::XGene,
+			magic_nft_sale_info,
+		);
+		let hero_nft_sale_info = NftSaleInfo {
+			race_count: 0,
+			career_count: 0,
+			race_for_sale_count: 1250,
+			race_giveaway_count: 50,
+			race_reserved_count: 0,
+		};
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Hero,
+			RaceType::AISpectre,
+			hero_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Hero,
+			RaceType::Cyborg,
+			hero_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Hero,
+			RaceType::Pandroid,
+			hero_nft_sale_info.clone(),
+		);
+		OriginOfShellsInventory::<T>::insert(
+			OriginOfShellType::Hero,
+			RaceType::XGene,
+			hero_nft_sale_info,
+		);
+
+		Ok(())
+	}
+
+	/// Update the NftSaleInfo for a given OriginOfShellType and RaceType
+	///
+	/// Parameters:
+	/// - `origin_of_shell_type`: OriginOfShellType to update in OriginOfShellInventory
+	/// - `race`: RaceType to update in OriginOfShellInventory
+	/// - `for_sale_count`: count to increment the for sale count
+	/// - `giveaway_count`: count to increment the race giveaway count
+	fn update_nft_sale_info(
+		origin_of_shell_type: OriginOfShellType,
+		race: RaceType,
+		for_sale_count: u32,
+		giveaway_count: u32,
+	) -> DispatchResult {
+		OriginOfShellsInventory::<T>::try_mutate_exists(
+			origin_of_shell_type,
+			race,
+			|nft_sale_info| -> DispatchResult {
+				if let Some(nft_sale_info) = nft_sale_info {
+					nft_sale_info.race_for_sale_count =
+						nft_sale_info.race_for_sale_count.saturating_add(for_sale_count);
+					nft_sale_info.race_giveaway_count =
+						nft_sale_info.race_giveaway_count.saturating_add(giveaway_count);
+				}
+				Ok(())
+			},
+		)?;
+
+		Ok(())
+	}
+
+	// Set the race and career attributes for a Origin of Shell NFT
+	//
+	// Parameters:
+	// - `collection_id`: Collection id of the Origin of Shell NFT
+	// - `nft_id`: NFT id of the Origin of Shell NFT
+	// - `race`: Race attribute to set for the Origin of Shell NFT
+	// - `career`: Career attribute to set for the Origin of Shell NFT
+	// fn set_race_and_career_attributes(
+	// 	collection_id: CollectionId,
+	// 	nft_id: NftId,
+	// 	race: RaceType,
+	// 	career: CareerType,
+	// ) -> DispatchResult {
+	// 	// Set Race
+	// 	pallet_uniques::Pallet::<T>::set_attribute(
+	// 		Origin::<T>::Signed(overlord.clone()).into(),
+	// 		collection_id,
+	// 		Some(nft_id),
+	// 		"race".into(),
+	// 		race.clone().into(),
+	// 	);
+	// 	// Set Career
+	// 	pallet_uniques::Pallet::<T>::set_attribute(
+	// 		Origin::<T>::Signed(overlord.clone()).into(),
+	// 		collection_id,
+	// 		Some(nft_id),
+	// 		"career".into(),
+	// 		career.clone().into(),
+	// 	);
+	//
+	// 	Ok(())
+	// }
+
 	/// Decrement RaceType count for the `race`
 	///
 	/// Parameters:
 	/// - `race`: The Race to increment count
 	fn decrement_race_type(race: RaceType) -> DispatchResult {
-		RaceTypeLeft::<T>::mutate(race, |race_count| {
+		RaceTypeCount::<T>::mutate(race, |race_count| {
 			*race_count = *race_count - 1;
 			*race_count
 		});
@@ -939,7 +1364,7 @@ impl<T: Config> Pallet<T> {
 	/// Parameters:
 	/// - `career`: The Career to increment count
 	fn decrement_career_type(career: CareerType) -> DispatchResult {
-		CareerTypeLeft::<T>::mutate(career, |career_count| {
+		CareerTypeCount::<T>::mutate(career, |career_count| {
 			*career_count = *career_count - 1;
 			*career_count
 		});
@@ -950,9 +1375,9 @@ impl<T: Config> Pallet<T> {
 	/// Increment RaceType count for the `race`
 	///
 	/// Parameters:
-	/// - `race`: The Race to increment count
+	/// - `race`: The Career to increment count
 	fn increment_race_type(race: RaceType) -> DispatchResult {
-		RaceTypeLeft::<T>::mutate(race, |race_count| {
+		RaceTypeCount::<T>::mutate(race, |race_count| {
 			*race_count = *race_count + 1;
 			*race_count
 		});
@@ -965,10 +1390,58 @@ impl<T: Config> Pallet<T> {
 	/// Parameters:
 	/// - `career`: The Career to increment count
 	fn increment_career_type(career: CareerType) -> DispatchResult {
-		CareerTypeLeft::<T>::mutate(career, |career_count| {
+		CareerTypeCount::<T>::mutate(career, |career_count| {
 			*career_count = *career_count + 1;
 			*career_count
 		});
+
+		Ok(())
+	}
+
+	/// Increment RaceType count for the `race`
+	///
+	/// Parameters:
+	/// - `race`: The Race to increment count
+	fn increment_race_type_by(race: RaceType, num: u32) -> DispatchResult {
+		RaceTypeLeft::<T>::mutate(race, |race_count| {
+			*race_count = race_count.saturating_add(num);
+			*race_count
+		});
+
+		Ok(())
+	}
+
+	/// Decrement RaceType count for the `race`
+	///
+	/// Parameters:
+	/// - `race`: The Race to increment count
+	fn decrement_race_type_left(race: RaceType) -> DispatchResult {
+		RaceTypeLeft::<T>::mutate(race, |race_count| {
+			*race_count = *race_count - 1;
+			*race_count
+		});
+
+		Ok(())
+	}
+
+	/// Decrement RaceType count for the `race`
+	///
+	/// Parameters:
+	/// - `race`: The Race to increment count
+	fn decrement_race_type_left2(
+		origin_of_shell_type: OriginOfShellType,
+		race: RaceType,
+	) -> DispatchResult {
+		OriginOfShellsInventory::<T>::try_mutate_exists(
+			origin_of_shell_type,
+			race,
+			|nft_sale_info| -> DispatchResult {
+				if let Some(nft_sale_info) = nft_sale_info {
+					nft_sale_info.race_for_sale_count = nft_sale_info.race_for_sale_count - 1;
+				}
+				Ok(())
+			},
+		);
 
 		Ok(())
 	}
@@ -979,15 +1452,6 @@ impl<T: Config> Pallet<T> {
 	/// - `race`: The Race to check
 	fn has_race_type_left(race: &RaceType) -> DispatchResult {
 		ensure!(RaceTypeLeft::<T>::get(race) > 0, Error::<T>::RaceMintMaxReached);
-		Ok(())
-	}
-
-	/// Verify if the chosen a Career has reached the max limit
-	///
-	/// Parameters:
-	/// - `career`: The Career to check
-	fn has_career_type_left(career: &CareerType) -> DispatchResult {
-		ensure!(CareerTypeLeft::<T>::get(career) > 0, Error::<T>::CareerMintMaxReached);
 		Ok(())
 	}
 }

@@ -1,8 +1,8 @@
 use codec::{Decode, Encode};
+use frame_support::pallet_prelude::*;
 use scale_info::TypeInfo;
 use sp_runtime::{DispatchError, RuntimeDebug};
 use sp_std::cmp::Eq;
-use frame_support::pallet_prelude::*;
 
 use crate::{career::CareerType, primitives::*, race::RaceType};
 use serde::{Deserialize, Serialize};
@@ -33,7 +33,7 @@ pub struct OriginOfShellInfo {
 	pub incubation_duration: u64,
 }
 
-pub trait OriginOfShell<AccountId, CollectionId, NftId, BlockNumber> {
+pub trait OriginOfShell<AccountId, BlockNumber> {
 	/// When a user initiates the incubation process, this function will set the start time for the
 	/// incubation process.
 	fn set_start_incubation_time(
@@ -41,8 +41,8 @@ pub trait OriginOfShell<AccountId, CollectionId, NftId, BlockNumber> {
 		collection_id: CollectionId,
 		nft_id: NftId,
 	) -> Result<BlockNumber, DispatchError>;
-	/// Get the `incubation_duration` of the Origin of Shell RMRK NFT and reduce it by `reduce_time_by`
-	/// This will be executed by the admin account
+	/// Get the `incubation_duration` of the Origin of Shell RMRK NFT and reduce it by
+	/// `reduce_time_by` This will be executed by the admin account
 	fn update_incubation_time(
 		admin: AccountId,
 		collection_id: CollectionId,
