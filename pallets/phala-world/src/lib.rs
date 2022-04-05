@@ -187,11 +187,6 @@ pub mod pallet {
 	#[pallet::getter(fn can_preorder_origin_of_shells)]
 	pub type CanPreorderOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-	/// Race Type count
-	#[pallet::storage]
-	#[pallet::getter(fn race_type_left)]
-	pub type RaceTypeLeft<T: Config> = StorageMap<_, Twox64Concat, RaceType, u32, ValueQuery>;
-
 	/// Spirit Collection ID
 	#[pallet::storage]
 	#[pallet::getter(fn spirit_collection_id)]
@@ -201,12 +196,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn origin_of_shell_collection_id)]
 	pub type OriginOfShellCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
-
-	/// Career StorageMap count
-	/// Race Type count
-	#[pallet::storage]
-	#[pallet::getter(fn race_type_count)]
-	pub type RaceTypeCount<T: Config> = StorageMap<_, Twox64Concat, RaceType, u32, ValueQuery>;
 
 	/// Career StorageMap count
 	#[pallet::storage]
@@ -228,7 +217,7 @@ pub mod pallet {
 					let current_era = <Era<T>>::get();
 					if secs_since_zero_day / T::SecondsPerEra::get() > current_era {
 						let new_era = Era::<T>::mutate(|era| {
-							*era = *era + 1;
+							*era += 1;
 							*era
 						});
 						Self::deposit_event(Event::NewEra { time: current_time, era: new_era });
@@ -307,11 +296,6 @@ pub mod pallet {
 			}
 			// Set initial config for OriginOfShellsInventory
 			self::Pallet::<T>::set_initial_origin_of_shell_inventory();
-			// Set max mints per race and career
-			RaceTypeLeft::<T>::insert(RaceType::Cyborg, T::MaxMintPerRace::get());
-			RaceTypeLeft::<T>::insert(RaceType::Pandroid, T::MaxMintPerRace::get());
-			RaceTypeLeft::<T>::insert(RaceType::AISpectre, T::MaxMintPerRace::get());
-			RaceTypeLeft::<T>::insert(RaceType::XGene, T::MaxMintPerRace::get());
 		}
 	}
 
@@ -453,6 +437,7 @@ pub mod pallet {
 		SpiritCollectionIdAlreadySet,
 		OriginOfShellCollectionNotSet,
 		OriginOfShellCollectionIdAlreadySet,
+		OriginOfShellInventoryCorrupted,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -580,11 +565,11 @@ pub mod pallet {
 			};
 			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 			// Check if race and career types have mints left
-			Self::has_race_type_left(&race)?;
+			Self::has_race_type_left(&origin_of_shell_type, &race)?;
 
 			// Define OriginOfShellInfo for storage
 			let origin_of_shell = OriginOfShellInfo {
-				origin_of_shell_type,
+				origin_of_shell_type: origin_of_shell_type.clone(),
 				race: race.clone(),
 				career: career.clone(),
 				start_incubation: 0,
@@ -612,9 +597,9 @@ pub mod pallet {
 			// career);
 
 			// TODO: Update helper methods to update OriginOfShellsInventory storage instead
-			Self::decrement_race_type_left(race.clone());
-			Self::increment_race_type(race);
-			Self::increment_career_type(career);
+			Self::decrement_race_type_left(origin_of_shell_type.clone(), race.clone())?;
+			Self::increment_race_type(origin_of_shell_type, race)?;
+			Self::increment_career_type(career)?;
 			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
 			Self::deposit_event(Event::RareOriginOfShellPurchased {
@@ -663,7 +648,7 @@ pub mod pallet {
 			// Get Hero Origin of Shell price
 			let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
 			// Check if race and career types have mints left
-			Self::has_race_type_left(&race)?;
+			Self::has_race_type_left(&OriginOfShellType::Hero, &race)?;
 
 			// Define OriginOfShellInfo for storage
 			let origin_of_shell = OriginOfShellInfo {
@@ -683,7 +668,7 @@ pub mod pallet {
 			)?;
 			// Mint Origin of Shell and transfer Origin of Shell to new owner
 			pallet_rmrk_core::Pallet::<T>::mint_nft(
-				Origin::<T>::Signed(overlord.clone()).into(),
+				Origin::<T>::Signed(overlord).into(),
 				sender.clone(),
 				origin_of_shell_collection_id,
 				None,
@@ -695,9 +680,9 @@ pub mod pallet {
 			// career);
 
 			// TODO: Update helper methods to update OriginOfShellsInventory storage instead
-			Self::decrement_race_type_left(race.clone());
-			Self::increment_race_type(race);
-			Self::increment_career_type(career);
+			Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
+			Self::increment_race_type(OriginOfShellType::Hero, race)?;
+			Self::increment_career_type(career)?;
 			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
 			Self::deposit_event(Event::HeroOriginOfShellPurchased {
@@ -737,7 +722,7 @@ pub mod pallet {
 				<PreorderIndex<T>>::try_mutate(|n| -> Result<PreorderId, DispatchError> {
 					let id = *n;
 					ensure!(id != PreorderId::max_value(), Error::<T>::NoAvailablePreorderId);
-					*n = *n + 1;
+					*n += 1;
 					Ok(id)
 				})?;
 
@@ -758,13 +743,41 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// This is an admin only function that will be used to set a preorder's status from Pending
+		/// to either Chosen or NotChosen
+		///
+		/// Parameters:
+		/// `origin`: Expected to come from Overlord admin account
+		/// `preorder_id`: Preorder id to change preorder status
+		/// `status`: Either Chosen or NotChosen
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[transactional]
+		pub fn set_preorder_status(
+			origin: OriginFor<T>,
+			preorder_id: PreorderId,
+			status: PreorderStatus,
+		) -> DispatchResult {
+			// Ensure Overlord account makes call
+			let sender = ensure_signed(origin)?;
+			Self::ensure_overlord(sender.clone())?;
+			// Change status of preorder
+			Preorders::<T>::try_mutate_exists(preorder_id, |preorder_info| -> DispatchResult {
+				if let Some(preorder_info) = preorder_info {
+					preorder_info.preorder_status = status;
+				}
+				Ok(())
+			})?;
+
+			Ok(())
+		}
+
 		/// This is an admin only function that will be called to do a bulk minting of all
 		/// origin_of_shell owners that made selected a race and career that was available based on
 		/// the quantity available. Those that did not win an origin_of_shell will have to claim
 		/// their refund
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn draw_winners_origin_of_shells(origin: OriginFor<T>) -> DispatchResult {
+		pub fn set_winners_origin_of_shells(origin: OriginFor<T>) -> DispatchResult {
 			// TODO: Reimplement and refactor
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
@@ -1194,13 +1207,12 @@ where
 	/// 15, race_giveaway_count: 0, race_reserved_count: 5 }`
 	/// `<Hero>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
 	/// 1250, race_giveaway_count: 50, race_reserved_count: 0 }`
-	fn set_initial_origin_of_shell_inventory() -> DispatchResult {
+	fn set_initial_origin_of_shell_inventory() {
 		// 3 OriginOfShellType Hero, Magic & Legendary and 4 different RaceType Cyborg, AISpectre,
 		// XGene & Pandroid
 		// TODO Refactor
 		let legendary_nft_sale_info = NftSaleInfo {
 			race_count: 0,
-			career_count: 0,
 			race_for_sale_count: 1,
 			race_giveaway_count: 0,
 			race_reserved_count: 1,
@@ -1227,7 +1239,6 @@ where
 		);
 		let magic_nft_sale_info = NftSaleInfo {
 			race_count: 0,
-			career_count: 0,
 			race_for_sale_count: 15,
 			race_giveaway_count: 0,
 			race_reserved_count: 5,
@@ -1254,7 +1265,6 @@ where
 		);
 		let hero_nft_sale_info = NftSaleInfo {
 			race_count: 0,
-			career_count: 0,
 			race_for_sale_count: 1250,
 			race_giveaway_count: 50,
 			race_reserved_count: 0,
@@ -1279,8 +1289,6 @@ where
 			RaceType::XGene,
 			hero_nft_sale_info,
 		);
-
-		Ok(())
 	}
 
 	/// Update the NftSaleInfo for a given OriginOfShellType and RaceType
@@ -1346,19 +1354,6 @@ where
 	// 	Ok(())
 	// }
 
-	/// Decrement RaceType count for the `race`
-	///
-	/// Parameters:
-	/// - `race`: The Race to increment count
-	fn decrement_race_type(race: RaceType) -> DispatchResult {
-		RaceTypeCount::<T>::mutate(race, |race_count| {
-			*race_count = *race_count - 1;
-			*race_count
-		});
-
-		Ok(())
-	}
-
 	/// Decrement CareerType count for the `career`
 	///
 	/// Parameters:
@@ -1375,12 +1370,22 @@ where
 	/// Increment RaceType count for the `race`
 	///
 	/// Parameters:
+	/// - `origin_of_shell_type`: Origin of Shell type
 	/// - `race`: The Career to increment count
-	fn increment_race_type(race: RaceType) -> DispatchResult {
-		RaceTypeCount::<T>::mutate(race, |race_count| {
-			*race_count = *race_count + 1;
-			*race_count
-		});
+	fn increment_race_type(
+		origin_of_shell_type: OriginOfShellType,
+		race: RaceType,
+	) -> DispatchResult {
+		OriginOfShellsInventory::<T>::try_mutate_exists(
+			origin_of_shell_type,
+			race,
+			|nft_sale_info| -> DispatchResult {
+				if let Some(nft_sale_info) = nft_sale_info {
+					nft_sale_info.race_count += 1;
+				}
+				Ok(())
+			},
+		)?;
 
 		Ok(())
 	}
@@ -1391,44 +1396,18 @@ where
 	/// - `career`: The Career to increment count
 	fn increment_career_type(career: CareerType) -> DispatchResult {
 		CareerTypeCount::<T>::mutate(career, |career_count| {
-			*career_count = *career_count + 1;
+			*career_count += 1;
 			*career_count
 		});
 
 		Ok(())
 	}
 
-	/// Increment RaceType count for the `race`
-	///
-	/// Parameters:
-	/// - `race`: The Race to increment count
-	fn increment_race_type_by(race: RaceType, num: u32) -> DispatchResult {
-		RaceTypeLeft::<T>::mutate(race, |race_count| {
-			*race_count = race_count.saturating_add(num);
-			*race_count
-		});
-
-		Ok(())
-	}
-
 	/// Decrement RaceType count for the `race`
 	///
 	/// Parameters:
 	/// - `race`: The Race to increment count
-	fn decrement_race_type_left(race: RaceType) -> DispatchResult {
-		RaceTypeLeft::<T>::mutate(race, |race_count| {
-			*race_count = *race_count - 1;
-			*race_count
-		});
-
-		Ok(())
-	}
-
-	/// Decrement RaceType count for the `race`
-	///
-	/// Parameters:
-	/// - `race`: The Race to increment count
-	fn decrement_race_type_left2(
+	fn decrement_race_type_left(
 		origin_of_shell_type: OriginOfShellType,
 		race: RaceType,
 	) -> DispatchResult {
@@ -1437,11 +1416,11 @@ where
 			race,
 			|nft_sale_info| -> DispatchResult {
 				if let Some(nft_sale_info) = nft_sale_info {
-					nft_sale_info.race_for_sale_count = nft_sale_info.race_for_sale_count - 1;
+					nft_sale_info.race_for_sale_count -= 1;
 				}
 				Ok(())
 			},
-		);
+		)?;
 
 		Ok(())
 	}
@@ -1450,8 +1429,16 @@ where
 	///
 	/// Parameters:
 	/// - `race`: The Race to check
-	fn has_race_type_left(race: &RaceType) -> DispatchResult {
-		ensure!(RaceTypeLeft::<T>::get(race) > 0, Error::<T>::RaceMintMaxReached);
+	fn has_race_type_left(
+		origin_of_shell_type: &OriginOfShellType,
+		race: &RaceType,
+	) -> DispatchResult {
+		if let Some(nft_sale_info) = OriginOfShellsInventory::<T>::get(origin_of_shell_type, race) {
+			ensure!(nft_sale_info.race_for_sale_count > 0, Error::<T>::RaceMintMaxReached);
+		} else {
+			return Err(Error::<T>::OriginOfShellInventoryCorrupted.into())
+		}
+
 		Ok(())
 	}
 }

@@ -4,18 +4,12 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::cmp::Eq;
 
-use crate::{
-	career::CareerType, origin_of_shell::OriginOfShellType, race::RaceType, status_type::StatusType,
-};
-
 /// NftSaleInfo is used as the value in the StorageDoubleMap that takes key1 as the
 /// OriginOfShellType and key2 as the RaceType
 #[derive(Encode, Decode, Eq, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct NftSaleInfo {
 	/// Number of Race Type count
 	pub race_count: u32,
-	/// Number of Careers within the Race Type count
-	pub career_count: u32,
 	/// Number of races left to sell
 	pub race_for_sale_count: u32,
 	/// Number of giveaway races left
