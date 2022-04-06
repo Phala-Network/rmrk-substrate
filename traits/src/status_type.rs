@@ -7,4 +7,5 @@ pub enum StatusType {
 	PurchaseRareOriginOfShells,
 	PurchaseHeroOriginOfShells,
 	PreorderOriginOfShells,
+	LastDayOfSale,
 }

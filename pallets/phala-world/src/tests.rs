@@ -91,6 +91,13 @@ fn setup_config(enable_status_type: StatusType) {
 				StatusType::PreorderOriginOfShells
 			));
 		},
+		StatusType::LastDayOfSale => {
+			assert_ok!(PhalaWorld::set_status_type(
+				Origin::signed(OVERLORD),
+				true,
+				StatusType::LastDayOfSale
+			));
+		},
 	}
 }
 

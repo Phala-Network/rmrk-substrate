@@ -187,6 +187,11 @@ pub mod pallet {
 	#[pallet::getter(fn can_preorder_origin_of_shells)]
 	pub type CanPreorderOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+	/// Last Day of Sale any Origin of Shell can be purchased
+	#[pallet::storage]
+	#[pallet::getter(fn last_day_of_sale)]
+	pub type LastDayOfSale<T: Config> = StorageValue<_, bool, ValueQuery>;
+
 	/// Spirit Collection ID
 	#[pallet::storage]
 	#[pallet::getter(fn spirit_collection_id)]
@@ -243,6 +248,8 @@ pub mod pallet {
 		pub can_purchase_hero_origin_of_shells: bool,
 		/// bool for if an Origin of Shell can be preordered
 		pub can_preorder_origin_of_shells: bool,
+		/// bool for the last day of sale for Origin of Shell
+		pub last_day_of_sale: bool,
 		/// CollectionId of Spirit Collection
 		pub spirit_collection_id: Option<CollectionId>,
 		/// CollectionId of Origin of Shell Collection
@@ -260,6 +267,7 @@ pub mod pallet {
 				can_purchase_rare_origin_of_shells: false,
 				can_purchase_hero_origin_of_shells: false,
 				can_preorder_origin_of_shells: false,
+				last_day_of_sale: false,
 				spirit_collection_id: None,
 				origin_of_shell_collection_id: None,
 			}
@@ -288,6 +296,8 @@ pub mod pallet {
 			<CanPurchaseHeroOriginOfShells<T>>::put(can_purchase_hero_origin_of_shells);
 			let can_preorder_origin_of_shells = self.can_preorder_origin_of_shells;
 			<CanPreorderOriginOfShells<T>>::put(can_preorder_origin_of_shells);
+			let last_day_of_sale = self.last_day_of_sale;
+			<LastDayOfSale<T>>::put(last_day_of_sale);
 			if let Some(spirit_collection_id) = self.spirit_collection_id {
 				<SpiritCollectionId<T>>::put(spirit_collection_id);
 			}
@@ -406,6 +416,10 @@ pub mod pallet {
 		PreorderOriginOfShellsStatusChanged {
 			status: bool,
 		},
+		/// Last Day of Sale status has changed
+		LastDayOfSaleStatusChanged {
+			status: bool,
+		},
 		OverlordChanged {
 			old_overlord: Option<T::AccountId>,
 		},
@@ -438,6 +452,9 @@ pub mod pallet {
 		OriginOfShellCollectionNotSet,
 		OriginOfShellCollectionIdAlreadySet,
 		OriginOfShellInventoryCorrupted,
+		UnableToAddAttributes,
+		KeyTooLong,
+		ValueTooLong,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -549,7 +566,7 @@ pub mod pallet {
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
 			ensure!(
-				CanPurchaseRareOriginOfShells::<T>::get(),
+				CanPurchaseRareOriginOfShells::<T>::get() || LastDayOfSale::<T>::get(),
 				Error::<T>::RareOriginOfShellPurchaseNotAvailable
 			);
 			let sender = ensure_signed(origin.clone())?;
@@ -592,11 +609,15 @@ pub mod pallet {
 				None,
 				metadata,
 			)?;
-			// TODO: Set Origin of Shell Type, Race and Career attributes for NFT
-			//Self::set_race_and_career_attributes(origin_of_shell_collection_id, nft_id, race,
-			// career);
+			// Set Origin of Shell Type, Race and Career attributes for NFT
+			Self::set_race_and_career_attributes(
+				origin_of_shell_collection_id,
+				nft_id,
+				race.clone(),
+				career.clone(),
+			)?;
 
-			// TODO: Update helper methods to update OriginOfShellsInventory storage instead
+			// Update storage
 			Self::decrement_race_type_left(origin_of_shell_type.clone(), race.clone())?;
 			Self::increment_race_type(origin_of_shell_type, race)?;
 			Self::increment_career_type(career)?;
@@ -631,7 +652,7 @@ pub mod pallet {
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
 			ensure!(
-				CanPreorderOriginOfShells::<T>::get(),
+				CanPreorderOriginOfShells::<T>::get() || LastDayOfSale::<T>::get(),
 				Error::<T>::HeroOriginOfShellPurchaseNotAvailable
 			);
 			let sender = ensure_signed(origin.clone())?;
@@ -675,11 +696,15 @@ pub mod pallet {
 				None,
 				metadata,
 			)?;
-			// TODO: Set Origin of Shell Type, Race and Career attributes for NFT
-			//Self::set_race_and_career_attributes(origin_of_shell_collection_id, nft_id, race,
-			// career);
+			// Set Origin of Shell Type, Race and Career attributes for NFT
+			Self::set_race_and_career_attributes(
+				origin_of_shell_collection_id,
+				nft_id,
+				race.clone(),
+				career.clone(),
+			)?;
 
-			// TODO: Update helper methods to update OriginOfShellsInventory storage instead
+			// Update storage
 			Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
 			Self::increment_race_type(OriginOfShellType::Hero, race)?;
 			Self::increment_career_type(career)?;
@@ -990,6 +1015,7 @@ pub mod pallet {
 					Self::set_purchase_hero_origin_of_shells_status(status)?,
 				StatusType::PreorderOriginOfShells =>
 					Self::set_preorder_origin_of_shells_status(status)?,
+				StatusType::LastDayOfSale => Self::set_last_day_of_sale_status(status)?,
 			}
 			Ok(Pays::No.into())
 		}
@@ -1198,6 +1224,19 @@ where
 		Ok(())
 	}
 
+	/// Set status of last day of sale for origin of shells with the Overlord Admin Account to allow
+	/// users to purchase any origin of shell
+	///
+	/// Parameters:
+	/// - `status`: Status to set LastDayOfSale StorageValue
+	fn set_last_day_of_sale_status(status: bool) -> DispatchResult {
+		<LastDayOfSale<T>>::put(status);
+
+		Self::deposit_event(Event::PreorderOriginOfShellsStatusChanged { status });
+
+		Ok(())
+	}
+
 	/// Set initial OriginOfShellInventory values in the StorageDoubleMap. Key1 will be of
 	/// OriginOfShellType and Key2 will be the RaceType and the Value will be NftSaleInfo struct
 	/// containing the information for the NFT sale. Initial config will look as follows:
@@ -1321,38 +1360,58 @@ where
 		Ok(())
 	}
 
-	// Set the race and career attributes for a Origin of Shell NFT
-	//
-	// Parameters:
-	// - `collection_id`: Collection id of the Origin of Shell NFT
-	// - `nft_id`: NFT id of the Origin of Shell NFT
-	// - `race`: Race attribute to set for the Origin of Shell NFT
-	// - `career`: Career attribute to set for the Origin of Shell NFT
-	// fn set_race_and_career_attributes(
-	// 	collection_id: CollectionId,
-	// 	nft_id: NftId,
-	// 	race: RaceType,
-	// 	career: CareerType,
-	// ) -> DispatchResult {
-	// 	// Set Race
-	// 	pallet_uniques::Pallet::<T>::set_attribute(
-	// 		Origin::<T>::Signed(overlord.clone()).into(),
-	// 		collection_id,
-	// 		Some(nft_id),
-	// 		"race".into(),
-	// 		race.clone().into(),
-	// 	);
-	// 	// Set Career
-	// 	pallet_uniques::Pallet::<T>::set_attribute(
-	// 		Origin::<T>::Signed(overlord.clone()).into(),
-	// 		collection_id,
-	// 		Some(nft_id),
-	// 		"career".into(),
-	// 		career.clone().into(),
-	// 	);
-	//
-	// 	Ok(())
-	// }
+	/// Set the race and career attributes for a Origin of Shell NFT
+	///
+	/// Parameters:
+	/// - `collection_id`: Collection id of the Origin of Shell NFT
+	/// - `nft_id`: NFT id of the Origin of Shell NFT
+	/// - `race`: Race attribute to set for the Origin of Shell NFT
+	/// - `career`: Career attribute to set for the Origin of Shell NFT
+	fn set_race_and_career_attributes(
+		collection_id: CollectionId,
+		nft_id: NftId,
+		race: RaceType,
+		career: CareerType,
+	) -> DispatchResult {
+		let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+		let mut race_key: BoundedVec<u8, T::KeyLimit> =
+			"race".as_bytes().to_vec().try_into().unwrap();
+		let race_str = match race {
+			RaceType::AISpectre => "AISpectre",
+			RaceType::Cyborg => "Cyborg",
+			RaceType::Pandroid => "Pandroid",
+			RaceType::XGene => "XGene",
+		};
+		let race_value = self::Pallet::<T>::to_boundedvec_value(race_str)?;
+
+		// Set Race
+		pallet_uniques::Pallet::<T>::set_attribute(
+			Origin::<T>::Signed(overlord.clone()).into(),
+			collection_id,
+			Some(nft_id),
+			race_key,
+			race_value,
+		);
+		let career_key = self::Pallet::<T>::to_boundedvec_key("career")?;
+		let career_str = match career {
+			CareerType::HackerWizard => "HackerWizard",
+			CareerType::HardwareDruid => "HardwareDruid",
+			CareerType::RoboWarrior => "RoboWarrior",
+			CareerType::TradeNegotiator => "TradeNegotiator",
+			CareerType::Web3Monk => "Web3Monk",
+		};
+		let career_value = self::Pallet::<T>::to_boundedvec_value(career_str)?;
+		// Set Career
+		pallet_uniques::Pallet::<T>::set_attribute(
+			Origin::<T>::Signed(overlord.clone()).into(),
+			collection_id,
+			Some(nft_id),
+			career_key,
+			career_value,
+		);
+
+		Ok(())
+	}
 
 	/// Decrement CareerType count for the `career`
 	///
@@ -1440,5 +1499,13 @@ where
 		}
 
 		Ok(())
+	}
+
+	fn to_boundedvec_key(name: &str) -> Result<BoundedVec<u8, T::KeyLimit>, Error<T>> {
+		name.as_bytes().to_vec().try_into().map_err(|_| Error::<T>::KeyTooLong)
+	}
+
+	fn to_boundedvec_value(name: &str) -> Result<BoundedVec<u8, T::ValueLimit>, Error<T>> {
+		name.as_bytes().to_vec().try_into().map_err(|_| Error::<T>::ValueTooLong)
 	}
 }

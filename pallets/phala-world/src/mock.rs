@@ -247,6 +247,7 @@ impl ExtBuilder {
 			can_purchase_rare_origin_of_shells: false,
 			can_purchase_hero_origin_of_shells: false,
 			can_preorder_origin_of_shells: false,
+			last_day_of_sale: false,
 			spirit_collection_id: None,
 			origin_of_shell_collection_id: None,
 		}
