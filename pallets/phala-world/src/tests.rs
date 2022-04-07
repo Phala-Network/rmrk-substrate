@@ -488,16 +488,25 @@ fn preorder_origin_of_shell_works_2() {
 	});
 }
 
-/*
 #[test]
 fn mint_preorder_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
+		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		// Set Overlord and configuration then enable preorder origin of shells
 		setup_config(StatusType::PreorderOriginOfShells);
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
+		let alice_claim = Encode::encode(&(ALICE, alice_metadata.clone()));
+		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
+		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
+		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
+		let charlie_claim = Encode::encode(&(CHARLIE, charlie_metadata.clone()));
+		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
+		mint_spirit(ALICE, alice_overlord_signature.clone(), alice_metadata.clone());
+		mint_spirit(BOB, bob_overlord_signature.clone(), bob_metadata.clone());
+		mint_spirit(CHARLIE, charlie_overlord_signature.clone(), charlie_metadata.clone());
 		// BOB preorders an origin of shell
 		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(BOB),
@@ -522,48 +531,224 @@ fn mint_preorder_origin_of_shell_works() {
 			owner: CHARLIE,
 			preorder_id: 1,
 		}));
-		// ALICE fails to preorder an origin of shell with CareerType HardwareDruid
-		assert_noop!(
-			PhalaWorld::preorder_origin_of_shell(
-				Origin::signed(ALICE),
-				RaceType::Cyborg,
-				CareerType::HardwareDruid,
-				alice_metadata.clone()
-			),
-			Error::<Test>::CareerMintMaxReached
-		);
-		// ALICE preorders an origin of shell succesfully
+		// ALICE preorders an origin of shell successfully
 		assert_ok!(PhalaWorld::preorder_origin_of_shell(
 			Origin::signed(ALICE),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
 			alice_metadata.clone()
 		));
+		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
+		assert_ok!(PhalaWorld::set_preorder_status(
+			Origin::signed(OVERLORD),
+			2u32,
+			PreorderStatus::Chosen
+		));
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::PreorderResultChanged {
+			preorder_id: 2u32,
+			status: PreorderStatus::Chosen,
+		}));
+		assert_ok!(PhalaWorld::set_preorder_status(
+			Origin::signed(OVERLORD),
+			1u32,
+			PreorderStatus::NotChosen
+		));
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::PreorderResultChanged {
+			preorder_id: 1u32,
+			status: PreorderStatus::NotChosen,
+		}));
+		assert_ok!(PhalaWorld::set_preorder_status(
+			Origin::signed(OVERLORD),
+			0u32,
+			PreorderStatus::Chosen
+		));
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::PreorderResultChanged {
+			preorder_id: 0u32,
+			status: PreorderStatus::Chosen,
+		}));
 		// Reassign PreorderIndex to max value
 		PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
-		// OVERLORD preorders an origin of shell but max value is reached
+		// ALICE preorders an origin of shell but max value is reached
 		assert_noop!(
 			PhalaWorld::preorder_origin_of_shell(
-				Origin::signed(OVERLORD),
+				Origin::signed(ALICE),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
 				alice_metadata
 			),
 			Error::<Test>::NoAvailablePreorderId
 		);
-		// Overlord mints origin of shells
-		assert_ok!(PhalaWorld::mint_origin_of_shells(Origin::signed(OVERLORD)));
+		assert_ok!(PhalaWorld::set_status_type(
+			Origin::signed(OVERLORD),
+			false,
+			StatusType::PreorderOriginOfShells
+		));
+		// ALICE claims origin of shells
+		assert_ok!(PhalaWorld::claim_chosen_preorders(Origin::signed(ALICE)));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
 			collection_id: 1,
-			nft_id: 2,
+			nft_id: 0,
+			owner: ALICE,
+		}));
+		// BOB claims origin of shells
+		assert_ok!(PhalaWorld::claim_chosen_preorders(Origin::signed(BOB)));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
+			collection_id: 1,
+			nft_id: 1,
+			owner: BOB,
+		}));
+		// CHARLIE should be able to make a call, but the transaction will not trigger an error
+		// since all valid preorders are minted and the account could have NotChosen preorders in
+		// their storage
+		assert_ok!(PhalaWorld::claim_chosen_preorders(Origin::signed(CHARLIE)));
+		// Check that last event is the same because CHARLIE was NotChosen
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
+			collection_id: 1,
+			nft_id: 1,
 			owner: BOB,
 		}));
 		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
 		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
 		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
-		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
-		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
+		assert_eq!(Balances::total_balance(&CHARLIE), 150_000 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_024 * PHA);
 	});
 }
- */
+
+#[test]
+fn claim_refund_preorder_origin_of_shell_works() {
+	ExtBuilder::default().build(OVERLORD).execute_with(|| {
+		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
+		// Set Overlord and configuration then enable preorder origin of shells
+		setup_config(StatusType::PreorderOriginOfShells);
+		let mut alice_metadata = BoundedVec::default();
+		let mut bob_metadata = BoundedVec::default();
+		let mut charlie_metadata = BoundedVec::default();
+		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
+		let alice_claim = Encode::encode(&(ALICE, alice_metadata.clone()));
+		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
+		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
+		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
+		let charlie_claim = Encode::encode(&(CHARLIE, charlie_metadata.clone()));
+		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
+		mint_spirit(ALICE, alice_overlord_signature.clone(), alice_metadata.clone());
+		mint_spirit(BOB, bob_overlord_signature.clone(), bob_metadata.clone());
+		mint_spirit(CHARLIE, charlie_overlord_signature.clone(), charlie_metadata.clone());
+		// BOB preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
+			Origin::signed(BOB),
+			RaceType::Cyborg,
+			CareerType::HardwareDruid,
+			bob_metadata
+		));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
+			owner: BOB,
+			preorder_id: 0,
+		}));
+		// CHARLIE preorders an origin of shell
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
+			Origin::signed(CHARLIE),
+			RaceType::Pandroid,
+			CareerType::HardwareDruid,
+			charlie_metadata
+		));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellPreordered {
+			owner: CHARLIE,
+			preorder_id: 1,
+		}));
+		// ALICE preorders an origin of shell successfully
+		assert_ok!(PhalaWorld::preorder_origin_of_shell(
+			Origin::signed(ALICE),
+			RaceType::AISpectre,
+			CareerType::HackerWizard,
+			alice_metadata.clone()
+		));
+		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
+		assert_ok!(PhalaWorld::set_preorder_status(
+			Origin::signed(OVERLORD),
+			2u32,
+			PreorderStatus::Chosen
+		));
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::PreorderResultChanged {
+			preorder_id: 2u32,
+			status: PreorderStatus::Chosen,
+		}));
+		assert_ok!(PhalaWorld::set_preorder_status(
+			Origin::signed(OVERLORD),
+			1u32,
+			PreorderStatus::NotChosen
+		));
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::PreorderResultChanged {
+			preorder_id: 1u32,
+			status: PreorderStatus::NotChosen,
+		}));
+		assert_ok!(PhalaWorld::set_preorder_status(
+			Origin::signed(OVERLORD),
+			0u32,
+			PreorderStatus::Chosen
+		));
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::PreorderResultChanged {
+			preorder_id: 0u32,
+			status: PreorderStatus::Chosen,
+		}));
+		// Reassign PreorderIndex to max value
+		PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
+		// ALICE preorders an origin of shell but max value is reached
+		assert_noop!(
+			PhalaWorld::preorder_origin_of_shell(
+				Origin::signed(ALICE),
+				RaceType::Cyborg,
+				CareerType::HackerWizard,
+				alice_metadata
+			),
+			Error::<Test>::NoAvailablePreorderId
+		);
+		assert_ok!(PhalaWorld::set_status_type(
+			Origin::signed(OVERLORD),
+			false,
+			StatusType::PreorderOriginOfShells
+		));
+		// ALICE claims origin of shells
+		assert_ok!(PhalaWorld::claim_chosen_preorders(Origin::signed(ALICE)));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
+			collection_id: 1,
+			nft_id: 0,
+			owner: ALICE,
+		}));
+		// BOB claims origin of shells
+		assert_ok!(PhalaWorld::claim_chosen_preorders(Origin::signed(BOB)));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
+			collection_id: 1,
+			nft_id: 1,
+			owner: BOB,
+		}));
+		// CHARLIE should be able to make a call, but the transaction will not trigger an error
+		// since all valid preorders are minted and the account could have NotChosen preorders in
+		// their storage
+		assert_ok!(PhalaWorld::claim_chosen_preorders(Origin::signed(CHARLIE)));
+		// Check that last event is the same because CHARLIE was NotChosen
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::OriginOfShellMinted {
+			collection_id: 1,
+			nft_id: 1,
+			owner: BOB,
+		}));
+		// CHARLIE still has a reserved balance so he can claim his refund
+		assert_ok!(PhalaWorld::claim_refund_preorders(Origin::signed(CHARLIE)));
+		// Check that last event is the same because CHARLIE was NotChosen
+		System::assert_last_event(MockEvent::PhalaWorld(crate::Event::RefundWasClaimed {
+			preorder_id: 1u32,
+			amount: mock::HeroOriginOfShellPrice::get(),
+		}));
+		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
+		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
+		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
+		assert_eq!(Balances::total_balance(&CHARLIE), 150_000 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_024 * PHA);
+	});
+}

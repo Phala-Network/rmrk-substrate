@@ -374,6 +374,11 @@ pub mod pallet {
 			preorder_id: PreorderId,
 			status: PreorderStatus,
 		},
+		/// Refund has been claimed
+		RefundWasClaimed {
+			preorder_id: PreorderId,
+			amount: BalanceOf<T>,
+		},
 		/// Origin of Shell received food from an account
 		OriginOfShellFoodReceived {
 			collection_id: CollectionId,
@@ -457,8 +462,11 @@ pub mod pallet {
 		WhitelistVerificationFailed,
 		InvalidPurchase,
 		NoAvailablePreorderId,
+		PreorderClaimNotDetected,
+		RefundClaimNotDetected,
+		PreorderIsPending,
+		NotPreorderOwner,
 		RaceMintMaxReached,
-		CareerMintMaxReached,
 		CannotHatchOriginOfShell,
 		CannotSendFoodToOriginOfShell,
 		NoFoodAvailable,
@@ -863,87 +871,146 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO Claim function for bulk minting chosen preorders for the sender
-		//
-		// Parameters:
-		// `origin`: Sender
-		// #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		// 	#[transactional]
-		// 	pub fn claim_chosen_preorders(origin: OriginFor<T>) -> DispatchResult {}
-
-		// TODO Claim function for refunds for not chosen preorders for the sender
-		//
-		// Parameters:
-		// `origin`: Sender
-		// #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		// 	#[transactional]
-		// 	pub fn claim_refund_preorders(origin: OriginFor<T>) -> DispatchResult {}
-
-		/// This is an admin only function that will be called to do a bulk minting of all
-		/// origin_of_shell owners that made selected a race and career that was available based on
-		/// the quantity available. Those that did not win an origin_of_shell will have to claim
-		/// their refund
+		/// Claim function for bulk minting chosen preorders for the sender
+		///
+		/// Parameters:
+		/// `origin`: Sender
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn set_winners_origin_of_shells(origin: OriginFor<T>) -> DispatchResult {
-			// TODO: Reimplement and refactor
-			// Ensure Overlord account makes call
+		pub fn claim_chosen_preorders(origin: OriginFor<T>) -> DispatchResult {
+			ensure!(
+				!CanPreorderOriginOfShells::<T>::get(),
+				Error::<T>::PreorderOriginOfShellNotAvailable
+			);
 			let sender = ensure_signed(origin)?;
-			Self::ensure_overlord(sender.clone())?;
-			// Ensure origin_of_shell collection is set
+			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+
+			// Has Spirit Collection been set
+			let spirit_collection_id =
+				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			// Must have a spirit to purchase a Origin of Shell
+			ensure!(
+				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
+					0,
+				Error::<T>::MustOwnSpiritToPurchase
+			);
+			// Must have origin of shell collection created
 			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
 				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
-			// Iterate through Preorders
-			for preorder_id in Preorders::<T>::iter_keys() {
-				if let Some(preorder) = Preorders::<T>::take(preorder_id) {
-					let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
-					// Define OriginOfShellInfo for storage
-					let origin_of_shell = OriginOfShellInfo {
-						origin_of_shell_type: OriginOfShellType::Hero,
-						race: preorder.race.clone(),
-						career: preorder.career.clone(),
-						start_incubation: 0,
-						incubation_duration: 0,
-					};
-					// Next NFT ID of Collection
-					let nft_id =
-						pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
+			ensure!(
+				(pallet_uniques::Pallet::<T>::owned_in_class(
+					&origin_of_shell_collection_id,
+					&sender
+				)
+				.count() == 0) || LastDayOfSale::<T>::get(),
+				Error::<T>::OriginOfShellAlreadyPurchased
+			);
+			// Get price of hero origin of shell
+			let hero_origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+			// Check if any preorders were chosen
+			let preorders_iter = PreorderResults::<T>::drain_prefix(sender.clone());
+			for (preorder_id, preorder) in preorders_iter {
+				let preorder_status = preorder.clone().preorder_status;
+				match preorder_status {
+					PreorderStatus::Chosen => {
+						// TODO refactor Define OriginOfShellInfo for storage
+						let origin_of_shell = OriginOfShellInfo {
+							origin_of_shell_type: OriginOfShellType::Hero,
+							race: preorder.race.clone(),
+							career: preorder.career.clone(),
+							start_incubation: 0,
+							incubation_duration: 0,
+						};
+						// Next NFT ID of Collection
+						let nft_id =
+							pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
+						// Get payment from owner's reserve
+						<T as pallet::Config>::Currency::unreserve(
+							&sender,
+							hero_origin_of_shell_price,
+						);
+						<T as pallet::Config>::Currency::transfer(
+							&sender,
+							&overlord,
+							hero_origin_of_shell_price,
+							ExistenceRequirement::KeepAlive,
+						)?;
+						// Mint Origin of Shell and transfer Origin of Shell to new owner
+						pallet_rmrk_core::Pallet::<T>::mint_nft(
+							Origin::<T>::Signed(overlord.clone()).into(),
+							preorder.owner.clone(),
+							origin_of_shell_collection_id,
+							None,
+							None,
+							preorder.metadata,
+						)?;
 
-					// Get payment from owner's reserve
-					<T as pallet::Config>::Currency::unreserve(
-						&preorder.owner,
-						origin_of_shell_price,
-					);
-					<T as pallet::Config>::Currency::transfer(
-						&preorder.owner,
-						&sender,
-						origin_of_shell_price,
-						ExistenceRequirement::KeepAlive,
-					)?;
-					// Mint Origin of Shell and transfer Origin of Shell to new owner
-					pallet_rmrk_core::Pallet::<T>::mint_nft(
-						Origin::<T>::Signed(sender.clone()).into(),
-						preorder.owner.clone(),
-						origin_of_shell_collection_id,
-						None,
-						None,
-						preorder.metadata,
-					)?;
+						OriginOfShells::<T>::insert(
+							origin_of_shell_collection_id,
+							nft_id,
+							origin_of_shell,
+						);
 
-					OriginOfShells::<T>::insert(
-						origin_of_shell_collection_id,
-						nft_id,
-						origin_of_shell,
-					);
-
-					Self::deposit_event(Event::OriginOfShellMinted {
-						collection_id: origin_of_shell_collection_id,
-						nft_id,
-						owner: preorder.owner,
-					});
+						Self::deposit_event(Event::OriginOfShellMinted {
+							collection_id: origin_of_shell_collection_id,
+							nft_id,
+							owner: preorder.owner,
+						});
+					},
+					PreorderStatus::NotChosen => {
+						// Re-insert into Storage as this will be handled in the claim refund
+						// preorders function
+						PreorderResults::<T>::insert(sender.clone(), preorder_id, preorder);
+					},
+					PreorderStatus::Pending => return Err(Error::<T>::PreorderIsPending.into()),
 				}
 			}
+			Ok(())
+		}
 
+		/// Claim function for refunds for not chosen preorders for the sender
+		///
+		/// Parameters:
+		/// `origin`: Sender
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[transactional]
+		pub fn claim_refund_preorders(origin: OriginFor<T>) -> DispatchResult {
+			ensure!(
+				!CanPreorderOriginOfShells::<T>::get(),
+				Error::<T>::PreorderOriginOfShellNotAvailable
+			);
+			let sender = ensure_signed(origin)?;
+			// Get the amount cost for Preorder
+			let hero_origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+			// Check if any preorders were chosen
+			let preorders_iter = PreorderResults::<T>::drain_prefix(sender.clone());
+			for (preorder_id, preorder) in preorders_iter {
+				let preorder_status = preorder.clone().preorder_status;
+				match preorder_status {
+					PreorderStatus::NotChosen => {
+						ensure!(
+							sender.clone() == preorder.owner.clone(),
+							Error::<T>::NotPreorderOwner
+						);
+						// Get payment from owner's reserve
+						<T as pallet::Config>::Currency::unreserve(
+							&sender,
+							hero_origin_of_shell_price,
+						);
+
+						Self::deposit_event(Event::RefundWasClaimed {
+							preorder_id,
+							amount: hero_origin_of_shell_price,
+						});
+					},
+					PreorderStatus::Chosen => {
+						// Re-insert into Storage as this will be handled in the claim Chosen
+						// preorders function
+						PreorderResults::<T>::insert(sender.clone(), preorder_id, preorder);
+					},
+					PreorderStatus::Pending => return Err(Error::<T>::PreorderIsPending.into()),
+				}
+			}
 			Ok(())
 		}
 
