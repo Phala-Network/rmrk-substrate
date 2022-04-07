@@ -473,7 +473,6 @@ pub mod pallet {
 		OriginOfShellInventoryCorrupted,
 		UnableToAddAttributes,
 		KeyTooLong,
-		ValueTooLong,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -1459,14 +1458,7 @@ where
 	) -> DispatchResult {
 		let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
 		let race_key: BoundedVec<u8, T::KeyLimit> = self::Pallet::<T>::to_boundedvec_key("race")?;
-		let race_str = match race {
-			RaceType::AISpectre => "AISpectre",
-			RaceType::Cyborg => "Cyborg",
-			RaceType::Pandroid => "Pandroid",
-			RaceType::XGene => "XGene",
-		};
-		let race_value = self::Pallet::<T>::to_boundedvec_value(race_str)?;
-
+		let race_value = race.encode().try_into().expect("[race] should not fail");
 		// Set Race
 		pallet_uniques::Pallet::<T>::set_attribute(
 			Origin::<T>::Signed(overlord.clone()).into(),
@@ -1476,14 +1468,7 @@ where
 			race_value,
 		)?;
 		let career_key = self::Pallet::<T>::to_boundedvec_key("career")?;
-		let career_str = match career {
-			CareerType::HackerWizard => "HackerWizard",
-			CareerType::HardwareDruid => "HardwareDruid",
-			CareerType::RoboWarrior => "RoboWarrior",
-			CareerType::TradeNegotiator => "TradeNegotiator",
-			CareerType::Web3Monk => "Web3Monk",
-		};
-		let career_value = self::Pallet::<T>::to_boundedvec_value(career_str)?;
+		let career_value = career.encode().try_into().expect("[career] should not fail");
 		// Set Career
 		pallet_uniques::Pallet::<T>::set_attribute(
 			Origin::<T>::Signed(overlord).into(),
@@ -1586,9 +1571,5 @@ where
 
 	fn to_boundedvec_key(name: &str) -> Result<BoundedVec<u8, T::KeyLimit>, Error<T>> {
 		name.as_bytes().to_vec().try_into().map_err(|_| Error::<T>::KeyTooLong)
-	}
-
-	fn to_boundedvec_value(name: &str) -> Result<BoundedVec<u8, T::ValueLimit>, Error<T>> {
-		name.as_bytes().to_vec().try_into().map_err(|_| Error::<T>::ValueTooLong)
 	}
 }
