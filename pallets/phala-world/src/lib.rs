@@ -127,6 +127,18 @@ pub mod pallet {
 	#[pallet::getter(fn preorders)]
 	pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, PreorderInfoOf<T>>;
 
+	/// Preorder results from the non-whitelist drawing
+	#[pallet::storage]
+	#[pallet::getter(fn preorder_results)]
+	pub type PreorderResults<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		PreorderId,
+		PreorderInfoOf<T>,
+	>;
+
 	/// Origin of Shells inventory
 	#[pallet::storage]
 	#[pallet::getter(fn origin_of_shells_inventory)]
@@ -214,7 +226,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_finalize(n: T::BlockNumber) {
+		fn on_finalize(_n: T::BlockNumber) {
 			if let Some(zero_day) = <ZeroDay<T>>::get() {
 				let current_time = T::Time::now().as_secs();
 				if current_time > zero_day {
@@ -357,6 +369,11 @@ pub mod pallet {
 		OriginOfShellCollectionIdSet {
 			collection_id: CollectionId,
 		},
+		/// Preorder result revealed
+		PreorderResultChanged {
+			preorder_id: PreorderId,
+			status: PreorderStatus,
+		},
 		/// Origin of Shell received food from an account
 		OriginOfShellFoodReceived {
 			collection_id: CollectionId,
@@ -434,6 +451,8 @@ pub mod pallet {
 		HeroOriginOfShellPurchaseNotAvailable,
 		PreorderOriginOfShellNotAvailable,
 		SpiritAlreadyClaimed,
+		MustOwnSpiritToPurchase,
+		OriginOfShellAlreadyPurchased,
 		BelowMinimumBalanceThreshold,
 		WhitelistVerificationFailed,
 		InvalidPurchase,
@@ -571,9 +590,28 @@ pub mod pallet {
 			);
 			let sender = ensure_signed(origin.clone())?;
 			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+			// Has Spirit Collection been set
+			let spirit_collection_id =
+				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
 			// Ensure origin_of_shell collection is set
 			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
 				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			// Must have a spirit to purchase a Origin of Shell
+			ensure!(
+				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
+					0,
+				Error::<T>::MustOwnSpiritToPurchase
+			);
+			// If not last day of sale, only allowed to purchase one Origin of Shell
+			ensure!(
+				(!LastDayOfSale::<T>::get() &&
+					pallet_uniques::Pallet::<T>::owned_in_class(
+						&origin_of_shell_collection_id,
+						&sender
+					)
+					.count() == 0) || LastDayOfSale::<T>::get(),
+				Error::<T>::OriginOfShellAlreadyPurchased
+			);
 			// Get Origin of Shell Price based on Origin of ShellType
 			let origin_of_shell_price = match origin_of_shell_type {
 				OriginOfShellType::Legendary => T::LegendaryOriginOfShellPrice::get(),
@@ -584,7 +622,7 @@ pub mod pallet {
 			// Check if race and career types have mints left
 			Self::has_race_type_left(&origin_of_shell_type, &race)?;
 
-			// Define OriginOfShellInfo for storage
+			// TODO: Update this for incubation info Define OriginOfShellInfo for storage
 			let origin_of_shell = OriginOfShellInfo {
 				origin_of_shell_type: origin_of_shell_type.clone(),
 				race: race.clone(),
@@ -602,7 +640,7 @@ pub mod pallet {
 			)?;
 			// Mint Origin of Shell and transfer Origin of Shell to new owner
 			pallet_rmrk_core::Pallet::<T>::mint_nft(
-				Origin::<T>::Signed(overlord.clone()).into(),
+				Origin::<T>::Signed(overlord).into(),
 				sender.clone(),
 				origin_of_shell_collection_id,
 				None,
@@ -652,18 +690,37 @@ pub mod pallet {
 			metadata: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
 			ensure!(
-				CanPreorderOriginOfShells::<T>::get() || LastDayOfSale::<T>::get(),
+				CanPurchaseHeroOriginOfShells::<T>::get() || LastDayOfSale::<T>::get(),
 				Error::<T>::HeroOriginOfShellPurchaseNotAvailable
 			);
 			let sender = ensure_signed(origin.clone())?;
 			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
-			// Ensure origin_of_shell collection is set
-			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
-				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
 			// Check if valid whitelist account
 			ensure!(
 				Self::verify_claim(sender.clone(), metadata.clone(), signature),
 				Error::<T>::WhitelistVerificationFailed
+			);
+			// Has Spirit Collection been set
+			let spirit_collection_id =
+				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			// Ensure origin_of_shell collection is set
+			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
+				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			// Must have a spirit to purchase a Origin of Shell
+			ensure!(
+				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
+					0,
+				Error::<T>::MustOwnSpiritToPurchase
+			);
+			// If not last day of sale, only allowed to purchase one Origin of Shell
+			ensure!(
+				(!LastDayOfSale::<T>::get() &&
+					pallet_uniques::Pallet::<T>::owned_in_class(
+						&origin_of_shell_collection_id,
+						&sender
+					)
+					.count() == 0) || LastDayOfSale::<T>::get(),
+				Error::<T>::OriginOfShellAlreadyPurchased
 			);
 			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 			// Get Hero Origin of Shell price
@@ -741,6 +798,15 @@ pub mod pallet {
 				Error::<T>::PreorderOriginOfShellNotAvailable
 			);
 			let sender = ensure_signed(origin)?;
+			// Has Spirit Collection been set
+			let spirit_collection_id =
+				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			// Must have a spirit to purchase a Origin of Shell
+			ensure!(
+				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
+					0,
+				Error::<T>::MustOwnSpiritToPurchase
+			);
 
 			// Get preorder_id for new preorder
 			let preorder_id =
@@ -784,17 +850,35 @@ pub mod pallet {
 		) -> DispatchResult {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
-			Self::ensure_overlord(sender.clone())?;
-			// Change status of preorder
-			Preorders::<T>::try_mutate_exists(preorder_id, |preorder_info| -> DispatchResult {
-				if let Some(preorder_info) = preorder_info {
-					preorder_info.preorder_status = status;
-				}
-				Ok(())
-			})?;
+			Self::ensure_overlord(sender)?;
+			// Ensure value exists
+			ensure!(Preorders::<T>::contains_key(preorder_id), Error::<T>::NoAvailablePreorderId);
+			// Change status of preorder and add to PreorderResult
+			let mut preorder_info =
+				Preorders::<T>::take(preorder_id).ok_or(Error::<T>::NoAvailablePreorderId)?;
+			preorder_info.preorder_status = status.clone();
+			PreorderResults::<T>::insert(&preorder_info.owner, preorder_id, &preorder_info);
+
+			Self::deposit_event(Event::PreorderResultChanged { preorder_id, status });
 
 			Ok(())
 		}
+
+		// TODO Claim function for bulk minting chosen preorders for the sender
+		//
+		// Parameters:
+		// `origin`: Sender
+		// #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		// 	#[transactional]
+		// 	pub fn claim_chosen_preorders(origin: OriginFor<T>) -> DispatchResult {}
+
+		// TODO Claim function for refunds for not chosen preorders for the sender
+		//
+		// Parameters:
+		// `origin`: Sender
+		// #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		// 	#[transactional]
+		// 	pub fn claim_refund_preorders(origin: OriginFor<T>) -> DispatchResult {}
 
 		/// This is an admin only function that will be called to do a bulk minting of all
 		/// origin_of_shell owners that made selected a race and career that was available based on
@@ -1374,8 +1458,7 @@ where
 		career: CareerType,
 	) -> DispatchResult {
 		let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
-		let mut race_key: BoundedVec<u8, T::KeyLimit> =
-			"race".as_bytes().to_vec().try_into().unwrap();
+		let race_key: BoundedVec<u8, T::KeyLimit> = self::Pallet::<T>::to_boundedvec_key("race")?;
 		let race_str = match race {
 			RaceType::AISpectre => "AISpectre",
 			RaceType::Cyborg => "Cyborg",
@@ -1391,7 +1474,7 @@ where
 			Some(nft_id),
 			race_key,
 			race_value,
-		);
+		)?;
 		let career_key = self::Pallet::<T>::to_boundedvec_key("career")?;
 		let career_str = match career {
 			CareerType::HackerWizard => "HackerWizard",
@@ -1403,12 +1486,12 @@ where
 		let career_value = self::Pallet::<T>::to_boundedvec_value(career_str)?;
 		// Set Career
 		pallet_uniques::Pallet::<T>::set_attribute(
-			Origin::<T>::Signed(overlord.clone()).into(),
+			Origin::<T>::Signed(overlord).into(),
 			collection_id,
 			Some(nft_id),
 			career_key,
 			career_value,
-		);
+		)?;
 
 		Ok(())
 	}
@@ -1419,7 +1502,7 @@ where
 	/// - `career`: The Career to increment count
 	fn decrement_career_type(career: CareerType) -> DispatchResult {
 		CareerTypeCount::<T>::mutate(career, |career_count| {
-			*career_count = *career_count - 1;
+			*career_count -= 1;
 			*career_count
 		});
 
