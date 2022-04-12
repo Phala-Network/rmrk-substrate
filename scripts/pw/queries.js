@@ -20,7 +20,7 @@ async function main() {
 
     // list spirit
     {
-        const spiritCollectionId = await api.query.phalaWorld.spirit_collection_id();
+        const spiritCollectionId = await api.query.phalaWorld.spiritCollectionId();
         if (spiritCollectionId.isSome()) {
             const spirit = await api.query.uniques.account.entries(user.address, spiritCollectionId);
             spirit
@@ -42,7 +42,7 @@ async function main() {
 
     // list origin of shells
     {
-        const originOfShellCollectionId = api.query.phalaWorld.origin_of_shell_collection_id();
+        const originOfShellCollectionId = await api.query.phalaWorld.OriginOfShellCollectionId();
         if (originOfShellCollectionId.isSome()) {
             const spirit = await api.query.uniques.account.entries(user.address, originOfShellCollectionId);
             spirit
@@ -60,6 +60,75 @@ async function main() {
                 'Origin of Shell Collection ID not configured'
             )
         }
+    }
+
+    // List all preorders before drawing winners
+    {
+        let x = 0;
+        const preorderIndex = await api.query.phalaWorld.preorderIndex();
+        console.log(`Current preorder index: ${preorderIndex}`);
+        if (x++ < preorderIndex) {
+            const preorder = await api.query.phalaWorld.preorders(x);
+            if (preorder.isSome()) {
+                //console.log() TODO list preorders info
+            }
+        }
+    }
+
+    // List of Preorder ids for a user
+    {
+        const userPreorderResults = await api.query.phalaWorld.PreorderResults.keys(user.address);
+        userPreorderResults.forEach(([{ args: [accountId, preorderId] }, _value]) => {
+           console.log(`Account: ${accountId} Preorder ID: ${preorderId} Preorder results:`)
+        });
+    }
+
+
+    // List the current Era
+    {
+        const currentEra = await api.query.phalaWorld.era();
+        console.log(`Current era: ${currentEra}`);
+    }
+
+    // List Zero Day Timestamp
+    {
+        const zeroDayTimestamp = await api.query.phalaWorld.zeroDay();
+        console.log(`Zero Day: ${zeroDayTimestamp}`);
+    }
+
+    // List all race types
+    {
+        //const originOfShelltype = await api.query.phalaWorld.originOfShellType()
+    }
+
+    // Can users claim spirit?
+    {
+        const canClaimSpirits = await api.query.phalaWorld.canClaimSpirits();
+        console.log(`Can claim spirit states: ${canClaimSpirits}`);
+    }
+
+    // Can users purchase rare origin of shell?
+    {
+        const canPurchaseRareOriginOfShells = await api.query.phalaWorld.canPurchaseRareOriginOfShells();
+        console.log(`Can purchase rare origin of shells: ${canPurchaseRareOriginOfShells}`);
+    }
+
+    // Can users on whitelist purchase hero origin of shell?
+    {
+        const canPurchaseHer0OriginOfShells = await api.query.phalaWorld.canPurchaseHeroOriginOfShells();
+        console.log(`Can whitelist purchase hero origin of shells: ${canPurchaseHeroOriginOfShells}`);
+    }
+
+    // Can users preorder origin of shell?
+    {
+        const canPreorderOriginOfShells = await api.query.phalaWorld.canPreorderOriginOfShells();
+        console.log(`Can preorder origin of shells: ${canPreorderOriginOfShells}`);
+    }
+
+    // Is last day of sale?
+    {
+        const isLastDayOfSale = await api.query.phalaWorld.lastDayOfSale();
+        console.log(`Is last day of sale: ${isLastDayOfSale}`);
     }
 }
 
