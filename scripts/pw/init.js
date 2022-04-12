@@ -27,7 +27,7 @@ async function main() {
         await api.tx.phalaWorld.initializeWorldClock()
             .signAndSend(overlord, {nonce: -1});
 
-        // availbe states:
+        // available states:
         // ClaimSpirits,
         // PurchaseRareOriginOfShells,
         // PurchaseHeroOriginOfShells,
