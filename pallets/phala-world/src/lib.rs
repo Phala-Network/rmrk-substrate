@@ -1284,14 +1284,14 @@ impl<T: Config> Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
-	/// Verify the whitelist status of an Account that has claimed a spirit. Serialize the evidence
-	/// with the provided account and metadata and verify the against the expected results by
-	/// validating against the Overlord account used to sign and validate the whitelisted user
+	/// Verify the whitelist status of an Account that has purchased origin of shell. Serialize the
+	/// evidence with the claimer & metadata then verify against the expected results
+	/// by calling sr25519 verify function
 	///
 	/// Parameters:
-	/// - claimer: AccountId of the account claiming the spirit
+	/// - claimer: AccountId of the account in the whitelist
 	/// - metadata: Metadata passed in associated with the claimer
-	/// - signature: Signature of the claimer
+	/// - signature: Signature passed in by the claimer
 	pub fn verify_claim(
 		claimer: T::AccountId,
 		metadata: BoundedVec<u8, T::StringLimit>,

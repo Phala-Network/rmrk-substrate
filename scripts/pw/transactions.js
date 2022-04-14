@@ -10,12 +10,80 @@ const endpoint = process.env.ENDPOINT;
 
 async function main() {
     const wsProvider = new WsProvider(endpoint);
-    const api = await ApiPromise.create({provider: wsProvider});
+    const api = await ApiPromise.create({
+        provider: wsProvider,
+        types: {
+            RaceType: {
+                _enum: ['Cyborg', 'AISpectre', 'XGene', 'Pandroid']
+            },
+            CareerType: {
+                _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']
+            },
+            StatusType: {
+                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchaseHeroOriginOfShells', 'PreorderOriginOfShells']
+            },
+            OriginOfShellType: {
+                _enum: ['Hero', 'Magic', 'Legendary']
+            },
+            PreorderStatus: {
+                _enum: ['Pending', 'Chosen', 'NotChosen']
+            },
+            PreorderInfo: {
+                owner: "AccountId",
+                race: "RaceType",
+                career: "CareerType",
+                metadata: "BoundedString",
+                preorder_status: "PreorderStatus",
+            },
+            OriginOfShellInfo: {
+                origin_of_shell_type: "OriginOfShellType",
+                race: "RaceType",
+                career: "CareerType",
+                start_incubation: "u64",
+                incubation_duration: "u64",
+            },
+            NftSaleInfo: {
+                race_count: "u32",
+                race_for_sale_count: "u32",
+                race_giveaway_count: "u32",
+                race_reserved_count: "u32",
+            }
+        }
+    });
     const keyring = new Keyring({type: 'sr25519'});
 
     const root = keyring.addFromUri(rootPrivkey);
     const user = keyring.addFromUri(userPrivkey);
     const overlord = keyring.addFromUri(overlordPrivkey);
+
+    // StatusType
+    const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
+    const purchaseRareOriginOfShells = api.createType('StatusType', 'PurchaseRareOriginOfShells');
+    const purchaseHeroOriginOfShells = api.createType('StatusType', 'PurchaseHeroOriginOfShells');
+    const preorderOriginOfShells = api.createType('StatusType', 'PreorderOriginOfShells');
+
+    // OriginOfShellTypes
+    const legendary = api.createType('OriginOfShellType', 'Legendary');
+    const magic = api.createType('OriginOfShellType', 'Magic');
+    const hero = api.createType('OriginOfShellType', 'Hero');
+
+    // RaceTypes
+    const cyborg = api.createType('RaceType', 'Cyborg');
+    const aiSpectre = api.createType('RaceType', 'AISpectre');
+    const xGene = api.createType('RaceType', 'XGene');
+    const pandroid = api.createType('RaceType', 'Pandroid');
+
+    // CareerTypes
+    const hardwareDruid = api.createType('CareerType', 'HardwareDruid');
+    const roboWarrior = api.createType('CareerType', 'RoboWarrior');
+    const tradeNegotiator = api.createType('CareerType', 'TradeNegotiator');
+    const hackerWizard = api.createType('CareerType', 'HackerWizard');
+    const web3Monk = api.createType('CareerType', 'Web3Monk');
+
+    // PreorderStatus
+    const pending = api.createType('PreorderStatus', 'Pending');
+    const chosen = api.createType('PreorderStatus', 'Chosen');
+    const notChosen = api.createType('PreorderStatus', 'NotChosen');
 
     // mint spirit nft
     {

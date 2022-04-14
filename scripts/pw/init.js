@@ -10,9 +10,23 @@ const endpoint = process.env.ENDPOINT;
 
 async function main() {
     const wsProvider = new WsProvider(endpoint);
-    const api = await ApiPromise.create({ provider: wsProvider });
+    const api = await ApiPromise.create({
+        provider: wsProvider,
+        types: {
+            RaceType: {
+                _enum: ['Cybord', 'AISpectre', 'XGene', 'Pandroid']
+            },
+            CareerType: {
+                _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']
+            },
+            StatusType: {
+                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchaseHeroOriginOfShells', 'PreorderOriginOfShells']
+            }
+        }
+    });
     const keyring = new Keyring({ type: 'sr25519' });
-
+    // status types
+    const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
     const root = keyring.addFromUri(rootPrivkey);
     const user = keyring.addFromUri(userPrivkey);
     const overlord = keyring.addFromUri(overlordPrivkey);
@@ -32,7 +46,7 @@ async function main() {
         // PurchaseRareOriginOfShells,
         // PurchaseHeroOriginOfShells,
         // PreorderOriginOfShells,
-        await api.tx.phalaWorld.setStatusType(true, 'ClaimSpirits')
+        await api.tx.phalaWorld.setStatusType(true, claimSpirits)
             .signAndSend(overlord, {nonce: -1});
 
         // mint spirits NFTs with overlord
