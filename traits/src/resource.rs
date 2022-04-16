@@ -3,7 +3,7 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
-use sp_runtime::{DispatchError, DispatchResult, RuntimeDebug};
+use sp_runtime::{DispatchResult, RuntimeDebug};
 use sp_std::{cmp::Eq, vec::Vec};
 
 use crate::primitives::*;
@@ -18,6 +18,9 @@ pub struct ResourceInfo<BoundedResource, BoundedString> {
 
 	/// If resource is sent to non-rootowned NFT, pending will be false and need to be accepted
 	pub pending: bool,
+
+	/// If resource removal request is sent by non-rootowned NFT, pending will be true and need to be accepted
+	pub pending_removal: bool,
 
 	/// If a resource is composed, it will have an array of parts that compose it
 	pub parts: Option<Vec<PartId>>,
@@ -63,6 +66,18 @@ pub trait Resource<BoundedString, AccountId, BoundedResource> {
 		parts: Option<Vec<PartId>>,
 	) -> DispatchResult;
 	fn accept(
+		sender: AccountId,
+		collection_id: CollectionId,
+		nft_id: NftId,
+		resource_id: BoundedResource,
+	) -> DispatchResult;
+	fn resource_remove(
+		sender: AccountId,
+		collection_id: CollectionId,
+		nft_id: NftId,
+		resource_id: BoundedResource,
+	) -> DispatchResult;
+	fn accept_removal(
 		sender: AccountId,
 		collection_id: CollectionId,
 		nft_id: NftId,
