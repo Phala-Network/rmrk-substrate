@@ -15,11 +15,13 @@ where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
 	fn priority_set(
-		_sender: T::AccountId,
+		sender: T::AccountId,
 		collection_id: CollectionId,
 		nft_id: NftId,
 		priorities: Vec<Vec<u8>>,
 	) -> DispatchResult {
+		let (root_owner, _) = Pallet::<T>::lookup_root_owner(collection_id, nft_id)?;
+		ensure!(sender == root_owner, Error::<T>::NoPermission);
 		// TODO : Check NFT lock status
 		let mut bounded_priorities = Vec::<BoundedVec<u8, T::StringLimit>>::new();
 		for priority in priorities {
@@ -75,6 +77,8 @@ where
 		thumb: Option<BoundedVec<u8, T::StringLimit>>,
 		parts: Option<Vec<PartId>>,
 	) -> DispatchResult {
+		let collection = Self::collections(collection_id).ok_or(Error::<T>::CollectionUnknown)?;
+		ensure!(collection.issuer == sender, Error::<T>::NoPermission);
 		let (root_owner, _) = Pallet::<T>::lookup_root_owner(collection_id, nft_id)?;
 
 		let empty =
@@ -97,6 +101,7 @@ where
 			thumb,
 			parts,
 			pending: root_owner != sender,
+			pending_removal: false,
 		};
 		Resources::<T>::insert((collection_id, nft_id, resource_id), res);
 
@@ -126,9 +131,68 @@ where
 		Self::deposit_event(Event::ResourceAccepted { nft_id, resource_id });
 		Ok(())
 	}
+
+	fn resource_remove(
+		sender: T::AccountId,
+		collection_id: CollectionId,
+		nft_id: NftId,
+		resource_id: BoundedResource<T::ResourceSymbolLimit>,
+	) -> DispatchResult {
+		let (root_owner, _) = Pallet::<T>::lookup_root_owner(collection_id, nft_id)?;
+		let collection = Self::collections(collection_id).ok_or(Error::<T>::CollectionUnknown)?;
+		ensure!(collection.issuer == sender, Error::<T>::NoPermission);
+		ensure!(
+			Resources::<T>::contains_key((collection_id, nft_id, &resource_id)),
+			Error::<T>::ResourceDoesntExist
+		);
+
+		if root_owner == sender {
+			Resources::<T>::remove((collection_id, nft_id, resource_id));
+		} else {
+			Resources::<T>::try_mutate_exists(
+				(collection_id, nft_id, resource_id),
+				|resource| -> DispatchResult {
+					if let Some(res) = resource {
+						res.pending_removal = true;
+					}
+					Ok(())
+				},
+			)?;
+		}
+
+		Ok(())
+	}
+
+	fn accept_removal(
+		sender: T::AccountId,
+		collection_id: CollectionId,
+		nft_id: NftId,
+		resource_id: BoundedResource<T::ResourceSymbolLimit>,
+	) -> DispatchResult {
+		let (root_owner, _) = Pallet::<T>::lookup_root_owner(collection_id, nft_id)?;
+		ensure!(root_owner == sender, Error::<T>::NoPermission);
+		ensure!(
+			Resources::<T>::contains_key((collection_id, nft_id, &resource_id)),
+			Error::<T>::ResourceDoesntExist
+		);
+
+		Resources::<T>::try_mutate_exists(
+			(collection_id, nft_id, resource_id),
+			|resource| -> DispatchResult {
+				if let Some(res) = resource {
+					ensure!(res.pending_removal, Error::<T>::ResourceNotPending);
+					*resource = None;
+				}
+				Ok(())
+			},
+		)?;
+
+		Ok(())
+	}
 }
 
-impl<T: Config> Collection<StringLimitOf<T>, BoundedCollectionSymbolOf<T>, T::AccountId> for Pallet<T>
+impl<T: Config> Collection<StringLimitOf<T>, BoundedCollectionSymbolOf<T>, T::AccountId>
+	for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
@@ -176,9 +240,13 @@ where
 		Ok((new_issuer, collection_id))
 	}
 
-	fn collection_lock(collection_id: CollectionId) -> Result<CollectionId, DispatchError> {
+	fn collection_lock(
+		sender: T::AccountId,
+		collection_id: CollectionId,
+	) -> Result<CollectionId, DispatchError> {
 		Collections::<T>::try_mutate_exists(collection_id, |collection| -> DispatchResult {
 			let collection = collection.as_mut().ok_or(Error::<T>::CollectionUnknown)?;
+			ensure!(collection.issuer == sender, Error::<T>::NoPermission);
 			collection.max = Some(collection.nfts_count);
 			Ok(())
 		})?;
@@ -202,7 +270,7 @@ where
 	) -> sp_std::result::Result<(CollectionId, NftId), DispatchError> {
 		let nft_id = Self::get_next_nft_id(collection_id)?;
 		let collection = Self::collections(collection_id).ok_or(Error::<T>::CollectionUnknown)?;
-		
+
 		// Prevent minting when next NFT id is greater than the collection max.
 		if let Some(max) = collection.max {
 			ensure!(nft_id < max, Error::<T>::CollectionFullOrLocked);
@@ -243,7 +311,7 @@ where
 		ensure!(max_recursions > 0, Error::<T>::TooManyRecursions);
 		Nfts::<T>::remove(collection_id, nft_id);
 
-		for _ in Resources::<T>::drain_prefix((collection_id, nft_id)) {}		
+		for _ in Resources::<T>::drain_prefix((collection_id, nft_id)) {}
 
 		let kids = Children::<T>::take((collection_id, nft_id));
 		for (child_collection_id, child_nft_id) in kids {
