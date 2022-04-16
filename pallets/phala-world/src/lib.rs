@@ -22,8 +22,8 @@ pub use pallet_rmrk_market;
 
 use rmrk_traits::{
 	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
-	primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo, OriginOfShellInfo,
-	PreorderInfo,
+	primitives::*, race::RaceType, status_type::StatusType, ClaimSpiritTicket, NftSaleInfo,
+	NftSaleMetadata, OriginOfShellInfo, PreorderInfo, WhitelistClaim,
 };
 
 #[cfg(test)]
@@ -37,23 +37,12 @@ mod benchmarking;
 
 pub use pallet::*;
 
-// #[cfg(feature = "std")]
-// use serde::{Deserialize, Serialize};
-//
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize, PartialEq, Eq))]
-// #[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone)]
-// pub struct OverlordInfo<AccountId> {
-// 	pub admin: AccountId,
-// 	pub collection_id: u32,
-// }
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::{
 		dispatch::DispatchResult,
 		pallet_prelude::*,
-		sp_runtime::traits::Zero,
 		traits::{
 			tokens::nonfungibles::InspectEnumerable, ExistenceRequirement, ReservableCurrency,
 		},
@@ -456,6 +445,8 @@ pub mod pallet {
 		HeroOriginOfShellPurchaseNotAvailable,
 		PreorderOriginOfShellNotAvailable,
 		SpiritAlreadyClaimed,
+		InvalidSpiritClaim,
+		InvalidMetadata,
 		MustOwnSpiritToPurchase,
 		OriginOfShellAlreadyPurchased,
 		BelowMinimumBalanceThreshold,
@@ -491,7 +482,8 @@ pub mod pallet {
 	where
 		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 	{
-		/// Claim a spirit for any account with at least 10 PHA in their account.
+		/// Claim a spirit for any account with at least 10 PHA in their account or has a valid
+		/// spirit claim ticket
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic.
@@ -500,30 +492,39 @@ pub mod pallet {
 		#[transactional]
 		pub fn claim_spirit(
 			origin: OriginFor<T>,
-			_mcp_id: u32, // Is this needed?
-			_signature: sr25519::Signature,
-			metadata: BoundedVec<u8, T::StringLimit>,
+			ticket: Option<ClaimSpiritTicket<T::AccountId>>,
+			metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 		) -> DispatchResult {
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
 			let sender = ensure_signed(origin)?;
-			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+			let overlord = Self::get_overlord_account()?;
 			// Has Spirit Collection been set
-			let spirit_collection_id =
-				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			let spirit_collection_id = Self::get_spirit_collection_id()?;
 			// Check if sender already claimed a spirit
 			ensure!(
 				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() ==
 					0,
 				Error::<T>::SpiritAlreadyClaimed
 			);
-			// Check if Balance has minimum required
-			ensure!(
-				<T as pallet::Config>::Currency::can_reserve(
-					&sender,
-					T::MinBalanceToClaimSpirit::get()
-				),
-				Error::<T>::BelowMinimumBalanceThreshold
-			);
+			// Check if there is a claim ticket and verify the claim ticket
+			if let Some(ticket) = ticket {
+				ensure!(
+					Self::verify_claim_spirit(&overlord, sender.clone(), ticket),
+					Error::<T>::InvalidSpiritClaim
+				);
+			} else {
+				// Check Balance has minimum required
+				ensure!(
+					<T as pallet::Config>::Currency::can_reserve(
+						&sender,
+						T::MinBalanceToClaimSpirit::get()
+					),
+					Error::<T>::BelowMinimumBalanceThreshold
+				);
+			}
+			// Verify metadata
+			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
+
 			// Get NFT ID to be minted
 			let spirit_nft_id = pallet_rmrk_core::NextNftId::<T>::get(spirit_collection_id);
 			// Mint new Spirit and transfer to sender
@@ -533,7 +534,7 @@ pub mod pallet {
 				spirit_collection_id,
 				None,
 				None,
-				metadata,
+				mint_metadata,
 			)?;
 			// Freeze NFT so it cannot be transferred
 			pallet_uniques::Pallet::<T>::freeze(
@@ -546,31 +547,6 @@ pub mod pallet {
 
 			Ok(())
 		}
-
-		// Buy origin of shell of any type during a certain sale interval (i.e. Rare Origin of
-		// Shells, Whitelisted Sale and Unlimited Last Day of Sale of any Origin of Shell type.
-		// Based on the StatusType passed in with the Origin of Shell Type, Race & Career, will
-		// determine if the Origin of Shell can be minted.
-		//
-		// Parameters:
-		// - origin: The origin of the extrinsic.
-		// - status_type: The status type of which sale to perform the purchase.
-		// - origin_of_shell_type: The type of origin_of_shell to be purchased.
-		// - race: The race of the origin_of_shell chosen by the user.
-		// - career: The career of the origin_of_shell chosen by the user or auto-generated based on
-		//   metadata
-		// pub fn mint_origin_of_shell(
-		// 	origin: OriginFor<T>,
-		// 	status_type: StatusType,
-		// 	origin_of_shell_type: OriginOfShellType,
-		// 	race: RaceType,
-		// 	career: CareerType,
-		// ) -> DispatchResult {
-		// 	// TODO: Refactor purchases functions
-		// 	let sender = ensure_signed(origin.clone())?;
-		//
-		// 	Ok(())
-		// }
 
 		/// Buy a rare origin_of_shell of either type Magic or Legendary. Both Origin of Shell types
 		/// will have a set price. These will also be limited in quantity and on a first come, first
@@ -589,20 +565,18 @@ pub mod pallet {
 			origin_of_shell_type: OriginOfShellType,
 			race: RaceType,
 			career: CareerType,
-			metadata: BoundedVec<u8, T::StringLimit>,
+			metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 		) -> DispatchResult {
 			ensure!(
-				CanPurchaseRareOriginOfShells::<T>::get() || LastDayOfSale::<T>::get(),
+				CanPurchaseRareOriginOfShells::<T>::get(),
 				Error::<T>::RareOriginOfShellPurchaseNotAvailable
 			);
 			let sender = ensure_signed(origin.clone())?;
-			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+			let overlord = Self::get_overlord_account()?;
 			// Has Spirit Collection been set
-			let spirit_collection_id =
-				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			let spirit_collection_id = Self::get_spirit_collection_id()?;
 			// Ensure origin_of_shell collection is set
-			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
-				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			let origin_of_shell_collection_id = Self::get_origin_of_shell_collection_id()?;
 			// Must have a spirit to purchase a Origin of Shell
 			ensure!(
 				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
@@ -611,12 +585,11 @@ pub mod pallet {
 			);
 			// If not last day of sale, only allowed to purchase one Origin of Shell
 			ensure!(
-				(!LastDayOfSale::<T>::get() &&
-					pallet_uniques::Pallet::<T>::owned_in_class(
-						&origin_of_shell_collection_id,
-						&sender
-					)
-					.count() == 0) || LastDayOfSale::<T>::get(),
+				(pallet_uniques::Pallet::<T>::owned_in_class(
+					&origin_of_shell_collection_id,
+					&sender
+				)
+				.count() == 0) || LastDayOfSale::<T>::get(),
 				Error::<T>::OriginOfShellAlreadyPurchased
 			);
 			// Get Origin of Shell Price based on Origin of ShellType
@@ -637,7 +610,8 @@ pub mod pallet {
 				start_incubation: 0,
 				incubation_duration: 0,
 			};
-
+			// Verify metadata
+			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
 			// Transfer the amount for the rare Origin of Shell NFT then mint the origin_of_shell
 			<T as pallet::Config>::Currency::transfer(
 				&sender,
@@ -652,7 +626,7 @@ pub mod pallet {
 				origin_of_shell_collection_id,
 				None,
 				None,
-				metadata,
+				mint_metadata,
 			)?;
 			// Set Origin of Shell Type, Race and Career attributes for NFT
 			Self::set_race_and_career_attributes(
@@ -690,29 +664,27 @@ pub mod pallet {
 		#[transactional]
 		pub fn buy_hero_origin_of_shell(
 			origin: OriginFor<T>,
-			_mcp_id: u32, // Is this needed?
-			signature: sr25519::Signature,
+			whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
 			race: RaceType,
 			career: CareerType,
-			metadata: BoundedVec<u8, T::StringLimit>,
+			metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 		) -> DispatchResult {
+			let is_last_day_of_sale = LastDayOfSale::<T>::get();
 			ensure!(
-				CanPurchaseHeroOriginOfShells::<T>::get() || LastDayOfSale::<T>::get(),
+				CanPurchaseHeroOriginOfShells::<T>::get() || is_last_day_of_sale,
 				Error::<T>::HeroOriginOfShellPurchaseNotAvailable
 			);
 			let sender = ensure_signed(origin.clone())?;
-			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+			let overlord = Self::get_overlord_account()?;
 			// Check if valid whitelist account
 			ensure!(
-				Self::verify_claim(sender.clone(), metadata.clone(), signature),
+				Self::verify_whitelist(&overlord, sender.clone(), whitelist_claim),
 				Error::<T>::WhitelistVerificationFailed
 			);
 			// Has Spirit Collection been set
-			let spirit_collection_id =
-				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			let spirit_collection_id = Self::get_spirit_collection_id()?;
 			// Ensure origin_of_shell collection is set
-			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
-				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			let origin_of_shell_collection_id = Self::get_origin_of_shell_collection_id()?;
 			// Must have a spirit to purchase a Origin of Shell
 			ensure!(
 				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
@@ -721,12 +693,12 @@ pub mod pallet {
 			);
 			// If not last day of sale, only allowed to purchase one Origin of Shell
 			ensure!(
-				(!LastDayOfSale::<T>::get() &&
+				(!is_last_day_of_sale &&
 					pallet_uniques::Pallet::<T>::owned_in_class(
 						&origin_of_shell_collection_id,
 						&sender
 					)
-					.count() == 0) || LastDayOfSale::<T>::get(),
+					.count() == 0) || is_last_day_of_sale,
 				Error::<T>::OriginOfShellAlreadyPurchased
 			);
 			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
@@ -743,7 +715,8 @@ pub mod pallet {
 				start_incubation: 0,
 				incubation_duration: 0,
 			};
-
+			// Verify metadata
+			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
 			// Transfer the amount for the rare Origin of Shell NFT then mint the origin_of_shell
 			<T as pallet::Config>::Currency::transfer(
 				&sender,
@@ -758,7 +731,7 @@ pub mod pallet {
 				origin_of_shell_collection_id,
 				None,
 				None,
-				metadata,
+				mint_metadata,
 			)?;
 			// Set Origin of Shell Type, Race and Career attributes for NFT
 			Self::set_race_and_career_attributes(
@@ -798,7 +771,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			race: RaceType,
 			career: CareerType,
-			metadata: BoundedVec<u8, T::StringLimit>,
+			metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 		) -> DispatchResult {
 			ensure!(
 				CanPreorderOriginOfShells::<T>::get(),
@@ -806,8 +779,7 @@ pub mod pallet {
 			);
 			let sender = ensure_signed(origin)?;
 			// Has Spirit Collection been set
-			let spirit_collection_id =
-				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			let spirit_collection_id = Self::get_spirit_collection_id()?;
 			// Must have a spirit to purchase a Origin of Shell
 			ensure!(
 				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
@@ -823,12 +795,14 @@ pub mod pallet {
 					*n += 1;
 					Ok(id)
 				})?;
-
+			let overlord = Self::get_overlord_account()?;
+			// Verify metadata
+			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
 			let preorder = PreorderInfo {
 				owner: sender.clone(),
 				race: race.clone(),
 				career: career.clone(),
-				metadata,
+				metadata: mint_metadata,
 				preorder_status: PreorderStatus::Pending,
 			};
 			// Reserve currency for the preorder at the Hero origin_of_shell price
@@ -883,11 +857,10 @@ pub mod pallet {
 				Error::<T>::PreorderOriginOfShellNotAvailable
 			);
 			let sender = ensure_signed(origin)?;
-			let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+			let overlord = Self::get_overlord_account()?;
 
 			// Has Spirit Collection been set
-			let spirit_collection_id =
-				SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+			let spirit_collection_id = Self::get_spirit_collection_id()?;
 			// Must have a spirit to purchase a Origin of Shell
 			ensure!(
 				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() >
@@ -895,8 +868,7 @@ pub mod pallet {
 				Error::<T>::MustOwnSpiritToPurchase
 			);
 			// Must have origin of shell collection created
-			let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
-				.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+			let origin_of_shell_collection_id = Self::get_origin_of_shell_collection_id()?;
 			ensure!(
 				(pallet_uniques::Pallet::<T>::owned_in_class(
 					&origin_of_shell_collection_id,
@@ -1284,30 +1256,83 @@ impl<T: Config> Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
+	/// Verify the Spirit Claim by either the account has at least 10 PHA or by checking the
+	/// signature signed of the account & account must be checked against the message claimer
+	///
+	/// Parameters:
+	/// - claimer: AccountId of the account with the Spirit Claim ticket
+	/// - ticket: ClaimSpiritTicket struct to ensure the Signature signed on the account field to
+	///   check against claimer
+	pub fn verify_claim_spirit(
+		overlord: &T::AccountId,
+		claimer: T::AccountId,
+		ticket: ClaimSpiritTicket<T::AccountId>,
+	) -> bool {
+		let ticket_account = ticket.account;
+		let ticket_signature = ticket.signature;
+		// Ensure the claimer is equal to the spirit claim ticket account
+		if ticket_account != claimer {
+			return false
+		}
+		let msg = Encode::encode(&ticket_account);
+		let encode_overlord = T::AccountId::encode(overlord);
+		let h256_overlord = H256::from_slice(&encode_overlord);
+		let overlord_key = sr25519::Public::from_h256(h256_overlord);
+		// verify claim
+		sp_io::crypto::sr25519_verify(&ticket_signature, &msg, &overlord_key)
+	}
 	/// Verify the whitelist status of an Account that has purchased origin of shell. Serialize the
 	/// evidence with the claimer & metadata then verify against the expected results
 	/// by calling sr25519 verify function
 	///
 	/// Parameters:
+	/// - overlord: Overlord admin account
 	/// - claimer: AccountId of the account in the whitelist
 	/// - metadata: Metadata passed in associated with the claimer
 	/// - signature: Signature passed in by the claimer
-	pub fn verify_claim(
+	pub fn verify_whitelist(
+		overlord: &T::AccountId,
 		claimer: T::AccountId,
-		metadata: BoundedVec<u8, T::StringLimit>,
-		signature: sr25519::Signature,
+		whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
 	) -> bool {
+		let metadata = whitelist_claim.metadata;
+		let signature = whitelist_claim.signature;
+		// Ensure the claimer is the same as account field
+		if claimer != whitelist_claim.account {
+			return false
+		}
 		// Serialize the evidence
 		let msg = Encode::encode(&(claimer, metadata));
-		if let Some(overlord) = <Overlord<T>>::get() {
-			let encode_overlord = T::AccountId::encode(&overlord);
-			let h256_overlord = H256::from_slice(&encode_overlord);
-			let overlord_key = sr25519::Public::from_h256(h256_overlord);
-			// verify claim
-			sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key)
-		} else {
-			false
-		}
+		let encode_overlord = T::AccountId::encode(overlord);
+		let h256_overlord = H256::from_slice(&encode_overlord);
+		let overlord_key = sr25519::Public::from_h256(h256_overlord);
+		// verify claim
+		sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key)
+	}
+
+	/// Verify the NFT metadata to ensure the metadata is signed and can be verified against the
+	/// expected metadata
+	///
+	/// Paraemeters:
+	/// - overlord: Overlord admin account
+	/// - nft_metadata: NftSaleMetadata struct that has the metadata and signature fields
+	pub fn verify_nft_metadata(
+		overlord: &T::AccountId,
+		nft_metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
+	) -> Result<BoundedVec<u8, T::StringLimit>, Error<T>> {
+		let metadata = nft_metadata.metadata;
+		let signature = nft_metadata.signature;
+		// Serialize evidence
+		let msg = Encode::encode(&metadata);
+		let encode_overlord = T::AccountId::encode(overlord);
+		let h256_overlord = H256::from_slice(&encode_overlord);
+		let overlord_key = sr25519::Public::from_h256(h256_overlord);
+		// verify claim
+		ensure!(
+			sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key),
+			Error::<T>::InvalidMetadata
+		);
+		Ok(metadata)
 	}
 
 	/// Helper function to ensure Overlord account is the sender
@@ -1320,6 +1345,12 @@ where
 			Error::<T>::RequireOverlordAccount
 		);
 		Ok(())
+	}
+
+	/// Helper function to get the Overlord admin account
+	fn get_overlord_account() -> Result<T::AccountId, Error<T>> {
+		let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+		Ok(overlord)
 	}
 
 	/// Set Spirit Claims with the Overlord admin Account to allow users to claim their
@@ -1523,7 +1554,7 @@ where
 		race: RaceType,
 		career: CareerType,
 	) -> DispatchResult {
-		let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
+		let overlord = Self::get_overlord_account()?;
 		let race_key: BoundedVec<u8, T::KeyLimit> = self::Pallet::<T>::to_boundedvec_key("race")?;
 		let race_value = race.encode().try_into().expect("[race] should not fail");
 		// Set Race
@@ -1634,6 +1665,20 @@ where
 		}
 
 		Ok(())
+	}
+
+	/// Helper function to get collection id origin of shell collection
+	fn get_origin_of_shell_collection_id() -> Result<CollectionId, Error<T>> {
+		let origin_of_shell_collection_id = OriginOfShellCollectionId::<T>::get()
+			.ok_or(Error::<T>::OriginOfShellCollectionNotSet)?;
+		Ok(origin_of_shell_collection_id)
+	}
+
+	/// Helper function to get collection id spirit collection
+	fn get_spirit_collection_id() -> Result<CollectionId, Error<T>> {
+		let spirit_collection_id =
+			SpiritCollectionId::<T>::get().ok_or(Error::<T>::SpiritCollectionNotSet)?;
+		Ok(spirit_collection_id)
 	}
 
 	fn to_boundedvec_key(name: &str) -> Result<BoundedVec<u8, T::KeyLimit>, Error<T>> {

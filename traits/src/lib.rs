@@ -12,8 +12,10 @@ pub mod priority;
 pub mod property;
 pub mod race;
 pub mod resource;
+pub mod spirit;
 pub mod status_type;
 pub mod theme;
+pub mod whitelist;
 
 pub use base::{Base, BaseInfo};
 pub use part::{EquippableList, FixedPart, PartType, SlotPart};
@@ -21,12 +23,14 @@ pub use theme::{Theme, ThemeProperty};
 // pub use part::{PartInfo};
 pub use collection::{Collection, CollectionInfo};
 pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
-pub use nft_sale::NftSaleInfo;
+pub use nft_sale::{NftSaleInfo, NftSaleMetadata};
 pub use origin_of_shell::{OriginOfShell, OriginOfShellInfo};
 pub use preorders::PreorderInfo;
 pub use priority::Priority;
 pub use property::Property;
 pub use resource::{Resource, ResourceInfo};
+pub use spirit::ClaimSpiritTicket;
+pub use whitelist::WhitelistClaim;
 
 pub mod primitives {
 	pub type CollectionId = u32;

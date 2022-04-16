@@ -3,6 +3,7 @@ use frame_support::pallet_prelude::*;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::cmp::Eq;
+use sp_core::sr25519;
 
 /// NftSaleInfo is used as the value in the StorageDoubleMap that takes key1 as the
 /// OriginOfShellType and key2 as the RaceType
@@ -18,16 +19,9 @@ pub struct NftSaleInfo {
 	pub race_reserved_count: u32,
 }
 
-// pub trait NftSale<AccountId> {
-// 	fn buy_rare_origin_of_shell(
-// 		sender: AccountId,
-// 		origin_of_shell_type: OriginOfShellType,
-// 		race: RaceType,
-// 		career: CareerType,
-// 	) -> DispatchResult;
-// 	fn buy_origin_of_shell_whitelist(
-// 		sender: AccountId,
-// 		race: RaceType,
-// 		career: CareerType,
-// 	) -> DispatchResult;
-// }
+/// Metadata to ensure metadata passed in is signed by the Overlord account
+#[derive(Encode, Decode, Clone, Debug, PartialEq, TypeInfo)]
+pub struct NftSaleMetadata<BoundedString> {
+	pub metadata: BoundedString,
+	pub signature: sr25519::Signature,
+}

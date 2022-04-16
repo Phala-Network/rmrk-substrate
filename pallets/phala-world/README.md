@@ -71,7 +71,7 @@ pub type ClaimedSpirits<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>
 
 /// Stores all of the valid claimed Origin Of Shells from the whitelist or preorder
 #[pallet::storage]
-#[pallet::getter(fn claimed_origin_of_shellss)]
+#[pallet::getter(fn claimed_origin_of_shells)]
 pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
 /// Preorder index that is the key to the Preorders StorageMap
@@ -179,9 +179,8 @@ pub enum Error<T> {
 Claim a spirit for users that are on the whitelist.
 ```rust
 origin: OriginFor<T>,
-serial_id: SerialId,
-signature: sr25519::Signature,
-metadata: BoundedVec<u8, T::StringLimit>,
+ticket: Option<ClaimSpiritTicket<T::AccountId>>,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 ### buy_rare_origin_of_shell
@@ -191,8 +190,18 @@ origin: OriginFor<T>,
 origin_of_shell_type: OriginOfShellType,
 race: RaceType,
 career: CareerType,
-metadata: BoundedVec<u8, T::StringLimit>,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
+
+### purchase_hero_origin_of_shell
+```rust
+origin: OriginFor<T>,
+whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
+race: RaceType,
+career: CareerType,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
+```
+
 
 ### preorder_origin_of_shell
 Preorder an OriginOfShell for eligible users
@@ -200,7 +209,7 @@ Preorder an OriginOfShell for eligible users
 origin: OriginFor<T>,
 race: RaceType,
 career: CareerType,
-metadata: BoundedVec<u8, T::StringLimit>,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 ### mint_origin_of_shells
