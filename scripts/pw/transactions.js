@@ -91,10 +91,11 @@ async function main() {
 
     // sign metadata
     {
-        const metadata = '0x1234';
+        const metadata = stringToU8a('I am Spirit');
         const metadataSig = overlord.sign(metadata);
-        u8aToHex(metadataSig);
-        console.log(metadataSig);
+        const isValid = overlord.verify(metadata, metadataSig, overlord.publicKey);
+        // output the result
+        console.log(`${u8aToHex(metadataSig)} is ${isValid ? 'valid' : 'invalid'}`);
     }
 
     // mint spirit nft
