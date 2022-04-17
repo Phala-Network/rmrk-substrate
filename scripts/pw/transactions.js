@@ -35,13 +35,6 @@ async function main() {
                 metadata: "BoundedString",
                 preorder_status: "PreorderStatus",
             },
-            OriginOfShellInfo: {
-                origin_of_shell_type: "OriginOfShellType",
-                race: "RaceType",
-                career: "CareerType",
-                start_incubation: "u64",
-                incubation_duration: "u64",
-            },
             NftSaleInfo: {
                 race_count: "u32",
                 race_for_sale_count: "u32",
@@ -85,11 +78,32 @@ async function main() {
     const chosen = api.createType('PreorderStatus', 'Chosen');
     const notChosen = api.createType('PreorderStatus', 'NotChosen');
 
+    // // produce whitelist
+    // {
+    //   const claimer = user.address;
+    //   const metadata = '0xDEADBEEF';
+    //   const message = api.createType('(AccountId,Vec<u8>)', [claimer, metadata]);
+    //   const sig = overlord.sign(message.toU8a());
+    //   u8aToHex(sig);
+    //   console.log(sig)
+    // }
+    // return;
+
+    // sign metadata
+    {
+        const metadata = '0x1234';
+        const metadataSig = overlord.sign(metadata);
+        u8aToHex(metadataSig);
+        console.log(metadataSig);
+    }
+
     // mint spirit nft
     {
         // const serialId = 1;
         // const signature = '0xAABB';
         // const metadata = '0xCCDD'
+        // const metadataSig = overlord.sign(metadata);
+        // u8aToHex(metadataSig);
         await api.tx.phalaWorld.claimSpirit()
             .signAndSend(user);
     }
@@ -100,6 +114,8 @@ async function main() {
         // RaceType ['AISpectre', 'Cyborg', 'Pandroid', 'XGene']
         // CareerType ['HardwareDruid', 'HackerWizard', 'RoboWarrior', 'TradeNegotiator', 'Web3Monk']
         // metadata '0x2813308004'
+        // const metadataSig = overlord.sign(metadata);
+        // u8aToHex(metadataSig);
         await api.tx.phalaWorld.buyRareOriginOfShell()
             .signAndSend(user);
     }
@@ -108,9 +124,12 @@ async function main() {
     {
         // RaceType ['AISpectre', 'Cyborg', 'Pandroid', 'XGene']
         // CareerType ['HardwareDruid', 'HackerWizard', 'RoboWarrior', 'TradeNegotiator', 'Web3Monk']
-        // mcp_id
-        // signature
+        // whitelistClaim createType('(AccountId,Vec<u8>)', [claimer, metadata]);
+        // const sig = overlord.sign(message.toU8a());
+        // u8aToHex(sig);
         // metadata '0x2813308004'
+        // const metadataSig = overlord.sign(metadata);
+        // u8aToHex(metadataSig);
         await api.tx.phalaWorld.buyHeroOriginOfShell()
             .signAndSend(user);
     }
@@ -120,6 +139,8 @@ async function main() {
         // RaceType ['AISpectre', 'Cyborg', 'Pandroid', 'XGene']
         // CareerType ['HardwareDruid', 'HackerWizard', 'RoboWarrior', 'TradeNegotiator', 'Web3Monk']
         // metadata '0x2813308004'
+        // const metadataSig = overlord.sign(metadata);
+        // u8aToHex(metadataSig);
         await api.tx.phalaWorld.preorderOriginOfShell()
             .signAndSend(user);
     }

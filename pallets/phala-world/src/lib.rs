@@ -7,14 +7,9 @@ use frame_support::{
 };
 use frame_system::{ensure_signed, Origin};
 
-use codec::{Decode, Encode};
-use scale_info::TypeInfo;
+use codec::Encode;
 use sp_core::{sr25519, H256};
-use sp_io::crypto::sr25519_verify;
-use sp_runtime::{
-	traits::{One, StaticLookup},
-	DispatchResult,
-};
+use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
 
 pub use pallet_rmrk_core::types::*;
@@ -23,7 +18,7 @@ pub use pallet_rmrk_market;
 use rmrk_traits::{
 	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
 	primitives::*, race::RaceType, status_type::StatusType, ClaimSpiritTicket, NftSaleInfo,
-	NftSaleMetadata, OriginOfShellInfo, PreorderInfo, WhitelistClaim,
+	NftSaleMetadata, PreorderInfo, WhitelistClaim,
 };
 
 #[cfg(test)]
@@ -55,7 +50,6 @@ pub mod pallet {
 		<T as frame_system::Config>::AccountId,
 		BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
 	>;
-	//type OverlordInfoOf<T> = OverlordInfo<<T as frame_system::Config>::AccountId>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -138,19 +132,6 @@ pub mod pallet {
 		Blake2_128Concat,
 		RaceType,
 		NftSaleInfo,
-	>;
-
-	/// Stores all the Origin of Shells and the information about the Origin of Shell pertaining to
-	/// Hatch times and feeding
-	#[pallet::storage]
-	#[pallet::getter(fn origin_of_shells)]
-	pub type OriginOfShells<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		CollectionId,
-		Blake2_128Concat,
-		NftId,
-		OriginOfShellInfo,
 	>;
 
 	/// Food per Owner where an owner gets 5 food per era
@@ -601,15 +582,6 @@ pub mod pallet {
 			let nft_id = pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
 			// Check if race and career types have mints left
 			Self::has_race_type_left(&origin_of_shell_type, &race)?;
-
-			// TODO: Update this for incubation info Define OriginOfShellInfo for storage
-			let origin_of_shell = OriginOfShellInfo {
-				origin_of_shell_type: origin_of_shell_type.clone(),
-				race: race.clone(),
-				career: career.clone(),
-				start_incubation: 0,
-				incubation_duration: 0,
-			};
 			// Verify metadata
 			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
 			// Transfer the amount for the rare Origin of Shell NFT then mint the origin_of_shell
@@ -640,7 +612,6 @@ pub mod pallet {
 			Self::decrement_race_type_left(origin_of_shell_type.clone(), race.clone())?;
 			Self::increment_race_type(origin_of_shell_type, race)?;
 			Self::increment_career_type(career)?;
-			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
 			Self::deposit_event(Event::RareOriginOfShellPurchased {
 				collection_id: origin_of_shell_collection_id,
@@ -706,15 +677,6 @@ pub mod pallet {
 			let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
 			// Check if race and career types have mints left
 			Self::has_race_type_left(&OriginOfShellType::Hero, &race)?;
-
-			// Define OriginOfShellInfo for storage
-			let origin_of_shell = OriginOfShellInfo {
-				origin_of_shell_type: OriginOfShellType::Hero,
-				race: race.clone(),
-				career: career.clone(),
-				start_incubation: 0,
-				incubation_duration: 0,
-			};
 			// Verify metadata
 			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
 			// Transfer the amount for the rare Origin of Shell NFT then mint the origin_of_shell
@@ -745,7 +707,6 @@ pub mod pallet {
 			Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
 			Self::increment_race_type(OriginOfShellType::Hero, race)?;
 			Self::increment_career_type(career)?;
-			OriginOfShells::<T>::insert(origin_of_shell_collection_id, nft_id, origin_of_shell);
 
 			Self::deposit_event(Event::HeroOriginOfShellPurchased {
 				collection_id: origin_of_shell_collection_id,
@@ -885,14 +846,6 @@ pub mod pallet {
 				let preorder_status = preorder.clone().preorder_status;
 				match preorder_status {
 					PreorderStatus::Chosen => {
-						// TODO refactor Define OriginOfShellInfo for storage
-						let origin_of_shell = OriginOfShellInfo {
-							origin_of_shell_type: OriginOfShellType::Hero,
-							race: preorder.race.clone(),
-							career: preorder.career.clone(),
-							start_incubation: 0,
-							incubation_duration: 0,
-						};
 						// Next NFT ID of Collection
 						let nft_id =
 							pallet_rmrk_core::NextNftId::<T>::get(origin_of_shell_collection_id);
@@ -916,12 +869,6 @@ pub mod pallet {
 							None,
 							preorder.metadata,
 						)?;
-
-						OriginOfShells::<T>::insert(
-							origin_of_shell_collection_id,
-							nft_id,
-							origin_of_shell,
-						);
 
 						Self::deposit_event(Event::OriginOfShellMinted {
 							collection_id: origin_of_shell_collection_id,

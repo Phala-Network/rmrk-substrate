@@ -83,6 +83,14 @@ async function main() {
     // }
     // return;
 
+    // sign metadata
+    {
+        const metadata = '0x1234';
+        const metadataSig = overlord.sign(metadata);
+        u8aToHex(metadataSig);
+        console.log(metadataSig);
+    }
+
     // mint spirit
     {
         // const serialId = 1;

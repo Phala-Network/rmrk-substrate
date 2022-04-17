@@ -24,7 +24,7 @@ pub use theme::{Theme, ThemeProperty};
 pub use collection::{Collection, CollectionInfo};
 pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
 pub use nft_sale::{NftSaleInfo, NftSaleMetadata};
-pub use origin_of_shell::{OriginOfShell, OriginOfShellInfo};
+pub use origin_of_shell::OriginOfShell;
 pub use preorders::PreorderInfo;
 pub use priority::Priority;
 pub use property::Property;

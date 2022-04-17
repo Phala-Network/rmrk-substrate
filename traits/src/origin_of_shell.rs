@@ -4,7 +4,7 @@ use scale_info::TypeInfo;
 use sp_runtime::{DispatchError, RuntimeDebug};
 use sp_std::cmp::Eq;
 
-use crate::{career::CareerType, primitives::*, race::RaceType};
+use crate::primitives::*;
 use serde::{Deserialize, Serialize};
 use sp_std::result::Result;
 
@@ -15,22 +15,6 @@ pub enum OriginOfShellType {
 	Hero,
 	Magic,
 	Legendary,
-}
-
-#[derive(Encode, Decode, Eq, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct OriginOfShellInfo {
-	/// Origin of Shell type of the Origin of Shell RMRK NFT
-	pub origin_of_shell_type: OriginOfShellType,
-	/// Race type of the Origin of Shell RMRK NFT
-	pub race: RaceType,
-	/// Career type of the Origin of Shell RMRK NFT
-	pub career: CareerType,
-	/// Block number when the Origin of Shell started incubation process
-	pub start_incubation: u64,
-	/// Time duration from `start_incubation` to when the Origin of Shell is ready to incubate
-	/// 0 if the Origin of Shell has not started the incubation process
-	pub incubation_duration: u64,
 }
 
 pub trait OriginOfShell<AccountId, BlockNumber> {

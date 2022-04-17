@@ -84,12 +84,6 @@ pub type PreorderIndex<T: Config> = StorageValue<_, PreorderId, ValueQuery>;
 #[pallet::getter(fn preorders)]
 pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, PreorderInfoOf<T>>;
 
-/// Stores all the Origin Of Shells and the information about the Origin Of Shell pertaining to Hatch times and feeding
-#[pallet::storage]
-#[pallet::getter(fn origin_of_shells)]
-pub type OriginOfShells<T: Config> =
-StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, OriginOfShellInfo>;
-
 /// Food per Owner where an owner gets 5 food per era
 #[pallet::storage]
 #[pallet::getter(fn get_food_by_owner)]

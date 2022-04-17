@@ -36,13 +36,6 @@ async function main() {
                 metadata: "BoundedString",
                 preorder_status: "PreorderStatus",
             },
-            OriginOfShellInfo: {
-                origin_of_shell_type: "OriginOfShellType",
-                race: "RaceType",
-                career: "CareerType",
-                start_incubation: "u64",
-                incubation_duration: "u64",
-            },
             NftSaleInfo: {
                 race_count: "u32",
                 race_for_sale_count: "u32",
