@@ -601,9 +601,10 @@ pub mod pallet {
 				mint_metadata,
 			)?;
 			// Set Origin of Shell Type, Race and Career attributes for NFT
-			Self::set_race_and_career_attributes(
+			Self::set_origin_of_shell_attributes(
 				origin_of_shell_collection_id,
 				nft_id,
+				origin_of_shell_type.clone(),
 				race.clone(),
 				career.clone(),
 			)?;
@@ -696,9 +697,10 @@ pub mod pallet {
 				mint_metadata,
 			)?;
 			// Set Origin of Shell Type, Race and Career attributes for NFT
-			Self::set_race_and_career_attributes(
+			Self::set_origin_of_shell_attributes(
 				origin_of_shell_collection_id,
 				nft_id,
+				OriginOfShellType::Hero,
 				race.clone(),
 				career.clone(),
 			)?;
@@ -1488,22 +1490,44 @@ where
 		Ok(())
 	}
 
-	/// Set the race and career attributes for a Origin of Shell NFT
+	/// Set the origin of shell type, race and career attributes for a Origin of Shell NFT
 	///
 	/// Parameters:
 	/// - `collection_id`: Collection id of the Origin of Shell NFT
 	/// - `nft_id`: NFT id of the Origin of Shell NFT
+	/// - `origin_of_shell_type`: Origin of Shell type for the NFT
 	/// - `race`: Race attribute to set for the Origin of Shell NFT
 	/// - `career`: Career attribute to set for the Origin of Shell NFT
-	fn set_race_and_career_attributes(
+	fn set_origin_of_shell_attributes(
 		collection_id: CollectionId,
 		nft_id: NftId,
+		origin_of_shell_type: OriginOfShellType,
 		race: RaceType,
 		career: CareerType,
 	) -> DispatchResult {
 		let overlord = Self::get_overlord_account()?;
+
+		let origin_of_shell_type_key: BoundedVec<u8, T::KeyLimit> =
+			self::Pallet::<T>::to_boundedvec_key("origin_of_shell_type")?;
+		let origin_of_shell_type_value = origin_of_shell_type
+			.encode()
+			.try_into()
+			.expect("[origin_of_shell_type] should not fail");
+
 		let race_key: BoundedVec<u8, T::KeyLimit> = self::Pallet::<T>::to_boundedvec_key("race")?;
 		let race_value = race.encode().try_into().expect("[race] should not fail");
+
+		let career_key = self::Pallet::<T>::to_boundedvec_key("career")?;
+		let career_value = career.encode().try_into().expect("[career] should not fail");
+
+		// Set Origin of Shell Type
+		pallet_uniques::Pallet::<T>::set_attribute(
+			Origin::<T>::Signed(overlord.clone()).into(),
+			collection_id,
+			Some(nft_id),
+			origin_of_shell_type_key,
+			origin_of_shell_type_value,
+		)?;
 		// Set Race
 		pallet_uniques::Pallet::<T>::set_attribute(
 			Origin::<T>::Signed(overlord.clone()).into(),
@@ -1512,8 +1536,6 @@ where
 			race_key,
 			race_value,
 		)?;
-		let career_key = self::Pallet::<T>::to_boundedvec_key("career")?;
-		let career_value = career.encode().try_into().expect("[career] should not fail");
 		// Set Career
 		pallet_uniques::Pallet::<T>::set_attribute(
 			Origin::<T>::Signed(overlord).into(),

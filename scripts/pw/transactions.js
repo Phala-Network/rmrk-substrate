@@ -40,6 +40,10 @@ async function main() {
                 race_for_sale_count: "u32",
                 race_giveaway_count: "u32",
                 race_reserved_count: "u32",
+            },
+            NftSaleMetadata: {
+                metadata: "BoundedString",
+                signature: "sr25519::Signature"
             }
         }
     });
@@ -91,11 +95,16 @@ async function main() {
 
     // sign metadata
     {
-        const metadata = stringToU8a('I am Spirit');
-        const metadataSig = overlord.sign(metadata);
-        const isValid = overlord.verify(metadata, metadataSig, overlord.publicKey);
+        const metadata = 'I am Spirit';
+        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
+        const metadataSig = overlord.sign(metadataType);
+        const isValid = overlord.verify(metadata, metadataSig, overlord.address);
+        const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
+
         // output the result
-        console.log(`${u8aToHex(metadataSig)} is ${isValid ? 'valid' : 'invalid'}`);
+        console.log(`${u8aToHex(metadataSig)}\n${u8aToHex(metadataType)} is ${isValid ? 'valid' : 'invalid'}`);
+        // Mint a Spirit
+        //await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 
     // mint spirit nft
@@ -105,8 +114,7 @@ async function main() {
         // const metadata = '0xCCDD'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        await api.tx.phalaWorld.claimSpirit()
-            .signAndSend(user);
+        // await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 
     // purchase rare origin of shell

@@ -346,6 +346,7 @@ fn purchase_rare_origin_of_shell_works() {
 fn purchase_hero_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
+		let bob_pair = sr25519::Pair::from_seed(b"09876543210987654321098765432109");
 		// let overlord_pub = overlord_pair.public();
 		// Set Overlord and configuration then enable spirits to be claimed
 		setup_config(StatusType::PurchaseHeroOriginOfShells);

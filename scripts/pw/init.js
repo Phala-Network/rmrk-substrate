@@ -46,7 +46,7 @@ async function main() {
         // PurchaseRareOriginOfShells,
         // PurchaseHeroOriginOfShells,
         // PreorderOriginOfShells,
-        await api.tx.phalaWorld.setStatusType(true, claimSpirits)
+        await api.tx.phalaWorld.setStatusType(true, 'claimSpirits')
             .signAndSend(overlord, {nonce: -1});
 
         // mint spirits NFTs with overlord
@@ -85,11 +85,11 @@ async function main() {
 
     // sign metadata
     {
-        const metadata = stringToU8a('I am Spirit');
-        const metadataSig = overlord.sign(metadata);
-        const isValid = overlord.verify(metadata, metadataSig, overlord.publicKey);
-        // output the result
-        console.log(`${u8aToHex(metadataSig)} is ${isValid ? 'valid' : 'invalid'}`);
+        // const metadata = 'I am Spirit';
+        // const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
+        // const metadataSig = overlord.sign(metadataType);
+        // const isValid = overlord.verify(metadata, metadataSig, overlord.address);
+        // const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
     }
 
     // mint spirit
@@ -97,8 +97,7 @@ async function main() {
         // const serialId = 1;
         // const signature = '0xAABB';
         // const metadata = '0xCCDD'
-        await api.tx.phalaWorld.claimSpirit()
-            .signAndSend(user, {nonce: -1});
+        // await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 }
 
