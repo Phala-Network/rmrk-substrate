@@ -14,7 +14,7 @@ async function main() {
         provider: wsProvider,
         types: {
             RaceType: {
-                _enum: ['Cybord', 'AISpectre', 'XGene', 'Pandroid']
+                _enum: ['Cyborg', 'AISpectre', 'XGene', 'Pandroid']
             },
             CareerType: {
                 _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']

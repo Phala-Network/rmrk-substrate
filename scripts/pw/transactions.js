@@ -125,7 +125,13 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        await api.tx.phalaWorld.buyRareOriginOfShell()
+        // Look at the signer example for the nftSaleMetadata
+        const metadata = 'I am Legendary';
+        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
+        const metadataSig = overlord.sign(metadataType);
+        const isValid = overlord.verify(metadata, metadataSig, overlord.address);
+        const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
+        await api.tx.phalaWorld.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
             .signAndSend(user);
     }
 
