@@ -6,6 +6,7 @@ const { stringToU8a, u8aToHex } = require('@polkadot/util');
 const rootPrivkey = process.env.ROOT_PRIVKEY;
 const userPrivkey = process.env.USER_PRIVKEY;
 const overlordPrivkey = process.env.OVERLOAD_PRIVKEY;
+const ferdiePrivkey = process.env.FERDIE_PRIVKEY;
 const endpoint = process.env.ENDPOINT;
 
 async function main() {
@@ -52,6 +53,7 @@ async function main() {
     const root = keyring.addFromUri(rootPrivkey);
     const user = keyring.addFromUri(userPrivkey);
     const overlord = keyring.addFromUri(overlordPrivkey);
+    const ferdie = keyring.addFromUri(ferdiePrivkey);
 
     // StatusType
     const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
@@ -145,8 +147,28 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        await api.tx.phalaWorld.buyHeroOriginOfShell()
-            .signAndSend(user);
+        const metadataHero = 'I am Hero';
+        const metadataHeroType = api.createType('BoundedVec<u8, T::StringLimit>', metadataHero).toU8a();
+        const metadataHeroSig = overlord.sign(metadataHeroType);
+        //const isValid = overlord.verify(metadataHero, metadataSig, overlord.address);
+        const nftSignedMetadata = api.createType('NftSaleMetadata', {
+            'metadata': metadataHeroType,
+            'signature': metadataHeroSig
+        });
+        const metadata = 'Whitelist for FERDIE';
+        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata);
+        const userMetadataType = api.createType('(AccountId,BoundedVec<u8, T::StringLimit>)', [ferdie.address, metadataType]).toU8a();
+        const metadataSign = overlord.sign(userMetadataType);
+        const whitelistType = api.createType('WhitelistClaim', {
+            'account': ferdie.address,
+            'metadata': metadataType,
+            'signature': metadataSign,
+        });
+        //await api.tx.phalaWorld.setStatusType(true, 'PurchaseHeroOriginOfShells')
+        //    .signAndSend(overlord, {nonce: -1});
+        // Mint Hero Origin of Shell
+        await api.tx.phalaWorld.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard', nftSignedMetadata)
+            .signAndSend(ferdie);
     }
 
     // preorder origin of shell

@@ -70,6 +70,8 @@ async function main() {
         await api.tx.phalaWorld.setOriginOfShellCollectionId(
             1
         ).signAndSend(overlord, {nonce: -1});
+        // set the initial inventory numbers that will be used until the preorder phase
+        await api.tx.phalaWorld.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
     }
 
     // // produce spirit whitelist

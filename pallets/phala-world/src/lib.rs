@@ -189,6 +189,11 @@ pub mod pallet {
 	#[pallet::getter(fn career_type_count)]
 	pub type CareerTypeCount<T: Config> = StorageMap<_, Twox64Concat, CareerType, u32, ValueQuery>;
 
+	/// Origin of Shells Inventory has been initialized
+	#[pallet::storage]
+	#[pallet::getter(fn is_origin_of_shells_inventory_set)]
+	pub type IsOriginOfShellsInventorySet<T: Config> = StorageValue<_, bool, ValueQuery>;
+
 	/// Overlord Admin account of Phala World
 	#[pallet::storage]
 	#[pallet::getter(fn overlord)]
@@ -236,6 +241,8 @@ pub mod pallet {
 		pub spirit_collection_id: Option<CollectionId>,
 		/// CollectionId of Origin of Shell Collection
 		pub origin_of_shell_collection_id: Option<CollectionId>,
+		/// Is Origin of Shells Inventory set?
+		pub is_origin_of_shells_inventory_set: bool,
 	}
 
 	#[cfg(feature = "std")]
@@ -252,6 +259,7 @@ pub mod pallet {
 				last_day_of_sale: false,
 				spirit_collection_id: None,
 				origin_of_shell_collection_id: None,
+				is_origin_of_shells_inventory_set: false,
 			}
 		}
 	}
@@ -286,8 +294,8 @@ pub mod pallet {
 			if let Some(origin_of_shell_collection_id) = self.origin_of_shell_collection_id {
 				<OriginOfShellCollectionId<T>>::put(origin_of_shell_collection_id);
 			}
-			// Set initial config for OriginOfShellsInventory
-			self::Pallet::<T>::set_initial_origin_of_shell_inventory();
+			let is_origin_of_shells_inventory_set = self.is_origin_of_shells_inventory_set;
+			<IsOriginOfShellsInventorySet<T>>::put(is_origin_of_shells_inventory_set);
 		}
 	}
 
@@ -415,6 +423,10 @@ pub mod pallet {
 		OverlordChanged {
 			old_overlord: Option<T::AccountId>,
 		},
+		/// Origin of Shells Inventory was set
+		OriginOfShellsInventoryWasSet {
+			status: bool,
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -451,6 +463,7 @@ pub mod pallet {
 		OriginOfShellCollectionNotSet,
 		OriginOfShellCollectionIdAlreadySet,
 		OriginOfShellInventoryCorrupted,
+		OriginOfShellInventoryAlreadySet,
 		UnableToAddAttributes,
 		KeyTooLong,
 	}
@@ -1091,6 +1104,24 @@ pub mod pallet {
 			Ok(Pays::No.into())
 		}
 
+		/// Initialize the settings for the non-whitelist preorder period amount of races &
+		/// giveaways available for the Origin of Shell NFTs. This is a privileged function and can
+		/// only be executed by the Overlord account. This will call the helper function
+		/// `set_initial_origin_of_shell_inventory`
+		///
+		/// Parameters:
+		/// - `origin` - Expected Overlord admin account
+		#[pallet::weight(0)]
+		pub fn init_origin_of_shell_type_counts(origin: OriginFor<T>) -> DispatchResult {
+			// Ensure Overlord account makes call
+			let sender = ensure_signed(origin)?;
+			Self::ensure_overlord(sender)?;
+			// Call helper function
+			Self::set_initial_origin_of_shell_inventory()?;
+			Self::deposit_event(Event::OriginOfShellsInventoryWasSet { status: true });
+			Ok(())
+		}
+
 		/// Update for the non-whitelist preorder period amount of races & giveaways available for
 		/// the Origin of Shell NFTs. This is a privileged function and can only be executed by the
 		/// Overlord account. Update the OriginOfShellInventory counts by incrementing them based on
@@ -1376,10 +1407,14 @@ where
 	/// 15, race_giveaway_count: 0, race_reserved_count: 5 }`
 	/// `<Hero>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
 	/// 1250, race_giveaway_count: 50, race_reserved_count: 0 }`
-	fn set_initial_origin_of_shell_inventory() {
+	fn set_initial_origin_of_shell_inventory() -> DispatchResult {
 		// 3 OriginOfShellType Hero, Magic & Legendary and 4 different RaceType Cyborg, AISpectre,
 		// XGene & Pandroid
-		// TODO Refactor
+		//
+		ensure!(
+			!IsOriginOfShellsInventorySet::<T>::get(),
+			Error::<T>::OriginOfShellInventoryAlreadySet
+		);
 		let legendary_nft_sale_info = NftSaleInfo {
 			race_count: 0,
 			race_for_sale_count: 1,
@@ -1458,6 +1493,10 @@ where
 			RaceType::XGene,
 			hero_nft_sale_info,
 		);
+		// Set IsOriginOfShellsInventorySet to true
+		IsOriginOfShellsInventorySet::<T>::put(true);
+
+		Ok(())
 	}
 
 	/// Update the NftSaleInfo for a given OriginOfShellType and RaceType

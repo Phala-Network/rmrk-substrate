@@ -54,6 +54,12 @@ await api.tx.phalaWorld.setOriginOfShellCollectionId(
 ).signAndSend(overlord, {nonce: -1});
 ```
 
+### Initialize the Inventory counts
+In the `init.js` script there is a transaction that will set the starting inventory counts for the initial sales until the preorder phase. This script will populate the StorageDoubleMap called `originOfShellsInventory`.
+```javascript
+await api.tx.phalaWorld.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
+```
+
 ### Claim a Spirit
 This is an example of generating the signed metadata for a Spirit NFT with `overlord` account then using the `ferdie` account to claim the spirit.
 ```javascript
