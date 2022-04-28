@@ -82,8 +82,8 @@ async function main() {
     // list spirit
     {
         const spiritCollectionId = await api.query.phalaWorld.spiritCollectionId();
-        if (spiritCollectionId.isSome()) {
-            const spirit = await api.query.uniques.account.entries(user.address, spiritCollectionId);
+        if (spiritCollectionId.isSome) {
+            const spirit = await api.query.uniques.account.entries(user.address, spiritCollectionId.unwrap());
             spirit
                 .map(([key, _value]) =>
                     [key.args[0].toString(), key.args[1].toNumber(), key.args[2].toNumber()]
@@ -104,8 +104,8 @@ async function main() {
     // list origin of shells
     {
         const originOfShellCollectionId = await api.query.phalaWorld.OriginOfShellCollectionId();
-        if (originOfShellCollectionId.isSome()) {
-            const spirit = await api.query.uniques.account.entries(user.address, originOfShellCollectionId);
+        if (originOfShellCollectionId.isSome) {
+            const spirit = await api.query.uniques.account.entries(user.address, originOfShellCollectionId.unwrap());
             spirit
                 .map(([key, _value]) =>
                     [key.args[0].toString(), key.args[1].toNumber(), key.args[2].toNumber()]
@@ -156,7 +156,7 @@ async function main() {
 
     // List all OriginOfShellsInventory
     {
-        const originOfShellsInventoryLegendary = await api.query.phalaWorld.OriginOfShellsInventory.keys(legendary);
+        const originOfShellsInventoryLegendary = await api.query.phalaWorld.OriginOfShellsInventory.keys('Legendary');
         originOfShellsInventoryLegendary.forEach(([{ args: race }, _value]) => {
            console.log(`Origin of Shell Type: Legendary\nRace Type: {}`)
         });

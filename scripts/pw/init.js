@@ -46,7 +46,7 @@ async function main() {
         // PurchaseRareOriginOfShells,
         // PurchaseHeroOriginOfShells,
         // PreorderOriginOfShells,
-        await api.tx.phalaWorld.setStatusType(true, 'claimSpirits')
+        await api.tx.phalaWorld.setStatusType(true, 'ClaimSpirits')
             .signAndSend(overlord, {nonce: -1});
 
         // mint spirits NFTs with overlord
