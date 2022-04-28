@@ -250,6 +250,7 @@ impl ExtBuilder {
 			last_day_of_sale: false,
 			spirit_collection_id: None,
 			origin_of_shell_collection_id: None,
+			is_origin_of_shells_inventory_set: false,
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();
