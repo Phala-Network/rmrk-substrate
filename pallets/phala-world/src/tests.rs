@@ -76,6 +76,8 @@ fn setup_config(enable_status_type: StatusType) {
 	));
 	// Initialize the Phala World Clock
 	assert_ok!(PhalaWorld::initialize_world_clock(Origin::signed(OVERLORD)));
+	// Initialize Origin of Shell Inventory numbers
+	assert_ok!(PhalaWorld::init_origin_of_shell_type_counts(Origin::signed(OVERLORD)));
 	match enable_status_type {
 		StatusType::ClaimSpirits => {
 			assert_ok!(PhalaWorld::set_status_type(
