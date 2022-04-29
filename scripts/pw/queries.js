@@ -7,6 +7,10 @@ const { stringToU8a, u8aToHex } = require('@polkadot/util');
 const rootPrivkey = process.env.ROOT_PRIVKEY;
 const userPrivkey = process.env.USER_PRIVKEY;
 const overlordPrivkey = process.env.OVERLOAD_PRIVKEY;
+const ferdiePrivkey = process.env.FERDIE_PRIVKEY;
+const charliePrivkey = process.env.CHARLIE_PRIVKEY;
+const davidPrivkey = process.env.DAVID_PRIVKEY;
+const evePrivkey = process.env.EVE_PRIVKEY;
 const endpoint = process.env.ENDPOINT;
 
 async function main() {
@@ -48,7 +52,11 @@ async function main() {
 
     const root = keyring.addFromUri(rootPrivkey);
     const user = keyring.addFromUri(userPrivkey);
+    const ferdie = keyring.addFromUri(ferdiePrivkey);
     const overlord = keyring.addFromUri(overlordPrivkey);
+    const charlie = keyring.addFromUri(charliePrivkey);
+    const david = keyring.addFromUri(davidPrivkey);
+    const eve = keyring.addFromUri(evePrivkey);
 
     // StatusType
     const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
