@@ -103,7 +103,7 @@ async function main() {
 
     // list origin of shells
     {
-        const originOfShellCollectionId = await api.query.phalaWorld.OriginOfShellCollectionId();
+        const originOfShellCollectionId = await api.query.phalaWorld.originOfShellCollectionId();
         if (originOfShellCollectionId.isSome) {
             const spirit = await api.query.uniques.account.entries(user.address, originOfShellCollectionId.unwrap());
             spirit
@@ -127,18 +127,43 @@ async function main() {
     {
         const preorderIndex = await api.query.phalaWorld.preorderIndex();
         console.log(`Current preorder index: ${preorderIndex}`);
-        const preorderKeys = await api.query.phalaWorld.preorders.keys();
-        preorderKeys.forEach(([{ args: [id] }, _value]) => {
-            console.log(`Preorder ID: ${id}`);
+        const preorderKeys = await api.query.phalaWorld.preorders.entries();
+        preorderKeys
+            .map(([key, value]) =>
+                [key.args[0].toNumber(), value.toHuman()]
+            ).forEach(([account, preorderInfo]) => {
+            console.log({
+                account,
+                preorderInfo,
+            })
         })
     }
 
     // List of Preorder ids for a user
+    // Example output
+    // {
+    //     account: '5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL',
+    //         preorderId: 0,
+    //     preorderInfo: {
+    //     owner: '5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL',
+    //         race: 'Pandroid',
+    //         career: 'HackerWizard',
+    //         metadata: 'I am Hero',
+    //         preorderStatus: 'Chosen'
+    //      }
+    // }
     {
-        const userPreorderResults = await api.query.phalaWorld.PreorderResults.keys(user.address);
-        userPreorderResults.forEach(([{ args: [accountId, preorderId] }, _value]) => {
-           console.log(`Account: ${accountId} Preorder ID: ${preorderId} Preorder results:`)
-        });
+        const userPreorderResults = await api.query.phalaWorld.preorderResults.entries(ferdie.address);
+        userPreorderResults
+            .map(([key, value]) =>
+                [key.args[0].toString(), key.args[1].toNumber(), value.toHuman()]
+            ).forEach(([account, preorderId, preorderInfo]) => {
+            console.log({
+                account,
+                preorderId,
+                preorderInfo,
+            })
+        })
     }
 
 

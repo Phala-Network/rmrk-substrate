@@ -106,7 +106,7 @@ async function main() {
         // output the result
         console.log(`${u8aToHex(metadataSig)}\n${u8aToHex(metadataType)} is ${isValid ? 'valid' : 'invalid'}`);
         // Mint a Spirit
-        //await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+        await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 
     // mint spirit nft
@@ -178,8 +178,12 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        await api.tx.phalaWorld.preorderOriginOfShell()
-            .signAndSend(user);
+        const metadata = 'I am Hero';
+        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
+        const metadataSig = overlord.sign(metadataType);
+        const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
+        await api.tx.phalaWorld.preorderOriginOfShell('Pandroid', 'HackerWizard', nftSignedMetadata)
+            .signAndSend(ferdie);
     }
 
     // privileged function preorder status to declare Chosen or NotChosen preorders
