@@ -131,9 +131,9 @@ async function main() {
         preorderKeys
             .map(([key, value]) =>
                 [key.args[0].toNumber(), value.toHuman()]
-            ).forEach(([account, preorderInfo]) => {
+            ).forEach(([preorderId, preorderInfo]) => {
             console.log({
-                account,
+                preorderId,
                 preorderInfo,
             })
         })
