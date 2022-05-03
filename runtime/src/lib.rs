@@ -321,11 +321,11 @@ impl pallet_rmrk_core::Config for Runtime {
 
 parameter_types! {
 	pub const SecondsPerEra: u64 = SECONDS_PER_DAY;
-	pub const FounderEggPrice: Balance = 10_000 * DOLLARS;
-	pub const LegendaryEggPrice: Balance = 1_000 * DOLLARS;
-	pub const NormalEggPrice: Balance = 100 * DOLLARS;
-	pub const MaxMintPerRace: u32 = 2_088;
-	pub const MaxMintPerCareer: u32 = 8_888;
+	pub const MinBalanceToClaimSpirit: Balance = 10 * DOLLARS;
+	pub const LegendaryOriginOfShellPrice: Balance = 3_000 * DOLLARS;
+	pub const MagicOriginOfShellPrice: Balance = 2_000 * DOLLARS;
+	pub const HeroOriginOfShellPrice: Balance = 300 * DOLLARS;
+	pub const MaxMintPerRace: u32 = 2_200;
 	pub const FoodPerEra: u8 = 5;
 	pub const MaxFoodFedPerEra: u16 = 20;
 	pub const MaxFoodFeedSelf: u8 = 2;
@@ -336,11 +336,11 @@ impl pallet_phala_world::Config for Runtime {
 	type Currency = Balances;
 	type Time = pallet_timestamp::Pallet<Runtime>;
 	type SecondsPerEra = SecondsPerEra;
-	type FounderEggPrice = FounderEggPrice;
-	type LegendaryEggPrice = LegendaryEggPrice;
-	type NormalEggPrice = NormalEggPrice;
+	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
+	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
+	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
+	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
 	type MaxMintPerRace = MaxMintPerRace;
-	type MaxMintPerCareer = MaxMintPerCareer;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;

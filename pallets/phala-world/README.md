@@ -2,13 +2,13 @@
 
 ## Types
 ```rust
-pub enum EggType {
-    /// Egg is a normal egg
-    Normal,
-    /// Egg is a legendary egg
+pub enum OriginOfShellType {
+    /// Origin of Shell type is Hero
+    Hero,
+    /// Origin of Shell type is Magic
+    Magic,
+    /// Origin of Shell is Legendary
     Legendary,
-    /// Egg is a founder egg
-    Founder,
 }
 
 /// Four Races to choose from
@@ -36,15 +36,15 @@ pub enum CareerType {
 /// Seconds per Era that will increment the Era storage value every interval
 #[pallet::constant]
 type SecondsPerEra: Get<u64>;
-/// Price of Founder Egg Price
+/// Price of Legendary Origin of Shell
 #[pallet::constant]
-type FounderEggPrice: Get<BalanceOf<Self>>;
-/// Price of Legendary Egg Price
+type LegendaryOriginOfShellPrice: Get<BalanceOf<Self>>;
+/// Price of Magic Origin of Shell
 #[pallet::constant]
-type LegendaryEggPrice: Get<BalanceOf<Self>>;
-/// Price of Normal Egg Price
+type MagicOriginOfShellPrice: Get<BalanceOf<Self>>;
+/// Price of Hero Origin of Shell
 #[pallet::constant]
-type NormalEggPrice: Get<BalanceOf<Self>>;
+type HeroOriginOfShellPrice: Get<BalanceOf<Self>>;
 /// Max mint per Race
 #[pallet::constant]
 type MaxMintPerRace: Get<u32>;
@@ -54,10 +54,10 @@ type MaxMintPerCareer: Get<u32>;
 /// Amount of food per Era
 #[pallet::constant]
 type FoodPerEra: Get<u8>;
-/// Max food an Egg can be fed per day
+/// Max food an Origin Of Shell can be fed per day
 #[pallet::constant]
 type MaxFoodFedPerEra: Get<u16>;
-/// Max food to feed your own Egg
+/// Max food to feed your own Origin Of Shell
 #[pallet::constant]
 type MaxFoodFeedSelf: Get<u8>;
 ```
@@ -69,10 +69,10 @@ type MaxFoodFeedSelf: Get<u8>;
 #[pallet::getter(fn claimed_spirits)]
 pub type ClaimedSpirits<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
-/// Stores all of the valid claimed Eggs from the whitelist or preorder
+/// Stores all of the valid claimed Origin Of Shells from the whitelist or preorder
 #[pallet::storage]
-#[pallet::getter(fn claimed_eggs)]
-pub type ClaimedEggs<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
+#[pallet::getter(fn claimed_origin_of_shells)]
+pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
 /// Preorder index that is the key to the Preorders StorageMap
 #[pallet::storage]
@@ -83,12 +83,6 @@ pub type PreorderIndex<T: Config> = StorageValue<_, PreorderId, ValueQuery>;
 #[pallet::storage]
 #[pallet::getter(fn preorders)]
 pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, PreorderInfoOf<T>>;
-
-/// Stores all the Eggs and the information about the Egg pertaining to Hatch times and feeding
-#[pallet::storage]
-#[pallet::getter(fn eggs)]
-pub type Eggs<T: Config> =
-StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, EggInfo>;
 
 /// Food per Owner where an owner gets 5 food per era
 #[pallet::storage]
@@ -110,15 +104,15 @@ pub type Era<T: Config> = StorageValue<_, u64, ValueQuery>;
 #[pallet::getter(fn can_claim_spirits)]
 pub type CanClaimSpirits<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-/// Rare Eggs can be purchased
+/// Rare Origin of Shells can be purchased
 #[pallet::storage]
-#[pallet::getter(fn can_purchase_rare_eggs)]
-pub type CanPurchaseRareEggs<T: Config> = StorageValue<_, bool, ValueQuery>;
+#[pallet::getter(fn can_purchase_rare_origin_of_shells)]
+pub type CanPurchaseRareOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-/// Eggs can be preordered
+/// Origin of Shells can be preordered
 #[pallet::storage]
-#[pallet::getter(fn can_preorder_eggs)]
-pub type CanPreorderEggs<T: Config> = StorageValue<_, bool, ValueQuery>;
+#[pallet::getter(fn can_preorder_origin_of_shells)]
+pub type CanPreorderOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
 /// Race Type count
 #[pallet::storage]
@@ -140,10 +134,10 @@ pub(super) type Overlord<T: Config> = StorageValue<_, T::AccountId, OptionQuery>
 #[pallet::getter(fn spirit_collection_id)]
 pub type SpiritCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
 
-/// Egg Collection ID
+/// Origin of Shell Collection ID
 #[pallet::storage]
-#[pallet::getter(fn egg_collection_id)]
-pub type EggCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
+#[pallet::getter(fn origin_of_shell_collection_id)]
+pub type OriginOfShellCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>;
 ```
 
 ## Errors
@@ -153,24 +147,24 @@ pub type EggCollectionId<T: Config> = StorageValue<_, CollectionId, OptionQuery>
 pub enum Error<T> {
     WorldClockAlreadySet,
     SpiritClaimNotAvailable,
-    RareEggPurchaseNotAvailable,
-    PreorderEggNotAvailable,
+    RareOriginOfShellPurchaseNotAvailable,
+    PreorderOriginOfShellNotAvailable,
     SpiritAlreadyClaimed,
     ClaimVerificationFailed,
     InvalidPurchase,
     NoAvailablePreorderId,
     RaceMintMaxReached,
     CareerMintMaxReached,
-    CannotHatchEgg,
-    CannotSendFoodToEgg,
+    CannotHatchOriginOfShell,
+    CannotSendFoodToOriginOfShell,
     NoFoodAvailable,
     OverlordNotSet,
     RequireOverlordAccount,
     InvalidStatusType,
     SpiritCollectionNotSet,
     SpiritCollectionIdAlreadySet,
-    EggCollectionNotSet,
-    EggCollectionIdAlreadySet,
+    OriginOfShellCollectionNotSet,
+    OriginOfShellCollectionIdAlreadySet,
 }
 ```
 
@@ -179,62 +173,71 @@ pub enum Error<T> {
 Claim a spirit for users that are on the whitelist.
 ```rust
 origin: OriginFor<T>,
-serial_id: SerialId,
-signature: sr25519::Signature,
-metadata: BoundedVec<u8, T::StringLimit>,
+ticket: Option<ClaimSpiritTicket<T::AccountId>>,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
-### buy_rare_egg
-Buy a rare egg of either type Legendary or Founder.
+### buy_rare_origin_of_shell
+Buy a rare origin of shell of either type Magic or Legendary.
 ```rust
 origin: OriginFor<T>,
-egg_type: EggType,
+origin_of_shell_type: OriginOfShellType,
 race: RaceType,
 career: CareerType,
-metadata: BoundedVec<u8, T::StringLimit>,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
-### preorder_egg
-Preorder an Egg for eligible users
+### purchase_hero_origin_of_shell
+```rust
+origin: OriginFor<T>,
+whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
+race: RaceType,
+career: CareerType,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
+```
+
+
+### preorder_origin_of_shell
+Preorder an OriginOfShell for eligible users
 ```rust
 origin: OriginFor<T>,
 race: RaceType,
 career: CareerType,
-metadata: BoundedVec<u8, T::StringLimit>,
+metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
-### mint_eggs
-This is an admin only function that will be called to do a bulk minting of all preordered egg
+### mint_origin_of_shells
+This is an admin only function that will be called to do a bulk minting of all preordered origin of shell
 ```rust
 origin: OriginFor<T>
 ```
 
-### start_hatching
-Initiate the hatching phase for an owner's Egg
+### start_incubation
+Initiate the incubation phase for an owner's OriginOfShell
 ```rust
 origin: OriginFor<T>,
 collection_id: CollectionId,
 nft_id: NftId,
 ```
 
-### feed_egg
-Feed another egg to the current egg being hatched.
+### feed_origin_of_shell
+Feed another origin of shell to the current origin of shell being incubated.
 ```rust
 origin: OriginFor<T>,
 collection_id: CollectionId,
 nft_id: NftId,
 ```
 
-### hatch_egg
-Hatch the egg that is currently being hatched.
+### awaken_origin_of_shell
+Hatch the origin of shell that is currently being incubated.
 ```rust
 origin: OriginFor<T>,
 collection_id: CollectionId,
 nft_id: NftId,
 ```
 
-### update_hatch_time
-This is an admin function to update eggs hatch times based on being in the top 10 of fed eggs within that era
+### update_incubation_time
+This is an admin function to update origin of shells incubation times based on being in the top 10 of fed origin of shells within that era
 ```rust
 origin: OriginFor<T>,
 collection_id: CollectionId,
@@ -256,7 +259,7 @@ origin: OriginFor<T>,
 ```
 
 ### set_status_type
-Privileged function to set the status for one of the defined StatusTypes like ClaimSpirits, PurchaseRareEggs, or PreorderEggs
+Privileged function to set the status for one of the defined StatusTypes like ClaimSpirits, PurchaseRareOriginOfShells, or PreorderOriginOfShells
 ```rust
 origin: OriginFor<T>,
 status: bool,
@@ -270,8 +273,8 @@ origin: OriginFor<T>,
 collection_id: CollectionId,
 ```
 
-### set_egg_collection_id
-Privileged function to set the collection id for the Egg collection
+### set_origin_of_shell_collection_id
+Privileged function to set the collection id for the OriginOfShell collection
 ```rust
 origin: OriginFor<T>,
 collection_id: CollectionId,

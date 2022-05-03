@@ -4,17 +4,17 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as PhalaWorld;
-use frame_benchmarking::{benchmarks, whitelisted_caller};
-use frame_system::RawOrigin;
+use frame_benchmarking::{benchmarks, whitelisted_caller, impl_benchmark_test_suite};
+use frame_system::RawOrigin as SystemOrigin;
+
 
 benchmarks! {
-	do_something {
-		let s in 0 .. 100;
-		let caller: T::AccountId = whitelisted_caller();
-	}: _(RawOrigin::Signed(caller), s)
-	verify {
-		assert_eq!(Something::<T>::get(), Some(s));
+	where_clause { where
+		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>
 	}
+	set_overlord {
+		let caller: T::AccountId = whitelisted_caller();
+	}: _(SystemOrigin::Root, caller.clone())
 
-	impl_benchmark_test_suite!(PhalaWorld, crate::mock::new_test_ext(), crate::mock::Test);
+impl_benchmark_test_suite!(PhalaWorld, crate::mock::ExtBuilder::default().build(whitelisted_caller()), crate::mock::Test);
 }
