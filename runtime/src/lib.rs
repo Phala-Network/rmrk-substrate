@@ -44,7 +44,7 @@ pub use pallet_rmrk_core;
 pub use pallet_rmrk_equip;
 pub use pallet_rmrk_market;
 
-pub use pallet_phala_world;
+pub use pallet_phala_world::{self, pallet_pw_nft_sale};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -330,7 +330,7 @@ parameter_types! {
 	pub const MaxFoodFedPerEra: u16 = 20;
 	pub const MaxFoodFeedSelf: u8 = 2;
 }
-impl pallet_phala_world::Config for Runtime {
+impl pallet_pw_nft_sale::Config for Runtime {
 	type Event = Event;
 	type OverlordOrigin = frame_system::EnsureRoot<AccountId>;
 	type Currency = Balances;
@@ -420,7 +420,7 @@ construct_runtime!(
 		RmrkEquip: pallet_rmrk_equip::{Pallet, Call, Event<T>, Storage},
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>, Storage},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Storage, Event<T>},
-		PhalaWorld: pallet_phala_world::{Pallet, Call, Storage, Event<T>},
+		PWNftSale: pallet_pw_nft_sale::{Pallet, Call, Storage, Event<T>},
 		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
 		Utility: pallet_utility::{Pallet, Call, Storage, Event},
 	}
@@ -602,7 +602,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			list_benchmark!(list, extra, pallet_template, TemplateModule);
-			list_benchmark!(list, extra, pallet_phala_world, PhalaWorld);
+			//list_benchmark!(list, extra, pallet_pw_nft_sale, PWNftSale);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -641,7 +641,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_template, TemplateModule);
-			add_benchmark!(params, batches, pallet_phala_world, PhalaWorld);
+			//add_benchmark!(params, batches, pallet_phala_world, PhalaWorld);
 
 			Ok(batches)
 		}

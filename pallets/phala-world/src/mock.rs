@@ -1,5 +1,5 @@
 use super::*;
-use crate as pallet_phala_world;
+use crate::pallet_pw_nft_sale;
 
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -36,7 +36,7 @@ frame_support::construct_runtime!(
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Event<T>},
-		PhalaWorld: pallet_phala_world::{Pallet, Call, Storage, Event<T>},
+		PWNftSale: pallet_pw_nft_sale::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -170,12 +170,12 @@ parameter_types! {
 	pub const MaxFoodFeedSelf: u8 = 1;
 }
 
-impl Config for Test {
+impl pallet_pw_nft_sale::Config for Test {
 	type Event = Event;
 	type OverlordOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
-	type SecondsPerEra = SecondsPerEra;
 	type Time = pallet_timestamp::Pallet<Test>;
+	type SecondsPerEra = SecondsPerEra;
 	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
@@ -193,7 +193,7 @@ pub fn fast_forward_to(n: u64) {
 	while System::block_number() < n {
 		System::set_block_number(System::block_number() + 1);
 		System::on_finalize(System::block_number());
-		PhalaWorld::on_finalize(System::block_number());
+		PWNftSale::on_finalize(System::block_number());
 		Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
 	}
 }
@@ -239,7 +239,7 @@ impl ExtBuilder {
 	pub fn build(self, overlord_key: AccountId32) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
-		pallet_phala_world::GenesisConfig::<Test> {
+		pallet_pw_nft_sale::GenesisConfig::<Test> {
 			zero_day: None,
 			overlord: Some(overlord_key),
 			era: 0,
