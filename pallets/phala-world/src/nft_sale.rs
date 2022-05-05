@@ -1352,8 +1352,7 @@ where
 
 	/// Helper function to get the Overlord admin account
 	fn get_overlord_account() -> Result<T::AccountId, Error<T>> {
-		let overlord = Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)?;
-		Ok(overlord)
+		Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)
 	}
 
 	/// Set Spirit Claims with the Overlord admin Account to allow users to claim their
