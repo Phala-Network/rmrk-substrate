@@ -312,12 +312,16 @@ pub mod pallet {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
+			race: RaceType,
+			career: CareerType,
 		},
 		/// Hero Origin of Shell has been purchased
 		HeroOriginOfShellPurchased {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
+			race: RaceType,
+			career: CareerType,
 		},
 		/// A chance to get an Origin of Shell through preorder
 		OriginOfShellPreordered {
@@ -329,6 +333,8 @@ pub mod pallet {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
+			race: RaceType,
+			career: CareerType,
 		},
 		/// Spirit collection id was set
 		SpiritCollectionIdSet {
@@ -428,6 +434,7 @@ pub mod pallet {
 		RareOriginOfShellPurchaseNotAvailable,
 		HeroOriginOfShellPurchaseNotAvailable,
 		PreorderOriginOfShellNotAvailable,
+		PreorderClaimNotAvailable,
 		SpiritAlreadyClaimed,
 		InvalidSpiritClaim,
 		InvalidMetadata,
@@ -615,13 +622,15 @@ pub mod pallet {
 
 			// Update storage
 			Self::decrement_race_type_left(origin_of_shell_type.clone(), race.clone())?;
-			Self::increment_race_type(origin_of_shell_type, race)?;
-			Self::increment_career_type(career)?;
+			Self::increment_race_type(origin_of_shell_type, race.clone())?;
+			Self::increment_career_type(career.clone())?;
 
 			Self::deposit_event(Event::RareOriginOfShellPurchased {
 				collection_id: origin_of_shell_collection_id,
 				nft_id,
 				owner: sender,
+				race,
+				career,
 			});
 
 			Ok(())
@@ -711,13 +720,15 @@ pub mod pallet {
 
 			// Update storage
 			Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
-			Self::increment_race_type(OriginOfShellType::Hero, race)?;
-			Self::increment_career_type(career)?;
+			Self::increment_race_type(OriginOfShellType::Hero, race.clone())?;
+			Self::increment_career_type(career.clone())?;
 
 			Self::deposit_event(Event::HeroOriginOfShellPurchased {
 				collection_id: origin_of_shell_collection_id,
 				nft_id,
 				owner: sender,
+				race,
+				career,
 			});
 
 			Ok(())
@@ -849,7 +860,10 @@ pub mod pallet {
 			// Check if any preorders were chosen
 			let preorders_iter = PreorderResults::<T>::drain_prefix(sender.clone());
 			for (preorder_id, preorder) in preorders_iter {
-				let preorder_status = preorder.clone().preorder_status;
+				let preorder_clone = preorder.clone();
+				let preorder_status = preorder_clone.preorder_status;
+				let race = preorder_clone.race;
+				let career = preorder_clone.career;
 				match preorder_status {
 					PreorderStatus::Chosen => {
 						// Next NFT ID of Collection
@@ -875,11 +889,25 @@ pub mod pallet {
 							None,
 							preorder.metadata,
 						)?;
+						// Set Origin of Shell Type, Race and Career attributes for NFT
+						Self::set_origin_of_shell_attributes(
+							origin_of_shell_collection_id,
+							nft_id,
+							OriginOfShellType::Hero,
+							race.clone(),
+							career.clone(),
+						)?;
+						// Update storage
+						Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
+						Self::increment_race_type(OriginOfShellType::Hero, race.clone())?;
+						Self::increment_career_type(career.clone())?;
 
 						Self::deposit_event(Event::OriginOfShellMinted {
 							collection_id: origin_of_shell_collection_id,
 							nft_id,
 							owner: preorder.owner,
+							race,
+							career,
 						});
 					},
 					PreorderStatus::NotChosen => {

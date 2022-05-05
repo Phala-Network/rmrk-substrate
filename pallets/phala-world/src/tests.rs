@@ -291,6 +291,8 @@ fn purchase_rare_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
+				race: RaceType::AISpectre,
+				career: CareerType::HackerWizard,
 			},
 		));
 		// BOB tries to buy Legendary Origin of Shell but not enough funds
@@ -318,6 +320,8 @@ fn purchase_rare_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
+				race: RaceType::Cyborg,
+				career: CareerType::HardwareDruid,
 			},
 		));
 		// CHARLIE tries to purchase Hero origin of shell and fails
@@ -345,6 +349,8 @@ fn purchase_rare_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 2,
 				owner: CHARLIE,
+				race: RaceType::Pandroid,
+				career: CareerType::HackerWizard,
 			},
 		));
 		// Check Balances of ALICE and BOB
@@ -410,6 +416,8 @@ fn purchase_hero_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 0,
 				owner: BOB,
+				race: RaceType::AISpectre,
+				career: CareerType::HackerWizard,
 			},
 		));
 		// BOB cannot purchase another Origin of Shell
@@ -683,6 +691,8 @@ fn mint_preorder_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
+				race: RaceType::AISpectre,
+				career: CareerType::HackerWizard,
 			},
 		));
 		// BOB claims origin of shells
@@ -693,6 +703,8 @@ fn mint_preorder_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
+				race: RaceType::Cyborg,
+				career: CareerType::HardwareDruid,
 			},
 		));
 		// CHARLIE should be able to make a call, but the transaction will not trigger an error
@@ -705,6 +717,8 @@ fn mint_preorder_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
+				race: RaceType::Cyborg,
+				career: CareerType::HardwareDruid,
 			},
 		));
 		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
@@ -834,6 +848,8 @@ fn claim_refund_preorder_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
+				race: RaceType::AISpectre,
+				career: CareerType::HackerWizard,
 			},
 		));
 		// BOB claims origin of shells
@@ -844,6 +860,8 @@ fn claim_refund_preorder_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
+				race: RaceType::Cyborg,
+				career: CareerType::HardwareDruid,
 			},
 		));
 		// CHARLIE should be able to make a call, but the transaction will not trigger an error
@@ -856,6 +874,8 @@ fn claim_refund_preorder_origin_of_shell_works() {
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
+				race: RaceType::Cyborg,
+				career: CareerType::HardwareDruid,
 			},
 		));
 		// CHARLIE still has a reserved balance so he can claim his refund
