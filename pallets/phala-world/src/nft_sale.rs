@@ -623,7 +623,7 @@ pub mod pallet {
 			// Update storage
 			Self::decrement_race_type_left(origin_of_shell_type.clone(), race.clone())?;
 			Self::increment_race_type(origin_of_shell_type, race.clone())?;
-			Self::increment_career_type(career.clone())?;
+			Self::increment_career_type(career.clone());
 
 			Self::deposit_event(Event::RareOriginOfShellPurchased {
 				collection_id: origin_of_shell_collection_id,
@@ -721,7 +721,7 @@ pub mod pallet {
 			// Update storage
 			Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
 			Self::increment_race_type(OriginOfShellType::Hero, race.clone())?;
-			Self::increment_career_type(career.clone())?;
+			Self::increment_career_type(career.clone());
 
 			Self::deposit_event(Event::HeroOriginOfShellPurchased {
 				collection_id: origin_of_shell_collection_id,
@@ -804,21 +804,29 @@ pub mod pallet {
 		#[transactional]
 		pub fn set_preorder_status(
 			origin: OriginFor<T>,
-			preorder_id: PreorderId,
-			status: PreorderStatus,
+			preorder_statuses: Vec<(PreorderId, PreorderStatus)>,
 		) -> DispatchResult {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
 			Self::ensure_overlord(sender)?;
-			// Ensure value exists
-			ensure!(Preorders::<T>::contains_key(preorder_id), Error::<T>::NoAvailablePreorderId);
-			// Change status of preorder and add to PreorderResult
-			let mut preorder_info =
-				Preorders::<T>::take(preorder_id).ok_or(Error::<T>::NoAvailablePreorderId)?;
-			preorder_info.preorder_status = status.clone();
-			PreorderResults::<T>::insert(&preorder_info.owner, preorder_id, &preorder_info);
+			// Iterate through the preorder_statuses Vec
+			for (preorder_id, preorder_status) in preorder_statuses {
+				// Ensure value exists
+				ensure!(
+					Preorders::<T>::contains_key(preorder_id),
+					Error::<T>::NoAvailablePreorderId
+				);
+				// Change status of preorder and add to PreorderResult
+				let mut preorder_info =
+					Preorders::<T>::take(preorder_id).ok_or(Error::<T>::NoAvailablePreorderId)?;
+				preorder_info.preorder_status = preorder_status.clone();
+				PreorderResults::<T>::insert(&preorder_info.owner, preorder_id, &preorder_info);
 
-			Self::deposit_event(Event::PreorderResultChanged { preorder_id, status });
+				Self::deposit_event(Event::PreorderResultChanged {
+					preorder_id,
+					status: preorder_status,
+				});
+			}
 
 			Ok(())
 		}
@@ -900,7 +908,7 @@ pub mod pallet {
 						// Update storage
 						Self::decrement_race_type_left(OriginOfShellType::Hero, race.clone())?;
 						Self::increment_race_type(OriginOfShellType::Hero, race.clone())?;
-						Self::increment_career_type(career.clone())?;
+						Self::increment_career_type(career.clone());
 
 						Self::deposit_event(Event::OriginOfShellMinted {
 							collection_id: origin_of_shell_collection_id,
@@ -1177,25 +1185,25 @@ pub mod pallet {
 				RaceType::AISpectre,
 				for_sale_count,
 				giveaway_count,
-			)?;
+			);
 			Self::update_nft_sale_info(
 				origin_of_shell_type.clone(),
 				RaceType::Cyborg,
 				for_sale_count,
 				giveaway_count,
-			)?;
+			);
 			Self::update_nft_sale_info(
 				origin_of_shell_type.clone(),
 				RaceType::Pandroid,
 				for_sale_count,
 				giveaway_count,
-			)?;
+			);
 			Self::update_nft_sale_info(
 				origin_of_shell_type.clone(),
 				RaceType::XGene,
 				for_sale_count,
 				giveaway_count,
-			)?;
+			);
 
 			Self::deposit_event(Event::OriginOfShellInventoryUpdated { origin_of_shell_type });
 
@@ -1316,7 +1324,7 @@ where
 	/// Verify the NFT metadata to ensure the metadata is signed and can be verified against the
 	/// expected metadata
 	///
-	/// Paraemeters:
+	/// Parameters:
 	/// - overlord: Overlord admin account
 	/// - nft_metadata: NftSaleMetadata struct that has the metadata and signature fields
 	pub fn verify_nft_metadata(
@@ -1432,7 +1440,6 @@ where
 	fn set_initial_origin_of_shell_inventory() -> DispatchResult {
 		// 3 OriginOfShellType Hero, Magic & Legendary and 4 different RaceType Cyborg, AISpectre,
 		// XGene & Pandroid
-		//
 		ensure!(
 			!IsOriginOfShellsInventorySet::<T>::get(),
 			Error::<T>::OriginOfShellInventoryAlreadySet
@@ -1533,22 +1540,15 @@ where
 		race: RaceType,
 		for_sale_count: u32,
 		giveaway_count: u32,
-	) -> DispatchResult {
-		OriginOfShellsInventory::<T>::try_mutate_exists(
-			origin_of_shell_type,
-			race,
-			|nft_sale_info| -> DispatchResult {
-				if let Some(nft_sale_info) = nft_sale_info {
-					nft_sale_info.race_for_sale_count =
-						nft_sale_info.race_for_sale_count.saturating_add(for_sale_count);
-					nft_sale_info.race_giveaway_count =
-						nft_sale_info.race_giveaway_count.saturating_add(giveaway_count);
-				}
-				Ok(())
-			},
-		)?;
-
-		Ok(())
+	) {
+		OriginOfShellsInventory::<T>::mutate(origin_of_shell_type, race, |nft_sale_info| {
+			if let Some(nft_sale_info) = nft_sale_info {
+				nft_sale_info.race_for_sale_count =
+					nft_sale_info.race_for_sale_count.saturating_add(for_sale_count);
+				nft_sale_info.race_giveaway_count =
+					nft_sale_info.race_giveaway_count.saturating_add(giveaway_count);
+			}
+		});
 	}
 
 	/// Set the origin of shell type, race and career attributes for a Origin of Shell NFT
@@ -1613,13 +1613,11 @@ where
 	///
 	/// Parameters:
 	/// - `career`: The Career to increment count
-	fn decrement_career_type(career: CareerType) -> DispatchResult {
+	fn decrement_career_type(career: CareerType) {
 		CareerTypeCount::<T>::mutate(career, |career_count| {
 			*career_count -= 1;
 			*career_count
 		});
-
-		Ok(())
 	}
 
 	/// Increment RaceType count for the `race`
@@ -1649,13 +1647,11 @@ where
 	///
 	/// Parameters:
 	/// - `career`: The Career to increment count
-	fn increment_career_type(career: CareerType) -> DispatchResult {
+	fn increment_career_type(career: CareerType) {
 		CareerTypeCount::<T>::mutate(career, |career_count| {
 			*career_count += 1;
 			*career_count
 		});
-
-		Ok(())
 	}
 
 	/// Decrement RaceType count for the `race`

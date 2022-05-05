@@ -632,37 +632,16 @@ fn mint_preorder_origin_of_shell_works() {
 			CareerType::HackerWizard,
 			hero_nft_sale_metadata.clone()
 		));
+		let preorder_statuses: Vec<(PreorderId, PreorderStatus)> = vec![
+			(0u32, PreorderStatus::Chosen),
+			(1u32, PreorderStatus::NotChosen),
+			(2u32, PreorderStatus::Chosen),
+		];
 		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
-		assert_ok!(PWNftSale::set_preorder_status(
-			Origin::signed(OVERLORD),
-			2u32,
-			PreorderStatus::Chosen
-		));
+		assert_ok!(PWNftSale::set_preorder_status(Origin::signed(OVERLORD), preorder_statuses));
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
 				preorder_id: 2u32,
-				status: PreorderStatus::Chosen,
-			},
-		));
-		assert_ok!(PWNftSale::set_preorder_status(
-			Origin::signed(OVERLORD),
-			1u32,
-			PreorderStatus::NotChosen
-		));
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
-				preorder_id: 1u32,
-				status: PreorderStatus::NotChosen,
-			},
-		));
-		assert_ok!(PWNftSale::set_preorder_status(
-			Origin::signed(OVERLORD),
-			0u32,
-			PreorderStatus::Chosen
-		));
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
-				preorder_id: 0u32,
 				status: PreorderStatus::Chosen,
 			},
 		));
@@ -789,37 +768,17 @@ fn claim_refund_preorder_origin_of_shell_works() {
 			CareerType::HackerWizard,
 			hero_nft_sale_metadata.clone()
 		));
+		// Preorder status Vec
+		let preorder_statuses: Vec<(PreorderId, PreorderStatus)> = vec![
+			(0u32, PreorderStatus::Chosen),
+			(1u32, PreorderStatus::NotChosen),
+			(2u32, PreorderStatus::Chosen),
+		];
 		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
-		assert_ok!(PWNftSale::set_preorder_status(
-			Origin::signed(OVERLORD),
-			2u32,
-			PreorderStatus::Chosen
-		));
+		assert_ok!(PWNftSale::set_preorder_status(Origin::signed(OVERLORD), preorder_statuses,));
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
 				preorder_id: 2u32,
-				status: PreorderStatus::Chosen,
-			},
-		));
-		assert_ok!(PWNftSale::set_preorder_status(
-			Origin::signed(OVERLORD),
-			1u32,
-			PreorderStatus::NotChosen
-		));
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
-				preorder_id: 1u32,
-				status: PreorderStatus::NotChosen,
-			},
-		));
-		assert_ok!(PWNftSale::set_preorder_status(
-			Origin::signed(OVERLORD),
-			0u32,
-			PreorderStatus::Chosen
-		));
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
-				preorder_id: 0u32,
 				status: PreorderStatus::Chosen,
 			},
 		));
