@@ -164,7 +164,7 @@ parameter_types! {
 	pub const MagicOriginOfShellPrice: Balance = 1_000 * PHA;
 	pub const HeroOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
-	pub const MaxMintPerCareer: u32 = 2;
+	pub const IterLimit: u32 = 200;
 	pub const FoodPerEra: u8 = 2;
 	pub const MaxFoodFedPerEra: u16 = 2;
 	pub const MaxFoodFeedSelf: u8 = 1;
@@ -180,7 +180,7 @@ impl pallet_pw_nft_sale::Config for Test {
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
 	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
-	type MaxMintPerRace = MaxMintPerRace;
+	type IterLimit = IterLimit;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;

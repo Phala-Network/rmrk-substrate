@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use sp_std::result::Result;
 
 /// Origin of Shell Types of Hero, Magic & Legendary
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum OriginOfShellType {
 	Hero,

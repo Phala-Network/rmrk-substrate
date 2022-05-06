@@ -283,11 +283,11 @@ fn purchase_rare_origin_of_shell_works() {
 			OriginOfShellType::Legendary,
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
-			alice_nft_sale_metadata,
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::RareOriginOfShellPurchased {
+			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Legendary,
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
@@ -302,7 +302,6 @@ fn purchase_rare_origin_of_shell_works() {
 				OriginOfShellType::Legendary,
 				RaceType::Cyborg,
 				CareerType::HardwareDruid,
-				bob_nft_sale_metadata.clone(),
 			),
 			pallet_balances::Error::<Test>::InsufficientBalance
 		);
@@ -312,11 +311,11 @@ fn purchase_rare_origin_of_shell_works() {
 			OriginOfShellType::Magic,
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
-			bob_nft_sale_metadata,
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::RareOriginOfShellPurchased {
+			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Magic,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -331,7 +330,6 @@ fn purchase_rare_origin_of_shell_works() {
 				OriginOfShellType::Hero,
 				RaceType::Pandroid,
 				CareerType::HackerWizard,
-				charlie_nft_sale_metadata.clone(),
 			),
 			Error::<Test>::InvalidPurchase
 		);
@@ -341,11 +339,11 @@ fn purchase_rare_origin_of_shell_works() {
 			OriginOfShellType::Magic,
 			RaceType::Pandroid,
 			CareerType::HackerWizard,
-			charlie_nft_sale_metadata,
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::RareOriginOfShellPurchased {
+			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Magic,
 				collection_id: 1,
 				nft_id: 2,
 				owner: CHARLIE,
@@ -396,7 +394,6 @@ fn purchase_hero_origin_of_shell_works() {
 				bob_whitelist_claim.clone(),
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
-				hero_nft_sale_metadata.clone(),
 			),
 			Error::<Test>::MustOwnSpiritToPurchase
 		);
@@ -408,11 +405,11 @@ fn purchase_hero_origin_of_shell_works() {
 			bob_whitelist_claim.clone(),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
-			hero_nft_sale_metadata.clone(),
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::HeroOriginOfShellPurchased {
+			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 0,
 				owner: BOB,
@@ -427,7 +424,6 @@ fn purchase_hero_origin_of_shell_works() {
 				bob_whitelist_claim,
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
-				hero_nft_sale_metadata,
 			),
 			Error::<Test>::OriginOfShellAlreadyPurchased
 		);
@@ -466,7 +462,6 @@ fn preorder_origin_of_shell_works() {
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -480,7 +475,6 @@ fn preorder_origin_of_shell_works() {
 			Origin::signed(ALICE),
 			RaceType::Pandroid,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -497,7 +491,6 @@ fn preorder_origin_of_shell_works() {
 				Origin::signed(CHARLIE),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
-				hero_nft_sale_metadata
 			),
 			Error::<Test>::NoAvailablePreorderId
 		);
@@ -534,7 +527,6 @@ fn preorder_origin_of_shell_works_2() {
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -548,7 +540,6 @@ fn preorder_origin_of_shell_works_2() {
 			Origin::signed(ALICE),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -565,7 +556,6 @@ fn preorder_origin_of_shell_works_2() {
 				Origin::signed(CHARLIE),
 				RaceType::Pandroid,
 				CareerType::HackerWizard,
-				hero_nft_sale_metadata
 			),
 			Error::<Test>::NoAvailablePreorderId
 		);
@@ -602,7 +592,6 @@ fn mint_preorder_origin_of_shell_works() {
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -616,7 +605,6 @@ fn mint_preorder_origin_of_shell_works() {
 			Origin::signed(CHARLIE),
 			RaceType::Pandroid,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -630,7 +618,6 @@ fn mint_preorder_origin_of_shell_works() {
 			Origin::signed(ALICE),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
-			hero_nft_sale_metadata.clone()
 		));
 		let preorder_statuses: Vec<(PreorderId, PreorderStatus)> = vec![
 			(0u32, PreorderStatus::Chosen),
@@ -653,7 +640,6 @@ fn mint_preorder_origin_of_shell_works() {
 				Origin::signed(ALICE),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
-				hero_nft_sale_metadata.clone()
 			),
 			Error::<Test>::NoAvailablePreorderId
 		);
@@ -667,6 +653,7 @@ fn mint_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
@@ -679,6 +666,7 @@ fn mint_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -693,6 +681,7 @@ fn mint_preorder_origin_of_shell_works() {
 		// Check that last event is the same because CHARLIE was NotChosen
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -738,7 +727,6 @@ fn claim_refund_preorder_origin_of_shell_works() {
 			Origin::signed(BOB),
 			RaceType::Cyborg,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -752,7 +740,6 @@ fn claim_refund_preorder_origin_of_shell_works() {
 			Origin::signed(CHARLIE),
 			RaceType::Pandroid,
 			CareerType::HardwareDruid,
-			hero_nft_sale_metadata.clone()
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
@@ -766,7 +753,6 @@ fn claim_refund_preorder_origin_of_shell_works() {
 			Origin::signed(ALICE),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
-			hero_nft_sale_metadata.clone()
 		));
 		// Preorder status Vec
 		let preorder_statuses: Vec<(PreorderId, PreorderStatus)> = vec![
@@ -790,7 +776,6 @@ fn claim_refund_preorder_origin_of_shell_works() {
 				Origin::signed(ALICE),
 				RaceType::Cyborg,
 				CareerType::HackerWizard,
-				hero_nft_sale_metadata
 			),
 			Error::<Test>::NoAvailablePreorderId
 		);
@@ -804,6 +789,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
@@ -816,6 +802,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -830,6 +817,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		// Check that last event is the same because CHARLIE was NotChosen
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
+				origin_of_shell_type: OriginOfShellType::Hero,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,

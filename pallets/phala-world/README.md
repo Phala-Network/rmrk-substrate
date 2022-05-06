@@ -184,7 +184,6 @@ origin: OriginFor<T>,
 origin_of_shell_type: OriginOfShellType,
 race: RaceType,
 career: CareerType,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 ### purchase_hero_origin_of_shell
@@ -203,7 +202,6 @@ Preorder an OriginOfShell for eligible users
 origin: OriginFor<T>,
 race: RaceType,
 career: CareerType,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 ### mint_origin_of_shells

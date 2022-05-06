@@ -7,7 +7,7 @@ use sp_std::cmp::Eq;
 use crate::{career::CareerType, race::RaceType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum PreorderStatus {
 	Pending,
