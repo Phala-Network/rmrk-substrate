@@ -1535,16 +1535,16 @@ where
 		let overlord = Self::get_overlord_account()?;
 
 		let origin_of_shell_type_key: BoundedVec<u8, T::KeyLimit> =
-			self::Pallet::<T>::to_boundedvec_key("origin_of_shell_type")?;
+			Self::to_boundedvec_key("origin_of_shell_type")?;
 		let origin_of_shell_type_value = origin_of_shell_type
 			.encode()
 			.try_into()
 			.expect("[origin_of_shell_type] should not fail");
 
-		let race_key: BoundedVec<u8, T::KeyLimit> = self::Pallet::<T>::to_boundedvec_key("race")?;
+		let race_key: BoundedVec<u8, T::KeyLimit> = Self::to_boundedvec_key("race")?;
 		let race_value = race.encode().try_into().expect("[race] should not fail");
 
-		let career_key = self::Pallet::<T>::to_boundedvec_key("career")?;
+		let career_key = Self::to_boundedvec_key("career")?;
 		let career_value = career.encode().try_into().expect("[career] should not fail");
 
 		// Set Origin of Shell Type
