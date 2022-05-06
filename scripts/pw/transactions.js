@@ -112,7 +112,7 @@ async function main() {
         // output the result
         console.log(`${u8aToHex(metadataSig)}\n${u8aToHex(metadataType)} is ${isValid ? 'valid' : 'invalid'}`);
         // Mint a Spirit
-        await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+        await api.tx.pwNftSale.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 
     // mint spirit nft
@@ -122,7 +122,7 @@ async function main() {
         // const metadata = '0xCCDD'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        // await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+        // await api.tx.pwNftSale.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 
     // purchase rare origin of shell
@@ -139,7 +139,7 @@ async function main() {
         const metadataSig = overlord.sign(metadataType);
         const isValid = overlord.verify(metadata, metadataSig, overlord.address);
         const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-        await api.tx.phalaWorld.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
+        await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
             .signAndSend(user);
     }
 
@@ -170,10 +170,10 @@ async function main() {
             'metadata': metadataType,
             'signature': metadataSign,
         });
-        //await api.tx.phalaWorld.setStatusType(true, 'PurchaseHeroOriginOfShells')
+        //await api.tx.pwNftSale.setStatusType(true, 'PurchaseHeroOriginOfShells')
         //    .signAndSend(overlord, {nonce: -1});
         // Mint Hero Origin of Shell
-        await api.tx.phalaWorld.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard', nftSignedMetadata)
+        await api.tx.pwNftSale.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard', nftSignedMetadata)
             .signAndSend(ferdie);
     }
 
@@ -188,7 +188,7 @@ async function main() {
         const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
         const metadataSig = overlord.sign(metadataType);
         const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-        await api.tx.phalaWorld.preorderOriginOfShell('Pandroid', 'HackerWizard', nftSignedMetadata)
+        await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard', nftSignedMetadata)
             .signAndSend(ferdie);
     }
 
@@ -196,19 +196,19 @@ async function main() {
     {
         // Preorder id
         // status ['Chosen', 'NotChosen']
-        await api.tx.phalaWorld.setPreorderStatus()
+        await api.tx.pwNftSale.setPreorderStatus()
             .signAndSend(overlord);
     }
 
     // Claim chosen preorders
     {
-        await api.tx.phalaWorld.claimChosenPreorders()
+        await api.tx.pwNftSale.claimChosenPreorders()
             .signAndSend(user);
     }
 
     // Claim refund for not chosen preorders
     {
-        await api.tx.phalaWorld.claimRefundPreorders()
+        await api.tx.pwNftSale.claimRefundPreorders()
             .signAndSend(user);
     }
 }

@@ -89,7 +89,7 @@ async function main() {
 
     // list spirit
     {
-        const spiritCollectionId = await api.query.phalaWorld.spiritCollectionId();
+        const spiritCollectionId = await api.query.pwNftSale.spiritCollectionId();
         if (spiritCollectionId.isSome) {
             const spirit = await api.query.uniques.account.entries(user.address, spiritCollectionId.unwrap());
             spirit
@@ -111,7 +111,7 @@ async function main() {
 
     // list origin of shells
     {
-        const originOfShellCollectionId = await api.query.phalaWorld.originOfShellCollectionId();
+        const originOfShellCollectionId = await api.query.pwNftSale.originOfShellCollectionId();
         if (originOfShellCollectionId.isSome) {
             const spirit = await api.query.uniques.account.entries(user.address, originOfShellCollectionId.unwrap());
             spirit
@@ -133,9 +133,9 @@ async function main() {
 
     // List all preorders before drawing winners
     {
-        const preorderIndex = await api.query.phalaWorld.preorderIndex();
+        const preorderIndex = await api.query.pwNftSale.preorderIndex();
         console.log(`Current preorder index: ${preorderIndex}`);
-        const preorderKeys = await api.query.phalaWorld.preorders.entries();
+        const preorderKeys = await api.query.pwNftSale.preorders.entries();
         preorderKeys
             .map(([key, value]) =>
                 [key.args[0].toNumber(), value.toHuman()]
@@ -161,7 +161,7 @@ async function main() {
     //      }
     // }
     {
-        const userPreorderResults = await api.query.phalaWorld.preorderResults.entries(ferdie.address);
+        const userPreorderResults = await api.query.pwNftSale.preorderResults.entries(ferdie.address);
         userPreorderResults
             .map(([key, value]) =>
                 [key.args[0].toString(), key.args[1].toNumber(), value.toHuman()]
@@ -177,19 +177,19 @@ async function main() {
 
     // List the current Era
     {
-        const currentEra = await api.query.phalaWorld.era();
+        const currentEra = await api.query.pwNftSale.era();
         console.log(`Current era: ${currentEra}`);
     }
 
     // List Zero Day Timestamp
     {
-        const zeroDayTimestamp = await api.query.phalaWorld.zeroDay();
+        const zeroDayTimestamp = await api.query.pwNftSale.zeroDay();
         console.log(`Zero Day: ${zeroDayTimestamp}`);
     }
 
     // List all OriginOfShellsInventory
     {
-        const originOfShellsInventoryLegendary = await api.query.phalaWorld.OriginOfShellsInventory.keys('Legendary');
+        const originOfShellsInventoryLegendary = await api.query.pwNftSale.OriginOfShellsInventory.keys('Legendary');
         originOfShellsInventoryLegendary.forEach(([{ args: race }, _value]) => {
            console.log(`Origin of Shell Type: Legendary\nRace Type: {}`)
         });
@@ -197,31 +197,31 @@ async function main() {
 
     // Can users claim spirit?
     {
-        const canClaimSpirits = await api.query.phalaWorld.canClaimSpirits();
+        const canClaimSpirits = await api.query.pwNftSale.canClaimSpirits();
         console.log(`Can claim spirit states: ${canClaimSpirits}`);
     }
 
     // Can users purchase rare origin of shell?
     {
-        const canPurchaseRareOriginOfShells = await api.query.phalaWorld.canPurchaseRareOriginOfShells();
+        const canPurchaseRareOriginOfShells = await api.query.pwNftSale.canPurchaseRareOriginOfShells();
         console.log(`Can purchase rare origin of shells: ${canPurchaseRareOriginOfShells}`);
     }
 
     // Can users on whitelist purchase hero origin of shell?
     {
-        const canPurchaseHer0OriginOfShells = await api.query.phalaWorld.canPurchaseHeroOriginOfShells();
+        const canPurchaseHer0OriginOfShells = await api.query.pwNftSale.canPurchaseHeroOriginOfShells();
         console.log(`Can whitelist purchase hero origin of shells: ${canPurchaseHer0OriginOfShells}`);
     }
 
     // Can users preorder origin of shell?
     {
-        const canPreorderOriginOfShells = await api.query.phalaWorld.canPreorderOriginOfShells();
+        const canPreorderOriginOfShells = await api.query.pwNftSale.canPreorderOriginOfShells();
         console.log(`Can preorder origin of shells: ${canPreorderOriginOfShells}`);
     }
 
     // Is last day of sale?
     {
-        const isLastDayOfSale = await api.query.phalaWorld.lastDayOfSale();
+        const isLastDayOfSale = await api.query.pwNftSale.lastDayOfSale();
         console.log(`Is last day of sale: ${isLastDayOfSale}`);
     }
 }

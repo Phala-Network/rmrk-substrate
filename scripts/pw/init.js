@@ -34,11 +34,11 @@ async function main() {
     // prep
     {
         await api.tx.sudo.sudo(
-            api.tx.phalaWorld.setOverlord(overlord.address)
+            api.tx.pwNftSale.setOverlord(overlord.address)
         ).signAndSend(root, {nonce: -1});
         await sleep(6000);
 
-        await api.tx.phalaWorld.initializeWorldClock()
+        await api.tx.pwNftSale.initializeWorldClock()
             .signAndSend(overlord, {nonce: -1});
 
         // available states:
@@ -46,7 +46,7 @@ async function main() {
         // PurchaseRareOriginOfShells,
         // PurchaseHeroOriginOfShells,
         // PreorderOriginOfShells,
-        await api.tx.phalaWorld.setStatusType(true, 'ClaimSpirits')
+        await api.tx.pwNftSale.setStatusType(true, 'ClaimSpirits')
             .signAndSend(overlord, {nonce: -1});
 
         // mint spirits NFTs with overlord
@@ -57,7 +57,7 @@ async function main() {
             'PWSPRT'
         ).signAndSend(overlord, {nonce: -1});
         // set the spirits collection id
-        await api.tx.phalaWorld.setSpiritCollectionId(
+        await api.tx.pwNftSale.setSpiritCollectionId(
             0
         ).signAndSend(overlord, {nonce: -1});
         // collection 1: origin of shells
@@ -67,11 +67,11 @@ async function main() {
             'PWOAS'
         ).signAndSend(overlord, {nonce: -1});
         // set the origin of shell collection id
-        await api.tx.phalaWorld.setOriginOfShellCollectionId(
+        await api.tx.pwNftSale.setOriginOfShellCollectionId(
             1
         ).signAndSend(overlord, {nonce: -1});
         // set the initial inventory numbers that will be used until the preorder phase
-        await api.tx.phalaWorld.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
+        await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
     }
 
     // // produce spirit whitelist
@@ -99,7 +99,7 @@ async function main() {
         // const serialId = 1;
         // const signature = '0xAABB';
         // const metadata = '0xCCDD'
-        // await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+        // await api.tx.pwNftSale.claimSpirit(null, nftSignedMetadata).signAndSend(user);
     }
 }
 
