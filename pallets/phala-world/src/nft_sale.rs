@@ -318,6 +318,8 @@ pub mod pallet {
 		/// Spirit has been claimed
 		SpiritClaimed {
 			owner: T::AccountId,
+			collection_id: CollectionId,
+			nft_id: NftId,
 		},
 		/// A chance to get an Origin of Shell through preorder
 		OriginOfShellPreordered {
@@ -471,68 +473,52 @@ pub mod pallet {
 	where
 		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 	{
-		/// Claim a spirit for any account with at least 10 PHA in their account or has a valid
-		/// spirit claim ticket
+		/// Claim a spirit for any account with at least 10 PHA in their account
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic.
-		/// - metadata: The metadata of the account that is claiming the spirit.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn claim_spirit(
+		pub fn claim_spirit(origin: OriginFor<T>) -> DispatchResult {
+			let sender = ensure_signed(origin.clone())?;
+			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
+			let overlord = Self::get_overlord_account()?;
+			// Check Balance has minimum required
+			ensure!(
+				<T as pallet::Config>::Currency::can_reserve(
+					&sender,
+					T::MinBalanceToClaimSpirit::get()
+				),
+				Error::<T>::BelowMinimumBalanceThreshold
+			);
+			// Mint Spirit NFT
+			Self::do_mint_spirit_nft(overlord, sender)?;
+
+			Ok(())
+		}
+
+		/// Redeem spirit function is called when an account has a `SpiritClaimTicket` that enables
+		/// an account to acquire a Spirit NFT without the 10 PHA minimum requirement, such that,
+		/// the account has a valid `SpiritClaimTicket` signed by the Overlord admin account.
+		///
+		/// Parameters:
+		/// - origin: The origin of the extrinsic.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[transactional]
+		pub fn redeem_spirit(
 			origin: OriginFor<T>,
-			ticket: Option<ClaimSpiritTicket<T::AccountId>>,
-			metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
+			redeem_ticket: ClaimSpiritTicket<T::AccountId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
 			let overlord = Self::get_overlord_account()?;
-			// Has Spirit Collection been set
-			let spirit_collection_id = Self::get_spirit_collection_id()?;
-			// Check if sender already claimed a spirit
+			// verify the claim ticket
 			ensure!(
-				pallet_uniques::Pallet::<T>::owned_in_class(&spirit_collection_id, &sender).count() ==
-					0,
-				Error::<T>::SpiritAlreadyClaimed
+				Self::verify_claim_spirit(&overlord, sender.clone(), redeem_ticket),
+				Error::<T>::InvalidSpiritClaim
 			);
-			// Check if there is a claim ticket and verify the claim ticket
-			if let Some(ticket) = ticket {
-				ensure!(
-					Self::verify_claim_spirit(&overlord, sender.clone(), ticket),
-					Error::<T>::InvalidSpiritClaim
-				);
-			} else {
-				// Check Balance has minimum required
-				ensure!(
-					<T as pallet::Config>::Currency::can_reserve(
-						&sender,
-						T::MinBalanceToClaimSpirit::get()
-					),
-					Error::<T>::BelowMinimumBalanceThreshold
-				);
-			}
-			// Verify metadata
-			let mint_metadata = Self::verify_nft_metadata(&overlord, metadata)?;
-
-			// Get NFT ID to be minted
-			let spirit_nft_id = pallet_rmrk_core::NextNftId::<T>::get(spirit_collection_id);
-			// Mint new Spirit and transfer to sender
-			pallet_rmrk_core::Pallet::<T>::mint_nft(
-				Origin::<T>::Signed(overlord.clone()).into(),
-				sender.clone(),
-				spirit_collection_id,
-				None,
-				None,
-				mint_metadata,
-			)?;
-			// Freeze NFT so it cannot be transferred
-			pallet_uniques::Pallet::<T>::freeze(
-				Origin::<T>::Signed(overlord).into(),
-				spirit_collection_id,
-				spirit_nft_id,
-			)?;
-
-			Self::deposit_event(Event::SpiritClaimed { owner: sender });
+			// Mint Spirit NFT
+			Self::do_mint_spirit_nft(overlord, sender)?;
 
 			Ok(())
 		}
@@ -1435,6 +1421,48 @@ where
 					nft_sale_info.race_giveaway_count.saturating_add(giveaway_count);
 			}
 		});
+	}
+
+	/// Mint a Spirit NFT helper function that will mint a Spirit NFT to new owner
+	///
+	/// Parameters:
+	/// - `overlord`: Overlord account owns the NFT collection and will mint the NFT and freeze it
+	/// - `sender`: New owner of the Spirit NFT
+	fn do_mint_spirit_nft(overlord: T::AccountId, sender: T::AccountId) -> DispatchResult {
+		// Has Spirit Collection been set
+		let spirit_collection_id = Self::get_spirit_collection_id()?;
+		// Check if sender already claimed a spirit
+		ensure!(
+			!Self::owns_nft_in_collection(&sender, spirit_collection_id),
+			Error::<T>::SpiritAlreadyClaimed
+		);
+		// Empty metadata
+		let metadata = Self::get_empty_metadata();
+		// Get NFT ID to be minted
+		let spirit_nft_id = pallet_rmrk_core::NextNftId::<T>::get(spirit_collection_id);
+		// Mint new Spirit and transfer to sender
+		pallet_rmrk_core::Pallet::<T>::mint_nft(
+			Origin::<T>::Signed(overlord.clone()).into(),
+			sender.clone(),
+			spirit_collection_id,
+			None,
+			None,
+			metadata,
+		)?;
+		// Freeze NFT so it cannot be transferred
+		pallet_uniques::Pallet::<T>::freeze(
+			Origin::<T>::Signed(overlord).into(),
+			spirit_collection_id,
+			spirit_nft_id,
+		)?;
+
+		Self::deposit_event(Event::SpiritClaimed {
+			owner: sender,
+			collection_id: spirit_collection_id,
+			nft_id: spirit_nft_id,
+		});
+
+		Ok(())
 	}
 
 	/// Mint an Origin of Shell NFT helper function that will take in the shell type, race and

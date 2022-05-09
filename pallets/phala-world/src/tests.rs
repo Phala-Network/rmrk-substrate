@@ -50,18 +50,14 @@ fn mint_collection(account: AccountId32) {
 	RmrkCore::create_collection(Origin::signed(account), bvec![0u8; 20], Some(5), bvec![0u8; 15]);
 }
 
-fn mint_spirit(
-	account: AccountId32,
-	account_overlord_signature: sr25519::Signature,
-	account_metadata: BoundedVec<u8, UniquesStringLimit>,
-) {
+fn mint_spirit(account: AccountId32, spirit_claim_ticket: Option<ClaimSpiritTicket<AccountId32>>) {
 	let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
-	let enc_metadata = Encode::encode(&account_metadata);
-	let metadata_signature = overlord_pair.sign(&enc_metadata);
-	let nft_sale_metadata =
-		NftSaleMetadata { metadata: account_metadata.clone(), signature: metadata_signature };
-	// Mint Spirit NFT
-	assert_ok!(PWNftSale::claim_spirit(Origin::signed(account), None, nft_sale_metadata));
+	if let Some(spirit_claim_ticket) = spirit_claim_ticket {
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), spirit_claim_ticket));
+	} else {
+		// Mint Spirit NFT
+		assert_ok!(PWNftSale::claim_spirit(Origin::signed(account)));
+	}
 }
 
 fn setup_config(enable_status_type: StatusType) {
@@ -150,23 +146,14 @@ fn claimed_spirit_works() {
 		// let overlord_pub = overlord_pair.public();
 		// Set Overlord and configuration then enable spirits to be claimed
 		setup_config(StatusType::ClaimSpirits);
-		let metadata = stb("I am Spirit");
-		let enc_metadata = Encode::encode(&metadata);
-		let metadata_signature = overlord_pair.sign(&enc_metadata);
-		let nft_sale_metadata =
-			NftSaleMetadata { metadata: metadata.clone(), signature: metadata_signature };
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
 		let claim = Encode::encode(&BOB);
 		let overlord_signature = overlord_pair.sign(&claim);
 		let bob_ticket = ClaimSpiritTicket { account: BOB, signature: overlord_signature };
-		// Dispatch a claim spirit from BOB's account
-		assert_ok!(PWNftSale::claim_spirit(
-			Origin::signed(BOB),
-			Some(bob_ticket),
-			nft_sale_metadata.clone()
-		));
+		// Dispatch a redeem_spirit from BOB's account
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), bob_ticket,));
 		// ALICE should be able to claim since she has minimum amount of PHA
-		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE), None, nft_sale_metadata));
+		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE)));
 	});
 }
 
@@ -177,11 +164,6 @@ fn claimed_spirit_twice_fails() {
 		//let overlord_pub = overlord_pair.public();
 		// Set Overlord and configuration then enable spirits to be claimed
 		setup_config(StatusType::ClaimSpirits);
-		let metadata = stb("I am Spirit");
-		let claim = Encode::encode(&metadata.clone());
-		let metadata_signature = overlord_pair.sign(&claim);
-		let nft_sale_metadata =
-			NftSaleMetadata { metadata: metadata.clone(), signature: metadata_signature };
 		//  Only root can set the Overlord Admin account
 		assert_noop!(PWNftSale::set_overlord(Origin::signed(ALICE), BOB), BadOrigin);
 		// Enable spirits to be claimed
@@ -190,10 +172,10 @@ fn claimed_spirit_twice_fails() {
 			Error::<Test>::RequireOverlordAccount
 		);
 		// Dispatch a claim spirit from ALICE's account
-		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE), None, nft_sale_metadata.clone()));
+		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE)));
 		// Fail to dispatch a second claim spirit
 		assert_noop!(
-			PWNftSale::claim_spirit(Origin::signed(ALICE), None, nft_sale_metadata),
+			PWNftSale::claim_spirit(Origin::signed(ALICE)),
 			Error::<Test>::SpiritAlreadyClaimed
 		);
 	});
@@ -247,36 +229,16 @@ fn purchase_rare_origin_of_shell_works() {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		// Set Overlord and configuration then enable purchase of rare origin of shells
 		setup_config(StatusType::PurchaseRareOriginOfShells);
-		// Set metadata for buyers
-		let mut alice_metadata = BoundedVec::default();
-		let mut bob_metadata = BoundedVec::default();
-		let mut charlie_metadata = BoundedVec::default();
-		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		let alice_claim = Encode::encode(&ALICE);
-		let alice_metadata_enc = Encode::encode(&alice_metadata.clone());
-		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
-		let alice_metadata_signature = overlord_pair.sign(&alice_metadata_enc);
 		let bob_claim = Encode::encode(&BOB);
-		let bob_metadata_enc = Encode::encode(&bob_metadata.clone());
 		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let bob_metadata_signature = overlord_pair.sign(&bob_metadata_enc);
+		let bob_ticket = ClaimSpiritTicket { account: BOB, signature: bob_overlord_signature };
 		let charlie_claim = Encode::encode(&CHARLIE);
-		let charlie_metadata_enc = Encode::encode(&charlie_metadata.clone());
 		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
-		let charlie_metadata_signature = overlord_pair.sign(&charlie_metadata_enc);
-		mint_spirit(ALICE, alice_overlord_signature, alice_metadata.clone());
-		mint_spirit(BOB, bob_overlord_signature, bob_metadata.clone());
-		mint_spirit(CHARLIE, charlie_overlord_signature, charlie_metadata.clone());
-		let alice_nft_sale_metadata = NftSaleMetadata {
-			metadata: alice_metadata.clone(),
-			signature: alice_metadata_signature,
-		};
-		let bob_nft_sale_metadata =
-			NftSaleMetadata { metadata: bob_metadata.clone(), signature: bob_metadata_signature };
-		let charlie_nft_sale_metadata = NftSaleMetadata {
-			metadata: charlie_metadata.clone(),
-			signature: charlie_metadata_signature,
-		};
+		let charlie_ticket =
+			ClaimSpiritTicket { account: CHARLIE, signature: charlie_overlord_signature };
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, Some(bob_ticket));
+		mint_spirit(CHARLIE, Some(charlie_ticket));
 		// ALICE purchases Legendary Origin of Shell
 		assert_ok!(PWNftSale::buy_rare_origin_of_shell(
 			Origin::signed(ALICE),
@@ -371,22 +333,14 @@ fn purchase_hero_origin_of_shell_works() {
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
-		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		let spirit_metadata = "I am Spirit";
-		let spirit_metadata = stb(spirit_metadata);
-		let hero_metadata = "I am Hero Origin of Shell";
-		let hero_metadata = stb(hero_metadata);
-		let hero_metadata_enc = Encode::encode(&hero_metadata);
+		metadata_accounts(alice_metadata, bob_metadata.clone(), charlie_metadata);
 		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
 		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let hero_metadata_signature = overlord_pair.sign(&hero_metadata_enc);
 		let bob_whitelist_claim = WhitelistClaim {
 			account: BOB,
 			metadata: bob_metadata.clone(),
 			signature: bob_overlord_signature.clone(),
 		};
-		let hero_nft_sale_metadata =
-			NftSaleMetadata { metadata: hero_metadata, signature: hero_metadata_signature };
 		// BOB cannot purchase another Origin of Shell without Spirit NFT
 		assert_noop!(
 			PWNftSale::buy_hero_origin_of_shell(
@@ -398,7 +352,7 @@ fn purchase_hero_origin_of_shell_works() {
 			Error::<Test>::MustOwnSpiritToPurchase
 		);
 		// BOB mints Spirit NFT
-		mint_spirit(BOB, bob_overlord_signature.clone(), spirit_metadata.clone());
+		mint_spirit(BOB, None);
 		// BOB purchases a Hero NFT
 		assert_ok!(PWNftSale::buy_hero_origin_of_shell(
 			Origin::signed(BOB),
@@ -436,27 +390,9 @@ fn preorder_origin_of_shell_works() {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		// Set Overlord and configuration then enable preorder origin of shells
 		setup_config(StatusType::PreorderOriginOfShells);
-		let mut alice_metadata = BoundedVec::default();
-		let mut bob_metadata = BoundedVec::default();
-		let mut charlie_metadata = BoundedVec::default();
-		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		let alice_claim = Encode::encode(&(ALICE, alice_metadata.clone()));
-		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
-		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
-		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let charlie_claim = Encode::encode(&(CHARLIE, charlie_metadata.clone()));
-		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
-		mint_spirit(ALICE, alice_overlord_signature.clone(), alice_metadata.clone());
-		mint_spirit(BOB, bob_overlord_signature.clone(), bob_metadata.clone());
-		mint_spirit(CHARLIE, charlie_overlord_signature.clone(), charlie_metadata.clone());
-		let spirit_metadata = "I am Spirit";
-		let spirit_metadata = stb(spirit_metadata);
-		let hero_metadata = "I am Hero Origin of Shell";
-		let hero_metadata = stb(hero_metadata);
-		let hero_metadata_enc = Encode::encode(&hero_metadata);
-		let hero_metadata_signature = overlord_pair.sign(&hero_metadata_enc);
-		let hero_nft_sale_metadata =
-			NftSaleMetadata { metadata: hero_metadata, signature: hero_metadata_signature };
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, None);
+		mint_spirit(CHARLIE, None);
 		// BOB preorders an origin of shell
 		assert_ok!(PWNftSale::preorder_origin_of_shell(
 			Origin::signed(BOB),
@@ -503,25 +439,9 @@ fn preorder_origin_of_shell_works_2() {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		// Set Overlord and configuration then enable preorder origin of shells
 		setup_config(StatusType::PreorderOriginOfShells);
-		let mut alice_metadata = BoundedVec::default();
-		let mut bob_metadata = BoundedVec::default();
-		let mut charlie_metadata = BoundedVec::default();
-		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		let alice_claim = Encode::encode(&(ALICE, alice_metadata.clone()));
-		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
-		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
-		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let charlie_claim = Encode::encode(&(CHARLIE, charlie_metadata.clone()));
-		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
-		mint_spirit(ALICE, alice_overlord_signature.clone(), alice_metadata.clone());
-		mint_spirit(BOB, bob_overlord_signature.clone(), bob_metadata.clone());
-		mint_spirit(CHARLIE, charlie_overlord_signature.clone(), charlie_metadata.clone());
-		let hero_metadata = "I am Hero Origin of Shell";
-		let hero_metadata = stb(hero_metadata);
-		let hero_metadata_enc = Encode::encode(&hero_metadata);
-		let hero_metadata_signature = overlord_pair.sign(&hero_metadata_enc);
-		let hero_nft_sale_metadata =
-			NftSaleMetadata { metadata: hero_metadata, signature: hero_metadata_signature };
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, None);
+		mint_spirit(CHARLIE, None);
 		// BOB preorders an origin of shell
 		assert_ok!(PWNftSale::preorder_origin_of_shell(
 			Origin::signed(BOB),
@@ -568,25 +488,9 @@ fn mint_preorder_origin_of_shell_works() {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		// Set Overlord and configuration then enable preorder origin of shells
 		setup_config(StatusType::PreorderOriginOfShells);
-		let mut alice_metadata = BoundedVec::default();
-		let mut bob_metadata = BoundedVec::default();
-		let mut charlie_metadata = BoundedVec::default();
-		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		let alice_claim = Encode::encode(&(ALICE, alice_metadata.clone()));
-		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
-		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
-		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let charlie_claim = Encode::encode(&(CHARLIE, charlie_metadata.clone()));
-		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
-		mint_spirit(ALICE, alice_overlord_signature.clone(), alice_metadata.clone());
-		mint_spirit(BOB, bob_overlord_signature.clone(), bob_metadata.clone());
-		mint_spirit(CHARLIE, charlie_overlord_signature.clone(), charlie_metadata.clone());
-		let hero_metadata = "I am Hero Origin of Shell";
-		let hero_metadata = stb(hero_metadata);
-		let hero_metadata_enc = Encode::encode(&hero_metadata);
-		let hero_metadata_signature = overlord_pair.sign(&hero_metadata_enc);
-		let hero_nft_sale_metadata =
-			NftSaleMetadata { metadata: hero_metadata, signature: hero_metadata_signature };
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, None);
+		mint_spirit(CHARLIE, None);
 		// BOB preorders an origin of shell
 		assert_ok!(PWNftSale::preorder_origin_of_shell(
 			Origin::signed(BOB),
@@ -703,25 +607,9 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		// Set Overlord and configuration then enable preorder origin of shells
 		setup_config(StatusType::PreorderOriginOfShells);
-		let mut alice_metadata = BoundedVec::default();
-		let mut bob_metadata = BoundedVec::default();
-		let mut charlie_metadata = BoundedVec::default();
-		metadata_accounts(alice_metadata.clone(), bob_metadata.clone(), charlie_metadata.clone());
-		let alice_claim = Encode::encode(&(ALICE, alice_metadata.clone()));
-		let alice_overlord_signature = overlord_pair.sign(&alice_claim);
-		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
-		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let charlie_claim = Encode::encode(&(CHARLIE, charlie_metadata.clone()));
-		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
-		mint_spirit(ALICE, alice_overlord_signature.clone(), alice_metadata.clone());
-		mint_spirit(BOB, bob_overlord_signature.clone(), bob_metadata.clone());
-		mint_spirit(CHARLIE, charlie_overlord_signature.clone(), charlie_metadata.clone());
-		let hero_metadata = "I am Hero Origin of Shell";
-		let hero_metadata = stb(hero_metadata);
-		let hero_metadata_enc = Encode::encode(&hero_metadata);
-		let hero_metadata_signature = overlord_pair.sign(&hero_metadata_enc);
-		let hero_nft_sale_metadata =
-			NftSaleMetadata { metadata: hero_metadata, signature: hero_metadata_signature };
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, None);
+		mint_spirit(CHARLIE, None);
 		// BOB preorders an origin of shell
 		assert_ok!(PWNftSale::preorder_origin_of_shell(
 			Origin::signed(BOB),
