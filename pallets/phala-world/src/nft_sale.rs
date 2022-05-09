@@ -960,7 +960,7 @@ pub mod pallet {
 			new_overlord: T::AccountId,
 		) -> DispatchResultWithPostInfo {
 			// This is a public call, so we ensure that the origin is some signed account.
-			ensure_root(origin)?;
+			T::OverlordOrigin::ensure_origin(origin)?;
 			let old_overlord = <Overlord<T>>::get();
 
 			Overlord::<T>::put(&new_overlord);
