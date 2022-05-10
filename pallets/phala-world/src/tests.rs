@@ -9,8 +9,13 @@ use sp_core::{crypto::AccountId32, sr25519, Pair};
 
 use mock::{Call, Event as MockEvent, ExtBuilder, Origin, PWNftSale, Test};
 use rmrk_traits::{
-	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
-	primitives::*, race::RaceType, status_type::StatusType, whitelist::WhitelistClaim,
+	career::CareerType,
+	message::{MessageType, OverlordMessage},
+	origin_of_shell::OriginOfShellType,
+	preorders::PreorderStatus,
+	primitives::*,
+	race::RaceType,
+	status_type::StatusType,
 };
 
 /// Turns a string into a BoundedVec
@@ -52,7 +57,11 @@ fn mint_collection(account: AccountId32) {
 fn mint_spirit(account: AccountId32, spirit_signature: Option<sr25519::Signature>) {
 	let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 	if let Some(spirit_signature) = spirit_signature {
-		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), spirit_signature));
+		let message =
+			OverlordMessage { account: account.clone(), purpose: MessageType::RedeemSpirit };
+		let enc_msg = Encode::encode(&message);
+		let signature = overlord_pair.sign(&enc_msg);
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), signature, message));
 	} else {
 		// Mint Spirit NFT
 		assert_ok!(PWNftSale::claim_spirit(Origin::signed(account)));
@@ -99,7 +108,7 @@ fn setup_config(enable_status_type: StatusType) {
 				StatusType::PurchaseRareOriginOfShells
 			));
 		},
-		StatusType::PurchaseHeroOriginOfShells => {
+		StatusType::PurchasePrimeOriginOfShells => {
 			assert_ok!(PWNftSale::set_status_type(
 				Origin::signed(OVERLORD),
 				true,
@@ -108,7 +117,7 @@ fn setup_config(enable_status_type: StatusType) {
 			assert_ok!(PWNftSale::set_status_type(
 				Origin::signed(OVERLORD),
 				true,
-				StatusType::PurchaseHeroOriginOfShells
+				StatusType::PurchasePrimeOriginOfShells
 			));
 		},
 		StatusType::PreorderOriginOfShells => {
@@ -145,11 +154,12 @@ fn claimed_spirit_works() {
 		// let overlord_pub = overlord_pair.public();
 		// Set Overlord and configuration then enable spirits to be claimed
 		setup_config(StatusType::ClaimSpirits);
+		let message = OverlordMessage { account: BOB, purpose: MessageType::RedeemSpirit };
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
-		let claim = Encode::encode(&BOB);
+		let claim = Encode::encode(&message);
 		let overlord_signature = overlord_pair.sign(&claim);
 		// Dispatch a redeem_spirit from BOB's account
-		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), overlord_signature));
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), overlord_signature, message));
 		// ALICE should be able to claim since she has minimum amount of PHA
 		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE)));
 	});
@@ -280,11 +290,11 @@ fn purchase_rare_origin_of_shell_works() {
 				career: CareerType::HardwareDruid,
 			},
 		));
-		// CHARLIE tries to purchase Hero origin of shell and fails
+		// CHARLIE tries to purchase Prime origin of shell and fails
 		assert_noop!(
 			PWNftSale::buy_rare_origin_of_shell(
 				Origin::signed(CHARLIE),
-				OriginOfShellType::Hero,
+				OriginOfShellType::Prime,
 				RaceType::Pandroid,
 				CareerType::HackerWizard,
 			),
@@ -316,31 +326,32 @@ fn purchase_rare_origin_of_shell_works() {
 }
 
 #[test]
-fn purchase_hero_origin_of_shell_works() {
+fn purchase_prime_origin_of_shell_works() {
 	ExtBuilder::default().build(OVERLORD).execute_with(|| {
 		let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 		let bob_pair = sr25519::Pair::from_seed(b"09876543210987654321098765432109");
 		// let overlord_pub = overlord_pair.public();
 		// Set Overlord and configuration then enable spirits to be claimed
-		setup_config(StatusType::PurchaseHeroOriginOfShells);
+		setup_config(StatusType::PurchasePrimeOriginOfShells);
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
 		// Set metadata for buyers
 		let mut alice_metadata = BoundedVec::default();
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata, bob_metadata.clone(), charlie_metadata);
-		let bob_claim = Encode::encode(&(BOB, bob_metadata.clone()));
-		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let bob_whitelist_claim = WhitelistClaim {
-			account: BOB,
-			metadata: bob_metadata.clone(),
-			signature: bob_overlord_signature.clone(),
-		};
+		let bob_message = OverlordMessage { account: BOB, purpose: MessageType::Whitelist };
+		let bob_spirit_msg = OverlordMessage { account: BOB, purpose: MessageType::RedeemSpirit };
+		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
+		let claim = Encode::encode(&bob_message);
+		let fake_claim = Encode::encode(&bob_spirit_msg);
+		let bob_overlord_signature = overlord_pair.sign(&claim);
+		let fake_signature = overlord_pair.sign(&fake_claim);
 		// BOB cannot purchase another Origin of Shell without Spirit NFT
 		assert_noop!(
-			PWNftSale::buy_hero_origin_of_shell(
+			PWNftSale::buy_prime_origin_of_shell(
 				Origin::signed(BOB),
-				bob_whitelist_claim.clone(),
+				bob_overlord_signature.clone(),
+				bob_message.clone(),
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
 			),
@@ -348,17 +359,29 @@ fn purchase_hero_origin_of_shell_works() {
 		);
 		// BOB mints Spirit NFT
 		mint_spirit(BOB, None);
-		// BOB purchases a Hero NFT
-		assert_ok!(PWNftSale::buy_hero_origin_of_shell(
+		// BOB cannot use RedeemSpirit OverlordMessage to buy prime Origin of Shell
+		assert_noop!(
+			PWNftSale::buy_prime_origin_of_shell(
+				Origin::signed(BOB),
+				fake_signature,
+				bob_spirit_msg,
+				RaceType::AISpectre,
+				CareerType::HackerWizard,
+			),
+			Error::<Test>::WhitelistVerificationFailed
+		);
+		// BOB purchases a Prime NFT
+		assert_ok!(PWNftSale::buy_prime_origin_of_shell(
 			Origin::signed(BOB),
-			bob_whitelist_claim.clone(),
+			bob_overlord_signature.clone(),
+			bob_message.clone(),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
 		));
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 0,
 				owner: BOB,
@@ -368,9 +391,10 @@ fn purchase_hero_origin_of_shell_works() {
 		));
 		// BOB cannot purchase another Origin of Shell
 		assert_noop!(
-			PWNftSale::buy_hero_origin_of_shell(
+			PWNftSale::buy_prime_origin_of_shell(
 				Origin::signed(BOB),
-				bob_whitelist_claim,
+				bob_overlord_signature,
+				bob_message,
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
 			),
@@ -552,7 +576,7 @@ fn mint_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
@@ -565,7 +589,7 @@ fn mint_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -580,7 +604,7 @@ fn mint_preorder_origin_of_shell_works() {
 		// Check that last event is the same because CHARLIE was NotChosen
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -672,7 +696,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 0,
 				owner: ALICE,
@@ -685,7 +709,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		// Check if event triggered
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -700,7 +724,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		// Check that last event is the same because CHARLIE was NotChosen
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Hero,
+				origin_of_shell_type: OriginOfShellType::Prime,
 				collection_id: 1,
 				nft_id: 1,
 				owner: BOB,
@@ -714,7 +738,7 @@ fn claim_refund_preorder_origin_of_shell_works() {
 		System::assert_last_event(MockEvent::PWNftSale(
 			crate::pallet_pw_nft_sale::Event::RefundWasClaimed {
 				preorder_id: 1u32,
-				amount: mock::HeroOriginOfShellPrice::get(),
+				amount: mock::PrimeOriginOfShellPrice::get(),
 			},
 		));
 		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD

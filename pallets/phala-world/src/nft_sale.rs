@@ -19,9 +19,9 @@ pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
 
 use rmrk_traits::{
-	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
-	primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo, PreorderInfo,
-	WhitelistClaim,
+	career::CareerType, message::MessageType, origin_of_shell::OriginOfShellType,
+	preorders::PreorderStatus, primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo,
+	OverlordMessage, PreorderInfo,
 };
 
 pub type BalanceOf<T> =
@@ -62,9 +62,9 @@ pub mod pallet {
 		/// Price of Magic Origin of Shell Price
 		#[pallet::constant]
 		type MagicOriginOfShellPrice: Get<BalanceOf<Self>>;
-		/// Price of Hero Origin of Shell Price
+		/// Price of Prime Origin of Shell Price
 		#[pallet::constant]
-		type HeroOriginOfShellPrice: Get<BalanceOf<Self>>;
+		type PrimeOriginOfShellPrice: Get<BalanceOf<Self>>;
 		/// Max mint per Race
 		#[pallet::constant]
 		type IterLimit: Get<u32>;
@@ -159,8 +159,8 @@ pub mod pallet {
 
 	/// Origin of Shells can be purchased by whitelist
 	#[pallet::storage]
-	#[pallet::getter(fn can_purchase_hero_origin_of_shells)]
-	pub type CanPurchaseHeroOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
+	#[pallet::getter(fn can_purchase_prime_origin_of_shells)]
+	pub type CanPurchasePrimeOriginOfShells<T: Config> = StorageValue<_, bool, ValueQuery>;
 
 	/// Origin of Shells can be preordered
 	#[pallet::storage]
@@ -229,8 +229,8 @@ pub mod pallet {
 		pub can_claim_spirits: bool,
 		/// bool for if a Rare Origin of Shell can be purchased
 		pub can_purchase_rare_origin_of_shells: bool,
-		/// bool for Hero Origin of Shell purchases through whitelist
-		pub can_purchase_hero_origin_of_shells: bool,
+		/// bool for Prime Origin of Shell purchases through whitelist
+		pub can_purchase_prime_origin_of_shells: bool,
 		/// bool for if an Origin of Shell can be preordered
 		pub can_preorder_origin_of_shells: bool,
 		/// bool for the last day of sale for Origin of Shell
@@ -252,7 +252,7 @@ pub mod pallet {
 				era: 0,
 				can_claim_spirits: false,
 				can_purchase_rare_origin_of_shells: false,
-				can_purchase_hero_origin_of_shells: false,
+				can_purchase_prime_origin_of_shells: false,
 				can_preorder_origin_of_shells: false,
 				last_day_of_sale: false,
 				spirit_collection_id: None,
@@ -280,8 +280,8 @@ pub mod pallet {
 			<CanClaimSpirits<T>>::put(can_claim_spirits);
 			let can_purchase_rare_origin_of_shells = self.can_purchase_rare_origin_of_shells;
 			<CanPurchaseRareOriginOfShells<T>>::put(can_purchase_rare_origin_of_shells);
-			let can_purchase_hero_origin_of_shells = self.can_purchase_hero_origin_of_shells;
-			<CanPurchaseHeroOriginOfShells<T>>::put(can_purchase_hero_origin_of_shells);
+			let can_purchase_prime_origin_of_shells = self.can_purchase_prime_origin_of_shells;
+			<CanPurchasePrimeOriginOfShells<T>>::put(can_purchase_prime_origin_of_shells);
 			let can_preorder_origin_of_shells = self.can_preorder_origin_of_shells;
 			<CanPreorderOriginOfShells<T>>::put(can_preorder_origin_of_shells);
 			let last_day_of_sale = self.last_day_of_sale;
@@ -399,8 +399,8 @@ pub mod pallet {
 		PurchaseRareOriginOfShellsStatusChanged {
 			status: bool,
 		},
-		/// Purchase Hero Origin of Shells status changed
-		PurchaseHeroOriginOfShellsStatusChanged {
+		/// Purchase Prime Origin of Shells status changed
+		PurchasePrimeOriginOfShellsStatusChanged {
 			status: bool,
 		},
 		/// Preorder Origin of Shells status has changed
@@ -426,7 +426,7 @@ pub mod pallet {
 		WorldClockAlreadySet,
 		SpiritClaimNotAvailable,
 		RareOriginOfShellPurchaseNotAvailable,
-		HeroOriginOfShellPurchaseNotAvailable,
+		PrimeOriginOfShellPurchaseNotAvailable,
 		PreorderOriginOfShellNotAvailable,
 		PreorderClaimNotAvailable,
 		SpiritAlreadyClaimed,
@@ -504,13 +504,20 @@ pub mod pallet {
 		pub fn redeem_spirit(
 			origin: OriginFor<T>,
 			signature: sr25519::Signature,
+			message: OverlordMessage<T::AccountId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
 			let overlord = Self::get_overlord_account()?;
 			// verify the claim ticket
 			ensure!(
-				Self::verify_claim_spirit(&overlord, &sender, signature),
+				Self::verify_claim(
+					&overlord,
+					&sender,
+					signature,
+					message,
+					MessageType::RedeemSpirit
+				),
 				Error::<T>::InvalidSpiritClaim
 			);
 			// Mint Spirit NFT
@@ -564,42 +571,43 @@ pub mod pallet {
 		}
 
 		/// Accounts that have been whitelisted can purchase an Origin of Shell. The only Origin of
-		/// Shell type available for this purchase are Hero
+		/// Shell type available for this purchase are Prime
 		///
 		/// Parameters:
-		/// - origin: The origin of the extrinsic purchasing the Hero Origin of Shell
-		/// - mcp_id: MCP id from the DID protocol linked to the PHA account
+		/// - origin: The origin of the extrinsic purchasing the Prime Origin of Shell
+		/// - message: OverlordMessage with account and purpose
 		/// - signature: The signature of the account that is claiming the spirit.
 		/// - race: The race that the user has chosen (limited # of races)
 		/// - career: The career that the user has chosen (unlimited careers)
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn buy_hero_origin_of_shell(
+		pub fn buy_prime_origin_of_shell(
 			origin: OriginFor<T>,
-			whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
+			signature: sr25519::Signature,
+			message: OverlordMessage<T::AccountId>,
 			race: RaceType,
 			career: CareerType,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			let is_last_day_of_sale = LastDayOfSale::<T>::get();
 			ensure!(
-				CanPurchaseHeroOriginOfShells::<T>::get() || is_last_day_of_sale,
-				Error::<T>::HeroOriginOfShellPurchaseNotAvailable
+				CanPurchasePrimeOriginOfShells::<T>::get() || is_last_day_of_sale,
+				Error::<T>::PrimeOriginOfShellPurchaseNotAvailable
 			);
 
 			let overlord = Self::get_overlord_account()?;
-			// Check if valid whitelist account
+			// Check if valid message purpose is 'Whitelist' and verify whitelist account
 			ensure!(
-				Self::verify_whitelist(&overlord, sender.clone(), whitelist_claim),
+				Self::verify_claim(&overlord, &sender, signature, message, MessageType::Whitelist),
 				Error::<T>::WhitelistVerificationFailed
 			);
-			// Get Hero Origin of Shell price
-			let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+			// Get Prime Origin of Shell price
+			let origin_of_shell_price = T::PrimeOriginOfShellPrice::get();
 			// Mint origin of shell
 			Self::do_mint_origin_of_shell_nft(
 				overlord,
 				sender,
-				OriginOfShellType::Hero,
+				OriginOfShellType::Prime,
 				race,
 				career,
 				origin_of_shell_price,
@@ -655,8 +663,8 @@ pub mod pallet {
 				metadata,
 				preorder_status: PreorderStatus::Pending,
 			};
-			// Reserve currency for the preorder at the Hero origin_of_shell price
-			<T as pallet::Config>::Currency::reserve(&sender, T::HeroOriginOfShellPrice::get())?;
+			// Reserve currency for the preorder at the Prime origin_of_shell price
+			<T as pallet::Config>::Currency::reserve(&sender, T::PrimeOriginOfShellPrice::get())?;
 
 			Preorders::<T>::insert(preorder_id, preorder);
 
@@ -740,8 +748,8 @@ pub mod pallet {
 			// Get iter limit
 			let iter_limit = T::IterLimit::get();
 			let overlord = Self::get_overlord_account()?;
-			// Get price of hero origin of shell
-			let origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+			// Get price of prime origin of shell
+			let origin_of_shell_price = T::PrimeOriginOfShellPrice::get();
 			// Check if any preorders were chosen
 			let preorders_iter = ChosenPreorders::<T>::drain_prefix(sender.clone());
 			let mut index = 0;
@@ -762,7 +770,7 @@ pub mod pallet {
 							Self::do_mint_origin_of_shell_nft(
 								overlord.clone(),
 								sender.clone(),
-								OriginOfShellType::Hero,
+								OriginOfShellType::Prime,
 								race,
 								career,
 								origin_of_shell_price,
@@ -797,7 +805,7 @@ pub mod pallet {
 			let iter_limit = T::IterLimit::get();
 			let sender = ensure_signed(origin)?;
 			// Get the amount cost for Preorder
-			let hero_origin_of_shell_price = T::HeroOriginOfShellPrice::get();
+			let prime_origin_of_shell_price = T::PrimeOriginOfShellPrice::get();
 			// Check if any preorders were chosen
 			let preorders_iter = NotChosenPreorders::<T>::drain_prefix(sender.clone());
 			let mut index = 0;
@@ -810,12 +818,12 @@ pub mod pallet {
 							// Get payment from owner's reserve
 							<T as pallet::Config>::Currency::unreserve(
 								&sender,
-								hero_origin_of_shell_price,
+								prime_origin_of_shell_price,
 							);
 
 							Self::deposit_event(Event::RefundWasClaimed {
 								preorder_id,
-								amount: hero_origin_of_shell_price,
+								amount: prime_origin_of_shell_price,
 							});
 						},
 						_ => return Err(Error::<T>::PreordersCorrupted.into()),
@@ -981,8 +989,8 @@ pub mod pallet {
 				StatusType::ClaimSpirits => Self::set_claim_spirits_status(status)?,
 				StatusType::PurchaseRareOriginOfShells =>
 					Self::set_purchase_rare_origin_of_shells_status(status)?,
-				StatusType::PurchaseHeroOriginOfShells =>
-					Self::set_purchase_hero_origin_of_shells_status(status)?,
+				StatusType::PurchasePrimeOriginOfShells =>
+					Self::set_purchase_prime_origin_of_shells_status(status)?,
 				StatusType::PreorderOriginOfShells =>
 					Self::set_preorder_origin_of_shells_status(status)?,
 				StatusType::LastDayOfSale => Self::set_last_day_of_sale_status(status)?,
@@ -1029,12 +1037,12 @@ pub mod pallet {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
 			Self::ensure_overlord(sender)?;
-			// Ensure they are updating the OriginOfShellType::Hero
+			// Ensure they are updating the OriginOfShellType::Prime
 			ensure!(
-				origin_of_shell_type == OriginOfShellType::Hero,
+				origin_of_shell_type == OriginOfShellType::Prime,
 				Error::<T>::WrongOriginOfShellType
 			);
-			// Mutate the existing storage for the Hero Origin of Shells
+			// Mutate the existing storage for the Prime Origin of Shells
 			Self::update_nft_sale_info(
 				origin_of_shell_type,
 				RaceType::AISpectre,
@@ -1122,48 +1130,29 @@ impl<T: Config> Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
-	/// Verify the sender making the claim is the Account signed by the Overlord admin account.
+	/// Verify the sender making the claim is the Account signed by the Overlord admin account and
+	/// verify the purpose of the `OverlordMessage` which will be either `RedeemSpirit` or
+	/// `Whitelist`
 	///
 	/// Parameters:
 	/// - `overlord`: Overlord admin account
 	/// - `sender`: Sender that redeemed the claim
 	/// - `signature`: sr25519::Signature of the expected account making the claim
-	pub fn verify_claim_spirit(
+	/// - `message`: OverlordMessage that contains the account and purpose
+	/// - `purpose`: Expected Purpose
+	pub fn verify_claim(
 		overlord: &T::AccountId,
 		sender: &T::AccountId,
 		signature: sr25519::Signature,
+		message: OverlordMessage<T::AccountId>,
+		purpose: MessageType,
 	) -> bool {
-		// Serialize evidence
-		let msg = Encode::encode(sender);
-		let encode_overlord = T::AccountId::encode(overlord);
-		let h256_overlord = H256::from_slice(&encode_overlord);
-		let overlord_key = sr25519::Public::from_h256(h256_overlord);
-		// verify claim
-		sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key)
-	}
-
-	/// Verify the whitelist status of an Account that has purchased origin of shell. Serialize the
-	/// evidence with the claimer & metadata then verify against the expected results
-	/// by calling sr25519 verify function
-	///
-	/// Parameters:
-	/// - overlord: Overlord admin account
-	/// - claimer: AccountId of the account in the whitelist
-	/// - metadata: Metadata passed in associated with the claimer
-	/// - signature: Signature passed in by the claimer
-	pub fn verify_whitelist(
-		overlord: &T::AccountId,
-		claimer: T::AccountId,
-		whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
-	) -> bool {
-		let metadata = whitelist_claim.metadata;
-		let signature = whitelist_claim.signature;
-		// Ensure the claimer is the same as account field
-		if claimer != whitelist_claim.account {
+		// Check if account in message matches sender
+		if sender != &message.account || purpose != message.purpose {
 			return false
 		}
-		// Serialize the evidence
-		let msg = Encode::encode(&(claimer, metadata));
+		// Serialize evidence
+		let msg = Encode::encode(&message);
 		let encode_overlord = T::AccountId::encode(overlord);
 		let h256_overlord = H256::from_slice(&encode_overlord);
 		let overlord_key = sr25519::Public::from_h256(h256_overlord);
@@ -1214,15 +1203,15 @@ where
 		Ok(())
 	}
 
-	/// Set Hero Origin of Shells status for purchase with the Overlord Admin Account to allow
-	/// users to purchase Hero Origin of Shells
+	/// Set Prime Origin of Shells status for purchase with the Overlord Admin Account to allow
+	/// users to purchase Prime Origin of Shells
 	///
 	/// Parameters:
 	/// `status`: Status to set CanPurchaseOriginOfShellsWhitelist StorageValue
-	fn set_purchase_hero_origin_of_shells_status(status: bool) -> DispatchResult {
-		<CanPurchaseHeroOriginOfShells<T>>::put(status);
+	fn set_purchase_prime_origin_of_shells_status(status: bool) -> DispatchResult {
+		<CanPurchasePrimeOriginOfShells<T>>::put(status);
 
-		Self::deposit_event(Event::PurchaseHeroOriginOfShellsStatusChanged { status });
+		Self::deposit_event(Event::PurchasePrimeOriginOfShellsStatusChanged { status });
 
 		Ok(())
 	}
@@ -1260,10 +1249,10 @@ where
 	/// race_for_sale_count: 1, race_giveaway_count: 0, race_reserved_count: 1 }`
 	/// `<Magic>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
 	/// 15, race_giveaway_count: 0, race_reserved_count: 5 }`
-	/// `<Hero>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
+	/// `<Prime>,<RaceType> => NftSaleInfo { race_count: 0, career_count: 0, race_for_sale_count:
 	/// 1250, race_giveaway_count: 50, race_reserved_count: 0 }`
 	fn set_initial_origin_of_shell_inventory() -> DispatchResult {
-		// 3 OriginOfShellType Hero, Magic & Legendary and 4 different RaceType Cyborg, AISpectre,
+		// 3 OriginOfShellType Prime, Magic & Legendary and 4 different RaceType Cyborg, AISpectre,
 		// XGene & Pandroid
 		ensure!(
 			!IsOriginOfShellsInventorySet::<T>::get(),
@@ -1297,9 +1286,9 @@ where
 		);
 		let magic_nft_sale_info = NftSaleInfo {
 			race_count: 0,
-			race_for_sale_count: 15,
+			race_for_sale_count: 10,
 			race_giveaway_count: 0,
-			race_reserved_count: 5,
+			race_reserved_count: 10,
 		};
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
@@ -1321,31 +1310,31 @@ where
 			RaceType::XGene,
 			magic_nft_sale_info,
 		);
-		let hero_nft_sale_info = NftSaleInfo {
+		let prime_nft_sale_info = NftSaleInfo {
 			race_count: 0,
 			race_for_sale_count: 1250,
-			race_giveaway_count: 50,
+			race_giveaway_count: 0,
 			race_reserved_count: 0,
 		};
 		OriginOfShellsInventory::<T>::insert(
-			OriginOfShellType::Hero,
+			OriginOfShellType::Prime,
 			RaceType::AISpectre,
-			hero_nft_sale_info.clone(),
+			prime_nft_sale_info.clone(),
 		);
 		OriginOfShellsInventory::<T>::insert(
-			OriginOfShellType::Hero,
+			OriginOfShellType::Prime,
 			RaceType::Cyborg,
-			hero_nft_sale_info.clone(),
+			prime_nft_sale_info.clone(),
 		);
 		OriginOfShellsInventory::<T>::insert(
-			OriginOfShellType::Hero,
+			OriginOfShellType::Prime,
 			RaceType::Pandroid,
-			hero_nft_sale_info.clone(),
+			prime_nft_sale_info.clone(),
 		);
 		OriginOfShellsInventory::<T>::insert(
-			OriginOfShellType::Hero,
+			OriginOfShellType::Prime,
 			RaceType::XGene,
-			hero_nft_sale_info,
+			prime_nft_sale_info,
 		);
 		// Set IsOriginOfShellsInventorySet to true
 		IsOriginOfShellsInventorySet::<T>::put(true);

@@ -31,7 +31,7 @@ function getSignedMagicMetadata() {
     return getSignedMetadata(metadata);
 }
 
-function getSignedHeroMetadata() {
-    const metadata = 'I am Hero';
+function getSignedPrimeMetadata() {
+    const metadata = 'I am Prime';
     return getSignedMetadata(metadata);
 }

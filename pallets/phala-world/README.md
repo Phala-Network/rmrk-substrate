@@ -3,8 +3,8 @@
 ## Types
 ```rust
 pub enum OriginOfShellType {
-    /// Origin of Shell type is Hero
-    Hero,
+    /// Origin of Shell type is Prime
+    Prime,
     /// Origin of Shell type is Magic
     Magic,
     /// Origin of Shell is Legendary
@@ -42,9 +42,9 @@ type LegendaryOriginOfShellPrice: Get<BalanceOf<Self>>;
 /// Price of Magic Origin of Shell
 #[pallet::constant]
 type MagicOriginOfShellPrice: Get<BalanceOf<Self>>;
-/// Price of Hero Origin of Shell
+/// Price of Prime Origin of Shell
 #[pallet::constant]
-type HeroOriginOfShellPrice: Get<BalanceOf<Self>>;
+type PrimeOriginOfShellPrice: Get<BalanceOf<Self>>;
 /// Max mint per Race
 #[pallet::constant]
 type MaxMintPerRace: Get<u32>;
@@ -191,7 +191,7 @@ race: RaceType,
 career: CareerType,
 ```
 
-### purchase_hero_origin_of_shell
+### purchase_prime_origin_of_shell
 ```rust
 origin: OriginFor<T>,
 signature: sr25519::Signature,

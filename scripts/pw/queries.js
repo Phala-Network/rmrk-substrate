@@ -25,10 +25,10 @@ async function main() {
                 _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']
             },
             StatusType: {
-                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchaseHeroOriginOfShells', 'PreorderOriginOfShells']
+                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchasePrimeOriginOfShells', 'PreorderOriginOfShells']
             },
             OriginOfShellType: {
-                _enum: ['Hero', 'Magic', 'Legendary']
+                _enum: ['Prime', 'Magic', 'Legendary']
             },
             PreorderStatus: {
                 _enum: ['Pending', 'Chosen', 'NotChosen']
@@ -61,13 +61,13 @@ async function main() {
     // StatusType
     const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
     const purchaseRareOriginOfShells = api.createType('StatusType', 'PurchaseRareOriginOfShells');
-    const purchaseHeroOriginOfShells = api.createType('StatusType', 'PurchaseHeroOriginOfShells');
+    const purchasePrimeOriginOfShells = api.createType('StatusType', 'PurchasePrimeOriginOfShells');
     const preorderOriginOfShells = api.createType('StatusType', 'PreorderOriginOfShells');
 
     // OriginOfShellTypes
     const legendary = api.createType('OriginOfShellType', 'Legendary');
     const magic = api.createType('OriginOfShellType', 'Magic');
-    const hero = api.createType('OriginOfShellType', 'Hero');
+    const prime = api.createType('OriginOfShellType', 'Prime');
 
     // RaceTypes
     const cyborg = api.createType('RaceType', 'Cyborg');
@@ -156,7 +156,7 @@ async function main() {
     //     owner: '5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL',
     //         race: 'Pandroid',
     //         career: 'HackerWizard',
-    //         metadata: 'I am Hero',
+    //         metadata: 'I am Prime',
     //         preorderStatus: 'Chosen'
     //      }
     // }
@@ -207,10 +207,10 @@ async function main() {
         console.log(`Can purchase rare origin of shells: ${canPurchaseRareOriginOfShells}`);
     }
 
-    // Can users on whitelist purchase hero origin of shell?
+    // Can users on whitelist purchase prime origin of shell?
     {
-        const canPurchaseHer0OriginOfShells = await api.query.pwNftSale.canPurchaseHeroOriginOfShells();
-        console.log(`Can whitelist purchase hero origin of shells: ${canPurchaseHer0OriginOfShells}`);
+        const canPurchaseHer0OriginOfShells = await api.query.pwNftSale.canPurchasePrimeOriginOfShells();
+        console.log(`Can whitelist purchase prime origin of shells: ${canPurchaseHer0OriginOfShells}`);
     }
 
     // Can users preorder origin of shell?

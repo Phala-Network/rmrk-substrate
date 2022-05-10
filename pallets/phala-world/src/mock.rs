@@ -162,7 +162,7 @@ parameter_types! {
 	pub const MinBalanceToClaimSpirit: Balance = 10 * PHA;
 	pub const LegendaryOriginOfShellPrice: Balance = 1_000_000 * PHA;
 	pub const MagicOriginOfShellPrice: Balance = 1_000 * PHA;
-	pub const HeroOriginOfShellPrice: Balance = 10 * PHA;
+	pub const PrimeOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
 	pub const IterLimit: u32 = 200;
 	pub const FoodPerEra: u8 = 2;
@@ -179,7 +179,7 @@ impl pallet_pw_nft_sale::Config for Test {
 	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
-	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
+	type PrimeOriginOfShellPrice = PrimeOriginOfShellPrice;
 	type IterLimit = IterLimit;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
@@ -245,7 +245,7 @@ impl ExtBuilder {
 			era: 0,
 			can_claim_spirits: false,
 			can_purchase_rare_origin_of_shells: false,
-			can_purchase_hero_origin_of_shells: false,
+			can_purchase_prime_origin_of_shells: false,
 			can_preorder_origin_of_shells: false,
 			last_day_of_sale: false,
 			spirit_collection_id: None,

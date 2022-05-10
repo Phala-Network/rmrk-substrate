@@ -20,7 +20,7 @@ async function main() {
                 _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']
             },
             StatusType: {
-                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchaseHeroOriginOfShells', 'PreorderOriginOfShells']
+                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchasePrimeOriginOfShells', 'PreorderOriginOfShells']
             }
         }
     });
@@ -44,7 +44,7 @@ async function main() {
         // available states:
         // ClaimSpirits,
         // PurchaseRareOriginOfShells,
-        // PurchaseHeroOriginOfShells,
+        // PurchasePrimeOriginOfShells,
         // PreorderOriginOfShells,
         await api.tx.pwNftSale.setStatusType(true, 'ClaimSpirits')
             .signAndSend(overlord, {nonce: -1});

@@ -330,7 +330,7 @@ parameter_types! {
 	pub const MinBalanceToClaimSpirit: Balance = 10 * DOLLARS;
 	pub const LegendaryOriginOfShellPrice: Balance = 3_000 * DOLLARS;
 	pub const MagicOriginOfShellPrice: Balance = 2_000 * DOLLARS;
-	pub const HeroOriginOfShellPrice: Balance = 300 * DOLLARS;
+	pub const PrimeOriginOfShellPrice: Balance = 300 * DOLLARS;
 	pub const IterLimit: u32 = 1_000;
 	pub const FoodPerEra: u8 = 5;
 	pub const MaxFoodFedPerEra: u16 = 20;
@@ -345,7 +345,7 @@ impl pallet_pw_nft_sale::Config for Runtime {
 	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
-	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
+	type PrimeOriginOfShellPrice = PrimeOriginOfShellPrice;
 	type IterLimit = IterLimit;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;

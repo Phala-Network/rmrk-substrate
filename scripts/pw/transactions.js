@@ -24,10 +24,10 @@ async function main() {
                 _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']
             },
             StatusType: {
-                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchaseHeroOriginOfShells', 'PreorderOriginOfShells']
+                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchasePrimeOriginOfShells', 'PreorderOriginOfShells']
             },
             OriginOfShellType: {
-                _enum: ['Hero', 'Magic', 'Legendary']
+                _enum: ['Prime', 'Magic', 'Legendary']
             },
             PreorderStatus: {
                 _enum: ['Pending', 'Chosen', 'NotChosen']
@@ -45,6 +45,13 @@ async function main() {
                 race_giveaway_count: "u32",
                 race_reserved_count: "u32",
             },
+            MessageType: {
+                _enum: ['RedeemSpirit', 'Whitelist']
+            },
+            OverlordMessage: {
+                account: "AccountId",
+                purpose: "MessageType",
+            },
         }
     });
     const keyring = new Keyring({type: 'sr25519'});
@@ -60,13 +67,13 @@ async function main() {
     // StatusType
     const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
     const purchaseRareOriginOfShells = api.createType('StatusType', 'PurchaseRareOriginOfShells');
-    const purchaseHeroOriginOfShells = api.createType('StatusType', 'PurchaseHeroOriginOfShells');
+    const purchasePrimeOriginOfShells = api.createType('StatusType', 'PurchasePrimeOriginOfShells');
     const preorderOriginOfShells = api.createType('StatusType', 'PreorderOriginOfShells');
 
     // OriginOfShellTypes
     const legendary = api.createType('OriginOfShellType', 'Legendary');
     const magic = api.createType('OriginOfShellType', 'Magic');
-    const hero = api.createType('OriginOfShellType', 'Hero');
+    const prime = api.createType('OriginOfShellType', 'Prime');
 
     // RaceTypes
     const cyborg = api.createType('RaceType', 'Cyborg');
@@ -97,18 +104,16 @@ async function main() {
     // }
     // return;
 
-    // sign metadata
+    // Create OverlordMessage for RedeemSpirit
     {
-        const metadata = 'I am Spirit';
-        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-        const metadataSig = overlord.sign(metadataType);
-        const isValid = overlord.verify(metadata, metadataSig, overlord.address);
-        const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
+        const messageType = api.createType('MessageType', 'RedeemSpirit');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
+        const metadataSig = overlord.sign(overlordMessage.toU8a());
+        //const isValid = overlord.verify(overlordMessage, metadataSig, overlord.publicKey);
 
-        // output the result
-        console.log(`${u8aToHex(metadataSig)}\n${u8aToHex(metadataType)} is ${isValid ? 'valid' : 'invalid'}`);
         // Mint a Spirit
-        await api.tx.pwNftSale.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+        //await api.tx.pwNftSale.claimSpirit().signAndSend(user);
+        await api.tx.pwNftSale.redeemSpirit(metadataSig, overlordMessage).signAndSend(ferdie);
     }
 
     // mint spirit nft
@@ -123,7 +128,7 @@ async function main() {
 
     // purchase rare origin of shell
     {
-        // OriginOfShellType ['Legendary', 'Magic', 'Hero']
+        // OriginOfShellType ['Legendary', 'Magic', 'Prime']
         // RaceType ['AISpectre', 'Cyborg', 'Pandroid', 'XGene']
         // CareerType ['HardwareDruid', 'HackerWizard', 'RoboWarrior', 'TradeNegotiator', 'Web3Monk']
         // metadata '0x2813308004'
@@ -133,7 +138,7 @@ async function main() {
             .signAndSend(user);
     }
 
-    // purchase whitelist hero origin of shell
+    // purchase whitelist prime origin of shell
     {
         // RaceType ['AISpectre', 'Cyborg', 'Pandroid', 'XGene']
         // CareerType ['HardwareDruid', 'HackerWizard', 'RoboWarrior', 'TradeNegotiator', 'Web3Monk']
@@ -143,27 +148,14 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        const metadataHero = 'I am Hero';
-        const metadataHeroType = api.createType('BoundedVec<u8, T::StringLimit>', metadataHero).toU8a();
-        const metadataHeroSig = overlord.sign(metadataHeroType);
-        //const isValid = overlord.verify(metadataHero, metadataSig, overlord.address);
-        const nftSignedMetadata = api.createType('NftSaleMetadata', {
-            'metadata': metadataHeroType,
-            'signature': metadataHeroSig
-        });
-        const metadata = 'Whitelist for FERDIE';
-        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata);
-        const userMetadataType = api.createType('(AccountId,BoundedVec<u8, T::StringLimit>)', [ferdie.address, metadataType]).toU8a();
-        const metadataSign = overlord.sign(userMetadataType);
-        const whitelistType = api.createType('WhitelistClaim', {
-            'account': ferdie.address,
-            'metadata': metadataType,
-            'signature': metadataSign,
-        });
-        //await api.tx.pwNftSale.setStatusType(true, 'PurchaseHeroOriginOfShells')
+        const messageType = api.createType('MessageType', 'Whitelist');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
+        const overlordSig = overlord.sign(overlordMessage.toU8a());
+
+        //await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
         //    .signAndSend(overlord, {nonce: -1});
-        // Mint Hero Origin of Shell
-        await api.tx.pwNftSale.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard', nftSignedMetadata)
+        // Mint Prime Origin of Shell
+        await api.tx.pwNftSale.buyPrimeOriginOfShell(overlordSig, overlordMessage, 'Cyborg', 'HackerWizard')
             .signAndSend(ferdie);
     }
 
@@ -193,5 +185,12 @@ async function main() {
     {
         await api.tx.pwNftSale.claimRefundPreorders()
             .signAndSend(user);
+    }
+
+    // Update the Prime Origin of Shell NFTs based on the number of Whitelist NFTs claimed
+    // This is called AFTER the Whitelist Sale is complete. Must Disable Whitelist sale before updating to ensure numbers
+    // do not fluctuate.
+    {
+        await api.tx.pwNftSale.updateOriginOfShellTypeCounts('Prime', 900, 50).signAndSend(overlord);
     }
 }
