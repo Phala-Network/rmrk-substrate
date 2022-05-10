@@ -45,10 +45,6 @@ async function main() {
                 race_giveaway_count: "u32",
                 race_reserved_count: "u32",
             },
-            NftSaleMetadata: {
-                metadata: "BoundedString",
-                signature: "sr25519::Signature"
-            }
         }
     });
     const keyring = new Keyring({type: 'sr25519'});
@@ -133,13 +129,7 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        // Look at the signer example for the nftSaleMetadata
-        const metadata = 'I am Legendary';
-        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-        const metadataSig = overlord.sign(metadataType);
-        const isValid = overlord.verify(metadata, metadataSig, overlord.address);
-        const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-        await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
+        await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard')
             .signAndSend(user);
     }
 
@@ -181,14 +171,7 @@ async function main() {
     {
         // RaceType ['AISpectre', 'Cyborg', 'Pandroid', 'XGene']
         // CareerType ['HardwareDruid', 'HackerWizard', 'RoboWarrior', 'TradeNegotiator', 'Web3Monk']
-        // metadata '0x2813308004'
-        // const metadataSig = overlord.sign(metadata);
-        // u8aToHex(metadataSig);
-        const metadata = 'I am Hero';
-        const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-        const metadataSig = overlord.sign(metadataType);
-        const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-        await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard', nftSignedMetadata)
+        await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard')
             .signAndSend(ferdie);
     }
 

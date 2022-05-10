@@ -60,28 +60,19 @@ In the `init.js` script there is a transaction that will set the starting invent
 await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
 ```
 
-### Signing Metadata
-To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the metadata and proceed with minting of a given NFT. Here is an example of signing metadata and storing it in a new type called `NftSaleMetadata`. The `nftSignedMetadata` is used in the next section to claim a spirit.
+### Generate Redeem Spirit and Whitelist Signatures
+To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the claim and proceed with minting of a given NFT. Here is an example of signing the account address with a prefix of `"RS"` for Redeem Spirit or `"WL"` for Whitelist.
 ```javascript
-const metadata = 'I am Spirit';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {
-    'metadata': metadataType,
-    'signature': metadataSig
-});
+// TODO
 ```
 
 ### Claim a Spirit
-This is an example of generating the signed metadata for a Spirit NFT with `overlord` account then using the `ferdie` account to claim the spirit.
+This is an example of generating the `Signature` for a Spirit NFT by adding a prefix `"RS"` to `ferdie.address` then sign the encoding with `overlord` account then using the `ferdie` account to claim the spirit.
 ```javascript
-const metadata = 'I am Spirit';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const isValid = overlord.verify(metadata, metadataSig, overlord.address);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-// Mint a Spirit
-await api.tx.pwNftSale.claimSpirit(null, nftSignedMetadata).signAndSend(ferdie);
+// Mint a Spirit with at lest 10 PHA
+await api.tx.pwNftSale.claimSpirit().signAndSend(ferdie);
+// Redeem a Spirit with a valid Signature
+await api.tx.pwNftSale.redeemSpirit(signature).signAndSend(ferdie);
 ```
 
 ### Status Types
@@ -108,49 +99,29 @@ Here is an example of a user executing a transaction called `buyRareOriginOfShel
 - `OriginOfShellType`: Origin of Shell Type and in this case the 2 acceptable values are `'Legendary'` or `'Magic'`.
 - `RaceType`: A pick of any of the 4 Races `'Cyborg'`, `'AISpectre'`, `'Pandroid'`, `'XGene'`.
 - `CareerType`: A pick of any of the 5 Careers `'HardwareDruid'`, `'RoboWarrior'`, `'TradeNegotiator'`, `'HackerWizard'`, `'Web3Monk'`.
-- `NftSaleMetadata`: Metadata and the `Signature` from the `overlord` account to validate metdata.
 ```javascript
-const metadata = 'I am Legendary';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
 // Purchase rare Origin of Shell
 await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
     .signAndSend(user);
 ```
 
 ## [2] Enable Whitelist Sale
-After the rare Origin of Shell purchases, we will then move to the Whitelist purchases. This will involve another validation effort by the `overlord` account signing some metadata along with the whitelisted account ID. This will be a new type called `WhitelistClaim` and will be passed into the transaction called `buyHeroOriginOfShell`. First, the `StatusType` `PurchaseHeroOriginOfShells` before proceeding.
+After the rare Origin of Shell purchases, we will then move to the Whitelist purchases. This will involve another validation effort by the `overlord` account signing some metadata along with the whitelisted account ID. This will be a valid `Signature` and will be passed into the transaction called `buyHeroOriginOfShell`. First, enable the `StatusType` `PurchaseHeroOriginOfShells` before proceeding.
 ```javascript
 await api.tx.pwNftSale.setStatusType(true, 'PurchaseHeroOriginOfShells')
     .signAndSend(overlord);
 ```
-Here is an example of creating a `WhitelistClaim` for the `ferdie` account. This is what `ferdie` will use to pass into the `buyHeroOriginOfShell` function.
+Here is an example of creating a `Signature` for the `ferdie` account where a prefix of `"WL"` is added to the account address. This is what `ferdie` will use to pass into the `buyHeroOriginOfShell` function. 
 ```javascript
-const metadata = 'Whitelist for FERDIE';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata);
-const userMetadataType = api.createType('(AccountId,BoundedVec<u8, T::StringLimit>)', [ferdie.address, metadataType]).toU8a();
+//TODO
 const metadataSign = overlord.sign(userMetadataType);
-const whitelistType = api.createType('WhitelistClaim', {
-    'account': ferdie.address,
-    'metadata': metadataType,
-    'signature': metadataSign,
-});
 ```
 This will enable `ferdie` to call `PurchaseHeroOriginOfShells` and here is an explanation of the valid parameters:
-- `WhitelistClaim`: a `signature` of the `&(account, metadata)` by the `overlord` account to validate the whitelist claim by a given account.
+- `sr25519::Signature`: a `signature` of the `&("WL" + ferdie.address)` by the `overlord` account to validate the whitelist claim by a given account.
 - `RaceType`: A pick of any of the 4 Races `'Cyborg'`, `'AISpectre'`, `'Pandroid'`, `'XGene'`.
 - `CareerType`: A pick of any of the 5 Careers `'HardwareDruid'`, `'RoboWarrior'`, `'TradeNegotiator'`, `'HackerWizard'`, `'Web3Monk'`.
-- `NftSaleMetadata`: Metadata and the `Signature` from the `overlord` account to validate metdata.
 ```javascript
-const metadataHero = 'I am Hero';
-const metadataHeroType = api.createType('BoundedVec<u8, T::StringLimit>', metadataHero).toU8a();
-const metadataHeroSig = overlord.sign(metadataHeroType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {
-    'metadata': metadataHeroType,
-    'signature': metadataHeroSig
-});
-await api.tx.pwNftSale.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard', nftSignedMetadata)
+await api.tx.pwNftSale.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard')
     .signAndSend(ferdie);
 ```
 
@@ -162,11 +133,7 @@ await api.tx.pwNftSale.setStatusType(true, 'PreorderOriginOfShells')
 ```
 Here is an example of a Preorder transaction `preorderOriginOfShell`:
 ```javascript
-const metadata = 'I am Hero';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard', nftSignedMetadata)
+await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard')
     .signAndSend(ferdie);
 ```
 ### After Preorders Are Finalized

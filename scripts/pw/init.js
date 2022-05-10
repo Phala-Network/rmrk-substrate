@@ -85,21 +85,13 @@ async function main() {
     // }
     // return;
 
-    // sign metadata
-    {
-        // const metadata = 'I am Spirit';
-        // const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-        // const metadataSig = overlord.sign(metadataType);
-        // const isValid = overlord.verify(metadata, metadataSig, overlord.address);
-        // const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-    }
-
     // mint spirit
     {
         // const serialId = 1;
         // const signature = '0xAABB';
         // const metadata = '0xCCDD'
-        // await api.tx.pwNftSale.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+        // await api.tx.pwNftSale.claimSpirit().signAndSend(user);
+        // await api.tx.pwNftSale.redeemSpirit(signature).signAndSend(user);
     }
 }
 

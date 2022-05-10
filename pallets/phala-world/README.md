@@ -170,11 +170,16 @@ pub enum Error<T> {
 
 ## Calls
 ### claim_spirit
-Claim a spirit for users that are on the whitelist.
+Claim a spirit for users that have at least 10 PHA in account
 ```rust
 origin: OriginFor<T>,
-ticket: Option<ClaimSpiritTicket<T::AccountId>>,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
+```
+
+### redeem_spirit
+Redeem a spirit for users that have a valid signed signature
+```rust
+origin: OriginFor<T>,
+signature: sr25519::Signature,
 ```
 
 ### buy_rare_origin_of_shell
@@ -189,10 +194,9 @@ career: CareerType,
 ### purchase_hero_origin_of_shell
 ```rust
 origin: OriginFor<T>,
-whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
+signature: sr25519::Signature,
 race: RaceType,
 career: CareerType,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 

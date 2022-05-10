@@ -9,9 +9,8 @@ use sp_core::{crypto::AccountId32, sr25519, Pair};
 
 use mock::{Call, Event as MockEvent, ExtBuilder, Origin, PWNftSale, Test};
 use rmrk_traits::{
-	career::CareerType, nft_sale::NftSaleMetadata, origin_of_shell::OriginOfShellType,
-	preorders::PreorderStatus, primitives::*, race::RaceType, spirit::ClaimSpiritTicket,
-	status_type::StatusType, whitelist::WhitelistClaim,
+	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
+	primitives::*, race::RaceType, status_type::StatusType, whitelist::WhitelistClaim,
 };
 
 /// Turns a string into a BoundedVec
@@ -50,10 +49,10 @@ fn mint_collection(account: AccountId32) {
 	RmrkCore::create_collection(Origin::signed(account), bvec![0u8; 20], Some(5), bvec![0u8; 15]);
 }
 
-fn mint_spirit(account: AccountId32, spirit_claim_ticket: Option<ClaimSpiritTicket<AccountId32>>) {
+fn mint_spirit(account: AccountId32, spirit_signature: Option<sr25519::Signature>) {
 	let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
-	if let Some(spirit_claim_ticket) = spirit_claim_ticket {
-		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), spirit_claim_ticket));
+	if let Some(spirit_signature) = spirit_signature {
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), spirit_signature));
 	} else {
 		// Mint Spirit NFT
 		assert_ok!(PWNftSale::claim_spirit(Origin::signed(account)));
@@ -149,9 +148,8 @@ fn claimed_spirit_works() {
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
 		let claim = Encode::encode(&BOB);
 		let overlord_signature = overlord_pair.sign(&claim);
-		let bob_ticket = ClaimSpiritTicket { account: BOB, signature: overlord_signature };
 		// Dispatch a redeem_spirit from BOB's account
-		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), bob_ticket,));
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), overlord_signature));
 		// ALICE should be able to claim since she has minimum amount of PHA
 		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE)));
 	});
@@ -231,14 +229,11 @@ fn purchase_rare_origin_of_shell_works() {
 		setup_config(StatusType::PurchaseRareOriginOfShells);
 		let bob_claim = Encode::encode(&BOB);
 		let bob_overlord_signature = overlord_pair.sign(&bob_claim);
-		let bob_ticket = ClaimSpiritTicket { account: BOB, signature: bob_overlord_signature };
 		let charlie_claim = Encode::encode(&CHARLIE);
 		let charlie_overlord_signature = overlord_pair.sign(&charlie_claim);
-		let charlie_ticket =
-			ClaimSpiritTicket { account: CHARLIE, signature: charlie_overlord_signature };
 		mint_spirit(ALICE, None);
-		mint_spirit(BOB, Some(bob_ticket));
-		mint_spirit(CHARLIE, Some(charlie_ticket));
+		mint_spirit(BOB, Some(bob_overlord_signature));
+		mint_spirit(CHARLIE, Some(charlie_overlord_signature));
 		// ALICE purchases Legendary Origin of Shell
 		assert_ok!(PWNftSale::buy_rare_origin_of_shell(
 			Origin::signed(ALICE),

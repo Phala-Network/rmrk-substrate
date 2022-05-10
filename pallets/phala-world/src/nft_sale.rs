@@ -20,8 +20,8 @@ pub use pallet_rmrk_market;
 
 use rmrk_traits::{
 	career::CareerType, origin_of_shell::OriginOfShellType, preorders::PreorderStatus,
-	primitives::*, race::RaceType, status_type::StatusType, ClaimSpiritTicket, NftSaleInfo,
-	NftSaleMetadata, PreorderInfo, WhitelistClaim,
+	primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo, PreorderInfo,
+	WhitelistClaim,
 };
 
 pub type BalanceOf<T> =
@@ -32,12 +32,7 @@ pub use self::pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{
-		dispatch::DispatchResult,
-		pallet_prelude::*,
-		traits::{tokens::nonfungibles::InspectEnumerable, ReservableCurrency},
-	};
-	use frame_system::Origin;
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::ReservableCurrency};
 
 	type PreorderInfoOf<T> = PreorderInfo<
 		<T as frame_system::Config>::AccountId,
@@ -446,6 +441,7 @@ pub mod pallet {
 		PreorderClaimNotDetected,
 		RefundClaimNotDetected,
 		PreorderIsPending,
+		PreordersCorrupted,
 		NotPreorderOwner,
 		RaceMintMaxReached,
 		CannotHatchOriginOfShell,
@@ -507,14 +503,14 @@ pub mod pallet {
 		#[transactional]
 		pub fn redeem_spirit(
 			origin: OriginFor<T>,
-			redeem_ticket: ClaimSpiritTicket<T::AccountId>,
+			signature: sr25519::Signature,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
 			let overlord = Self::get_overlord_account()?;
 			// verify the claim ticket
 			ensure!(
-				Self::verify_claim_spirit(&overlord, sender.clone(), redeem_ticket),
+				Self::verify_claim_spirit(&overlord, &sender, signature),
 				Error::<T>::InvalidSpiritClaim
 			);
 			// Mint Spirit NFT
@@ -749,7 +745,7 @@ pub mod pallet {
 			// Check if any preorders were chosen
 			let preorders_iter = ChosenPreorders::<T>::drain_prefix(sender.clone());
 			let mut index = 0;
-			for (preorder_id, preorder) in preorders_iter {
+			for (_preorder_id, preorder) in preorders_iter {
 				if index < iter_limit {
 					let preorder_clone = preorder.clone();
 					let preorder_status = preorder_clone.preorder_status;
@@ -773,12 +769,7 @@ pub mod pallet {
 								false,
 							)?;
 						},
-						PreorderStatus::NotChosen => {
-							// Re-insert into Storage as this will be handled in the claim refund
-							// preorders function
-							NotChosenPreorders::<T>::insert(sender.clone(), preorder_id, preorder);
-						},
-						PreorderStatus::Pending => return Err(Error::<T>::PreorderIsPending.into()),
+						_ => return Err(Error::<T>::PreordersCorrupted.into()),
 					}
 					index += 1;
 				} else {
@@ -815,10 +806,7 @@ pub mod pallet {
 					let preorder_status = preorder.clone().preorder_status;
 					match preorder_status {
 						PreorderStatus::NotChosen => {
-							ensure!(
-								sender.clone() == preorder.owner.clone(),
-								Error::<T>::NotPreorderOwner
-							);
+							ensure!(&sender == &preorder.owner, Error::<T>::NotPreorderOwner);
 							// Get payment from owner's reserve
 							<T as pallet::Config>::Currency::unreserve(
 								&sender,
@@ -830,12 +818,7 @@ pub mod pallet {
 								amount: hero_origin_of_shell_price,
 							});
 						},
-						PreorderStatus::Chosen => {
-							// Re-insert into Storage as this will be handled in the claim Chosen
-							// preorders function
-							ChosenPreorders::<T>::insert(sender.clone(), preorder_id, preorder);
-						},
-						PreorderStatus::Pending => return Err(Error::<T>::PreorderIsPending.into()),
+						_ => return Err(Error::<T>::PreordersCorrupted.into()),
 					}
 					index += 1;
 				} else {
@@ -1139,31 +1122,26 @@ impl<T: Config> Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
-	/// Verify the Spirit Claim by either the account has at least 10 PHA or by checking the
-	/// signature signed of the account & account must be checked against the message claimer
+	/// Verify the sender making the claim is the Account signed by the Overlord admin account.
 	///
 	/// Parameters:
-	/// - claimer: AccountId of the account with the Spirit Claim ticket
-	/// - ticket: ClaimSpiritTicket struct to ensure the Signature signed on the account field to
-	///   check against claimer
+	/// - `overlord`: Overlord admin account
+	/// - `sender`: Sender that redeemed the claim
+	/// - `signature`: sr25519::Signature of the expected account making the claim
 	pub fn verify_claim_spirit(
 		overlord: &T::AccountId,
-		claimer: T::AccountId,
-		ticket: ClaimSpiritTicket<T::AccountId>,
+		sender: &T::AccountId,
+		signature: sr25519::Signature,
 	) -> bool {
-		let ticket_account = ticket.account;
-		let ticket_signature = ticket.signature;
-		// Ensure the claimer is equal to the spirit claim ticket account
-		if ticket_account != claimer {
-			return false
-		}
-		let msg = Encode::encode(&ticket_account);
+		// Serialize evidence
+		let msg = Encode::encode(sender);
 		let encode_overlord = T::AccountId::encode(overlord);
 		let h256_overlord = H256::from_slice(&encode_overlord);
 		let overlord_key = sr25519::Public::from_h256(h256_overlord);
 		// verify claim
-		sp_io::crypto::sr25519_verify(&ticket_signature, &msg, &overlord_key)
+		sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key)
 	}
+
 	/// Verify the whitelist status of an Account that has purchased origin of shell. Serialize the
 	/// evidence with the claimer & metadata then verify against the expected results
 	/// by calling sr25519 verify function
@@ -1191,31 +1169,6 @@ where
 		let overlord_key = sr25519::Public::from_h256(h256_overlord);
 		// verify claim
 		sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key)
-	}
-
-	/// Verify the NFT metadata to ensure the metadata is signed and can be verified against the
-	/// expected metadata
-	///
-	/// Parameters:
-	/// - overlord: Overlord admin account
-	/// - nft_metadata: NftSaleMetadata struct that has the metadata and signature fields
-	pub fn verify_nft_metadata(
-		overlord: &T::AccountId,
-		nft_metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
-	) -> Result<BoundedVec<u8, T::StringLimit>, Error<T>> {
-		let metadata = nft_metadata.metadata;
-		let signature = nft_metadata.signature;
-		// Serialize evidence
-		let msg = Encode::encode(&metadata);
-		let encode_overlord = T::AccountId::encode(overlord);
-		let h256_overlord = H256::from_slice(&encode_overlord);
-		let overlord_key = sr25519::Public::from_h256(h256_overlord);
-		// verify claim
-		ensure!(
-			sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key),
-			Error::<T>::InvalidMetadata
-		);
-		Ok(metadata)
 	}
 
 	/// Helper function to ensure Overlord account is the sender
