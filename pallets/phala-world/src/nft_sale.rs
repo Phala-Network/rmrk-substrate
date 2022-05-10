@@ -596,9 +596,16 @@ pub mod pallet {
 			);
 
 			let overlord = Self::get_overlord_account()?;
-			// Check if valid message purpose is 'Whitelist' and verify whitelist account
+			// Check if valid message purpose is 'BuyPrimeOriginOfShells' and verify whitelist
+			// account
 			ensure!(
-				Self::verify_claim(&overlord, &sender, signature, message, MessageType::Whitelist),
+				Self::verify_claim(
+					&overlord,
+					&sender,
+					signature,
+					message,
+					MessageType::BuyPrimeOriginOfShells
+				),
 				Error::<T>::WhitelistVerificationFailed
 			);
 			// Get Prime Origin of Shell price
@@ -1132,7 +1139,7 @@ where
 {
 	/// Verify the sender making the claim is the Account signed by the Overlord admin account and
 	/// verify the purpose of the `OverlordMessage` which will be either `RedeemSpirit` or
-	/// `Whitelist`
+	/// `BuyPrimeOriginOfShells`
 	///
 	/// Parameters:
 	/// - `overlord`: Overlord admin account

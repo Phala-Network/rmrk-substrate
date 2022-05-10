@@ -60,8 +60,8 @@ In the `init.js` script there is a transaction that will set the starting invent
 await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
 ```
 
-### Generate Redeem Spirit and Whitelist Signatures
-To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the claim and proceed with minting of a given NFT. Here is an example of signing the `OverlordMessage` with the account address and a purpose enum `MessageType` with values of `RedeemSpirit` or `Whitelist`.
+### Generate RedeemSpirit and BuyPrimeOriginOfShells Signatures
+To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the claim and proceed with minting of a given NFT. Here is an example of signing the `OverlordMessage` with the account address and a purpose enum `MessageType` with values of `RedeemSpirit` or `BuyPrimeOriginOfShells`.
 ```javascript
 // RedeemSpirit
 const messageType = api.createType('MessageType', 'RedeemSpirit');
@@ -114,10 +114,10 @@ After the rare Origin of Shell purchases, we will then move to the Whitelist pur
 await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
     .signAndSend(overlord);
 ```
-Here is an example of creating a `Signature` for the `ferdie` account where a `purpose` of `Whitelist` is added to the account address. This is what `ferdie` will use to pass into the `buyPrimeOriginOfShell` function. 
+Here is an example of creating a `Signature` for the `ferdie` account where a `purpose` of `BuyPrimeOriginOfShells` is added to the account address. This is what `ferdie` will use to pass into the `buyPrimeOriginOfShell` function. 
 ```javascript
-// Whitelist
-const messageType = api.createType('MessageType', 'Whitelist');
+// BuyPrimeOriginOfShells
+const messageType = api.createType('MessageType', 'BuyPrimeOriginOfShells');
 const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
 const overlordSig = overlord.sign(overlordMessage.toU8a());
 ```

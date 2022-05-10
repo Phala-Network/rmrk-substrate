@@ -9,7 +9,7 @@ use sp_std::cmp::Eq;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum MessageType {
 	RedeemSpirit,
-	Whitelist,
+	BuyPrimeOriginOfShells,
 }
 
 #[derive(Encode, Decode, Clone, Debug, PartialEq, TypeInfo)]

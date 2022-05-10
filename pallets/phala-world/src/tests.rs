@@ -339,7 +339,8 @@ fn purchase_prime_origin_of_shell_works() {
 		let mut bob_metadata = BoundedVec::default();
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata, bob_metadata.clone(), charlie_metadata);
-		let bob_message = OverlordMessage { account: BOB, purpose: MessageType::Whitelist };
+		let bob_message =
+			OverlordMessage { account: BOB, purpose: MessageType::BuyPrimeOriginOfShells };
 		let bob_spirit_msg = OverlordMessage { account: BOB, purpose: MessageType::RedeemSpirit };
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
 		let claim = Encode::encode(&bob_message);

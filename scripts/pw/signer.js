@@ -42,7 +42,7 @@ async function main() {
     // Create Whitelist for user account
     {
 
-        const messageType = api.createType('MessageType', 'Whitelist');
+        const messageType = api.createType('MessageType', 'BuyPrimeOriginOfShells');
         const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
         const overlordSig = overlord.sign(overlordMessage.toU8a());
     }

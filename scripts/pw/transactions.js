@@ -46,7 +46,7 @@ async function main() {
                 race_reserved_count: "u32",
             },
             MessageType: {
-                _enum: ['RedeemSpirit', 'Whitelist']
+                _enum: ['RedeemSpirit', 'BuyPrimeOriginOfShells']
             },
             OverlordMessage: {
                 account: "AccountId",
@@ -148,7 +148,7 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        const messageType = api.createType('MessageType', 'Whitelist');
+        const messageType = api.createType('MessageType', 'BuyPrimeOriginOfShells');
         const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
         const overlordSig = overlord.sign(overlordMessage.toU8a());
 
