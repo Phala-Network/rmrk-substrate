@@ -34,16 +34,16 @@ async function main() {
     const overlord = keyring.addFromUri(overlordPrivkey);
 
     {
-        const messageType = api.createType('MessageType', 'RedeemSpirit');
-        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
+        const purposeType = api.createType('PurposeType', 'RedeemSpirit');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
         const metadataSig = overlord.sign(overlordMessage.toU8a());
     }
 
     // Create Whitelist for user account
     {
 
-        const messageType = api.createType('MessageType', 'BuyPrimeOriginOfShells');
-        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': messageType});
+        const purposeType = api.createType('PurposeType', 'BuyPrimeOriginOfShells');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
         const overlordSig = overlord.sign(overlordMessage.toU8a());
     }
 }

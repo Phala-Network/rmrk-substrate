@@ -131,6 +131,25 @@ async function main() {
         }
     }
 
+    // Get NFT attributes
+    {
+        const col = 1;
+        const rol = api.createType('Option<ClassId>', 0);
+        const attributes = await api.query.uniques.attribute.entries(col, rol);
+        attributes
+            .map(([key, value]) =>
+                [key.args[0].toNumber(), key.args[1].unwrap().toNumber(), key.args[2].toHuman(), value.toHuman()]
+            ).forEach(([collection, nft, attr, val]) => {
+            console.log({
+                collection,
+                nft,
+                attr,
+                val
+            })
+        })
+
+    }
+
     // List all preorders before drawing winners
     {
         const preorderIndex = await api.query.pwNftSale.preorderIndex();

@@ -19,7 +19,7 @@ pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
 
 use rmrk_traits::{
-	career::CareerType, message::MessageType, origin_of_shell::OriginOfShellType,
+	career::CareerType, message::PurposeType, origin_of_shell::OriginOfShellType,
 	preorders::PreorderStatus, primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo,
 	OverlordMessage, PreorderInfo,
 };
@@ -517,7 +517,7 @@ pub mod pallet {
 					&sender,
 					signature,
 					message,
-					MessageType::RedeemSpirit
+					PurposeType::RedeemSpirit
 				),
 				Error::<T>::InvalidSpiritClaim
 			);
@@ -605,7 +605,7 @@ pub mod pallet {
 					&sender,
 					signature,
 					message,
-					MessageType::BuyPrimeOriginOfShells
+					PurposeType::BuyPrimeOriginOfShells
 				),
 				Error::<T>::WhitelistVerificationFailed
 			);
@@ -1153,7 +1153,7 @@ where
 		sender: &T::AccountId,
 		signature: sr25519::Signature,
 		message: OverlordMessage<T::AccountId>,
-		purpose: MessageType,
+		purpose: PurposeType,
 	) -> bool {
 		// Check if account in message matches sender
 		if sender != &message.account || purpose != message.purpose {

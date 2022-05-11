@@ -21,7 +21,7 @@ pub use part::{EquippableList, FixedPart, PartType, SlotPart};
 pub use theme::{Theme, ThemeProperty};
 // pub use part::{PartInfo};
 pub use collection::{Collection, CollectionInfo};
-pub use message::{MessageType, OverlordMessage};
+pub use message::{OverlordMessage, PurposeType};
 pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
 pub use nft_sale::NftSaleInfo;
 pub use origin_of_shell::OriginOfShell;
