@@ -205,7 +205,10 @@ fn auto_increment_era_works() {
 		// Set Overlord admin as BOB
 		assert_ok!(PWNftSale::set_overlord(Origin::root(), BOB));
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OverlordChanged { old_overlord: Some(OVERLORD) },
+			crate::pallet_pw_nft_sale::Event::OverlordChanged {
+				old_overlord: Some(OVERLORD),
+				new_overlord: BOB,
+			},
 		));
 		// Initialize the Phala World Clock
 		assert_ok!(PWNftSale::initialize_world_clock(Origin::signed(BOB)));

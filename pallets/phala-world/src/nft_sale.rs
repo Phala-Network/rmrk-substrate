@@ -413,6 +413,7 @@ pub mod pallet {
 		},
 		OverlordChanged {
 			old_overlord: Option<T::AccountId>,
+			new_overlord: T::AccountId,
 		},
 		/// Origin of Shells Inventory was set
 		OriginOfShellsInventoryWasSet {
@@ -948,7 +949,7 @@ pub mod pallet {
 			let old_overlord = <Overlord<T>>::get();
 
 			Overlord::<T>::put(&new_overlord);
-			Self::deposit_event(Event::OverlordChanged { old_overlord });
+			Self::deposit_event(Event::OverlordChanged { old_overlord, new_overlord });
 			// GameOverlord user does not pay a fee
 			Ok(Pays::No.into())
 		}
