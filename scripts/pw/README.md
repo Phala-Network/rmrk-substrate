@@ -75,7 +75,7 @@ This is an example of generating the `Signature` for a Spirit NFT by adding a pr
 // Mint a Spirit with at lest 10 PHA
 await api.tx.pwNftSale.claimSpirit().signAndSend(ferdie);
 // Redeem a Spirit with a valid Signature
-await api.tx.pwNftSale.redeemSpirit(overlordSig, overlordMessage).signAndSend(ferdie);
+await api.tx.pwNftSale.redeemSpirit(overlordSig).signAndSend(ferdie);
 ```
 
 ### Status Types
@@ -127,7 +127,7 @@ This will enable `ferdie` to call `PurchasePrimeOriginOfShells` and here is an e
 - `RaceType`: A pick of any of the 4 Races `'Cyborg'`, `'AISpectre'`, `'Pandroid'`, `'XGene'`.
 - `CareerType`: A pick of any of the 5 Careers `'HardwareDruid'`, `'RoboWarrior'`, `'TradeNegotiator'`, `'HackerWizard'`, `'Web3Monk'`.
 ```javascript
-await api.tx.pwNftSale.buyPrimeOriginOfShell(overlordSig, overlordMessage, 'Cyborg', 'HackerWizard')
+await api.tx.pwNftSale.buyPrimeOriginOfShell(overlordSig, 'Cyborg', 'HackerWizard')
     .signAndSend(ferdie);
 ```
 

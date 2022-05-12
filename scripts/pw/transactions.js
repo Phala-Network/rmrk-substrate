@@ -113,7 +113,7 @@ async function main() {
 
         // Mint a Spirit
         //await api.tx.pwNftSale.claimSpirit().signAndSend(user);
-        await api.tx.pwNftSale.redeemSpirit(metadataSig, overlordMessage).signAndSend(ferdie);
+        await api.tx.pwNftSale.redeemSpirit(metadataSig).signAndSend(ferdie);
     }
 
     // mint spirit nft
@@ -155,7 +155,7 @@ async function main() {
         //await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
         //    .signAndSend(overlord, {nonce: -1});
         // Mint Prime Origin of Shell
-        await api.tx.pwNftSale.buyPrimeOriginOfShell(overlordSig, overlordMessage, 'Cyborg', 'HackerWizard')
+        await api.tx.pwNftSale.buyPrimeOriginOfShell(overlordSig, 'Cyborg', 'HackerWizard')
             .signAndSend(ferdie);
     }
 

@@ -61,7 +61,7 @@ fn mint_spirit(account: AccountId32, spirit_signature: Option<sr25519::Signature
 			OverlordMessage { account: account.clone(), purpose: PurposeType::RedeemSpirit };
 		let enc_msg = Encode::encode(&message);
 		let signature = overlord_pair.sign(&enc_msg);
-		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), signature, message));
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), signature));
 	} else {
 		// Mint Spirit NFT
 		assert_ok!(PWNftSale::claim_spirit(Origin::signed(account)));
@@ -159,7 +159,7 @@ fn claimed_spirit_works() {
 		let claim = Encode::encode(&message);
 		let overlord_signature = overlord_pair.sign(&claim);
 		// Dispatch a redeem_spirit from BOB's account
-		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), overlord_signature, message));
+		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(BOB), overlord_signature));
 		// ALICE should be able to claim since she has minimum amount of PHA
 		assert_ok!(PWNftSale::claim_spirit(Origin::signed(ALICE)));
 	});
@@ -355,7 +355,6 @@ fn purchase_prime_origin_of_shell_works() {
 			PWNftSale::buy_prime_origin_of_shell(
 				Origin::signed(BOB),
 				bob_overlord_signature.clone(),
-				bob_message.clone(),
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
 			),
@@ -368,7 +367,6 @@ fn purchase_prime_origin_of_shell_works() {
 			PWNftSale::buy_prime_origin_of_shell(
 				Origin::signed(BOB),
 				fake_signature,
-				bob_spirit_msg,
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
 			),
@@ -378,7 +376,6 @@ fn purchase_prime_origin_of_shell_works() {
 		assert_ok!(PWNftSale::buy_prime_origin_of_shell(
 			Origin::signed(BOB),
 			bob_overlord_signature.clone(),
-			bob_message.clone(),
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
 		));
@@ -398,7 +395,6 @@ fn purchase_prime_origin_of_shell_works() {
 			PWNftSale::buy_prime_origin_of_shell(
 				Origin::signed(BOB),
 				bob_overlord_signature,
-				bob_message,
 				RaceType::AISpectre,
 				CareerType::HackerWizard,
 			),
