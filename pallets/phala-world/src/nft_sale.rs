@@ -505,7 +505,6 @@ pub mod pallet {
 		pub fn redeem_spirit(
 			origin: OriginFor<T>,
 			signature: sr25519::Signature,
-			message: OverlordMessage<T::AccountId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
@@ -516,7 +515,6 @@ pub mod pallet {
 					&overlord,
 					&sender,
 					signature,
-					message,
 					PurposeType::RedeemSpirit
 				),
 				Error::<T>::InvalidSpiritClaim
@@ -585,7 +583,6 @@ pub mod pallet {
 		pub fn buy_prime_origin_of_shell(
 			origin: OriginFor<T>,
 			signature: sr25519::Signature,
-			message: OverlordMessage<T::AccountId>,
 			race: RaceType,
 			career: CareerType,
 		) -> DispatchResult {
@@ -604,7 +601,6 @@ pub mod pallet {
 					&overlord,
 					&sender,
 					signature,
-					message,
 					PurposeType::BuyPrimeOriginOfShells
 				),
 				Error::<T>::WhitelistVerificationFailed
@@ -1152,20 +1148,18 @@ where
 		overlord: &T::AccountId,
 		sender: &T::AccountId,
 		signature: sr25519::Signature,
-		message: OverlordMessage<T::AccountId>,
 		purpose: PurposeType,
 	) -> bool {
-		// Check if account in message matches sender
-		if sender != &message.account || purpose != message.purpose {
-			return false
-		}
-		// Serialize evidence
-		let msg = Encode::encode(&message);
+		let message = OverlordMessage {
+			account: sender.clone(),
+			purpose
+		};
+		let encoded_message = Encode::encode(&message);
 		let encode_overlord = T::AccountId::encode(overlord);
 		let h256_overlord = H256::from_slice(&encode_overlord);
 		let overlord_key = sr25519::Public::from_h256(h256_overlord);
 		// verify claim
-		sp_io::crypto::sr25519_verify(&signature, &msg, &overlord_key)
+		sp_io::crypto::sr25519_verify(&signature, &encoded_message, &overlord_key)
 	}
 
 	/// Helper function to ensure Overlord account is the sender
