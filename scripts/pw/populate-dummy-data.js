@@ -94,6 +94,7 @@ async function main() {
     let nonceDavid = await getNonce(david.address);
     let nonceEve = await getNonce(eve.address);
     let nonceFerdie = await getNonce(ferdie.address);
+    let nonceOverlord = await getNonce(overlord.address);
 
     // Claim Spirits
     {
@@ -101,12 +102,13 @@ async function main() {
         const purposeType = api.createType('PurposeType', 'RedeemSpirit');
         const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
         const metadataSig = overlord.sign(overlordMessage.toU8a());
-        await api.tx.pwNftSale.claimSpirit().signAndSend(alice);
-        await api.tx.pwNftSale.claimSpirit().signAndSend(bob);
-        await api.tx.pwNftSale.claimSpirit().signAndSend(charlie);
-        await api.tx.pwNftSale.claimSpirit().signAndSend(david);
-        await api.tx.pwNftSale.claimSpirit().signAndSend(eve);
-        await api.tx.pwNftSale.redeemSpirit(metadataSig).signAndSend(ferdie);
+        await api.tx.pwNftSale.claimSpirit().signAndSend(alice, { nonce: nonceAlice++ });
+        await api.tx.pwNftSale.claimSpirit().signAndSend(bob, { nonce: nonceBob++ });
+        await api.tx.pwNftSale.claimSpirit().signAndSend(charlie, { nonce: nonceCharlie++ });
+        await api.tx.pwNftSale.claimSpirit().signAndSend(david, { nonce: nonceDavid++ });
+        await api.tx.pwNftSale.claimSpirit().signAndSend(eve, { nonce: nonceEve++ });
+        await api.tx.pwNftSale.redeemSpirit(metadataSig).signAndSend(ferdie, { nonce: nonceFerdie++ });
+        await waitTxAccepted(alice.address, nonceAlice - 1);
         console.log(`Claiming Spirits Done.`);
     }
 
@@ -114,15 +116,17 @@ async function main() {
     {
         console.log(`Purchase Rare Origin of Shells...`);
         await api.tx.pwNftSale.setStatusType(true, 'PurchaseRareOriginOfShells')
-            .signAndSend(overlord);
+            .signAndSend(overlord, { nonce: nonceOverlord++ } );
+        await waitTxAccepted(overlord.address, nonceOverlord - 1);
         await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard')
-            .signAndSend(bob);
+            .signAndSend(bob, { nonce: nonceBob++ });
         await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'AISpectre', 'Web3Monk')
-            .signAndSend(alice);
+            .signAndSend(alice, { nonce: nonceAlice++ });
         await api.tx.pwNftSale.buyRareOriginOfShell('Magic', 'Pandroid', 'RoboWarrior')
-            .signAndSend(charlie);
+            .signAndSend(charlie, { nonce: nonceCharlie++ });
         await api.tx.pwNftSale.buyRareOriginOfShell('Magic', 'XGene', 'TradeNegotiator')
-            .signAndSend(david);
+            .signAndSend(david, { nonce: nonceDavid++ });
+        await waitTxAccepted(bob.address, nonceBob - 1);
         console.log(`Purchase Rare Origin of Shells Done.`);
     }
 
@@ -130,16 +134,17 @@ async function main() {
     {
         console.log(`Purchase Prime Origin of Shells Whitelist...`);
         await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
-            .signAndSend(overlord);
+            .signAndSend(overlord, { nonce: nonceOverlord++ });
         const purposeType = api.createType('PurposeType', 'BuyPrimeOriginOfShells');
         const ferdieWlMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
         const eveWlMessage = api.createType('OverlordMessage', {'account': eve.address, 'purpose': purposeType});
         const ferdieWlSig = overlord.sign(ferdieWlMessage.toU8a());
         const eveWlSig = overlord.sign(eveWlMessage.toU8a());
         await api.tx.pwNftSale.buyPrimeOriginOfShell(ferdieWlSig, 'Cyborg', 'HackerWizard')
-            .signAndSend(ferdie);
+            .signAndSend(ferdie, { nonce: nonceFerdie++ });
         await api.tx.pwNftSale.buyPrimeOriginOfShell(eveWlSig, 'XGene', 'Web3Monk')
-            .signAndSend(eve);
+            .signAndSend(eve, { nonce: nonceEve++ });
+        await waitTxAccepted(overlord.address, nonceOverlord - 1);
         console.log(`Purchase Prime Origin of Shells Whitelist Done`);
     }
 
@@ -147,7 +152,7 @@ async function main() {
     {
         console.log(`Preorder Prime Origin of Shells Non-Whitelist...`);
         await api.tx.pwNftSale.setStatusType(true, 'PreorderOriginOfShells')
-           .signAndSend(overlord);
+           .signAndSend(overlord, { nonce: nonceOverlord++ });
         await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard')
            .signAndSend(ferdie, { nonce: nonceFerdie++ } );
         await api.tx.pwNftSale.preorderOriginOfShell('AISpectre', 'Web3Monk')
