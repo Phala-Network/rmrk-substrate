@@ -7,7 +7,7 @@ use sp_std::cmp::Eq;
 
 #[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum PurposeType {
+pub enum Purpose {
 	RedeemSpirit,
 	BuyPrimeOriginOfShells,
 }
@@ -15,5 +15,5 @@ pub enum PurposeType {
 #[derive(Encode, Decode, Clone, Debug, PartialEq, TypeInfo)]
 pub struct OverlordMessage<AccountId> {
 	pub account: AccountId,
-	pub purpose: PurposeType,
+	pub purpose: Purpose,
 }

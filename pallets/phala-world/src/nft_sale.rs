@@ -19,7 +19,7 @@ pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
 
 use rmrk_traits::{
-	career::CareerType, message::PurposeType, origin_of_shell::OriginOfShellType,
+	career::CareerType, message::Purpose, origin_of_shell::OriginOfShellType,
 	preorders::PreorderStatus, primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo,
 	OverlordMessage, PreorderInfo,
 };
@@ -511,7 +511,7 @@ pub mod pallet {
 			let overlord = Self::get_overlord_account()?;
 			// verify the claim ticket
 			ensure!(
-				Self::verify_claim(&overlord, &sender, signature, PurposeType::RedeemSpirit),
+				Self::verify_claim(&overlord, &sender, signature, Purpose::RedeemSpirit),
 				Error::<T>::InvalidSpiritClaim
 			);
 			// Mint Spirit NFT
@@ -596,7 +596,7 @@ pub mod pallet {
 					&overlord,
 					&sender,
 					signature,
-					PurposeType::BuyPrimeOriginOfShells
+					Purpose::BuyPrimeOriginOfShells
 				),
 				Error::<T>::WhitelistVerificationFailed
 			);
@@ -1143,7 +1143,7 @@ where
 		overlord: &T::AccountId,
 		sender: &T::AccountId,
 		signature: sr25519::Signature,
-		purpose: PurposeType,
+		purpose: Purpose,
 	) -> bool {
 		let message = OverlordMessage { account: sender.clone(), purpose };
 		let encoded_message = Encode::encode(&message);

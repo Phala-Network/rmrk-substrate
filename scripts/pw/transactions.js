@@ -45,12 +45,12 @@ async function main() {
                 race_giveaway_count: "u32",
                 race_reserved_count: "u32",
             },
-            PurposeType: {
+            Purpose: {
                 _enum: ['RedeemSpirit', 'BuyPrimeOriginOfShells']
             },
             OverlordMessage: {
                 account: "AccountId",
-                purpose: "PurposeType",
+                purpose: "Purpose",
             },
         }
     });
@@ -106,8 +106,8 @@ async function main() {
 
     // Create OverlordMessage for RedeemSpirit
     {
-        const purposeType = api.createType('PurposeType', 'RedeemSpirit');
-        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
+        const purpose = api.createType('Purpose', 'RedeemSpirit');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
         const metadataSig = overlord.sign(overlordMessage.toU8a());
         //const isValid = overlord.verify(overlordMessage, metadataSig, overlord.publicKey);
 
@@ -148,8 +148,8 @@ async function main() {
         // metadata '0x2813308004'
         // const metadataSig = overlord.sign(metadata);
         // u8aToHex(metadataSig);
-        const purposeType = api.createType('PurposeType', 'BuyPrimeOriginOfShells');
-        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
+        const purpose = api.createType('Purpose', 'BuyPrimeOriginOfShells');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
         const overlordSig = overlord.sign(overlordMessage.toU8a());
 
         //await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
