@@ -45,12 +45,12 @@ async function main() {
                 race_giveaway_count: "u32",
                 race_reserved_count: "u32",
             },
-            PurposeType: {
+            Purpose: {
                 _enum: ['RedeemSpirit', 'BuyPrimeOriginOfShells']
             },
             OverlordMessage: {
                 account: "AccountId",
-                purpose: "PurposeType",
+                purpose: "Purpose",
             },
         }
     });
@@ -99,8 +99,8 @@ async function main() {
     // Claim Spirits
     {
         console.log(`Claiming Spirits...`);
-        const purposeType = api.createType('PurposeType', 'RedeemSpirit');
-        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
+        const purpose = api.createType('Purpose', 'RedeemSpirit');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
         const metadataSig = overlord.sign(overlordMessage.toU8a());
         await api.tx.pwNftSale.claimSpirit().signAndSend(alice, { nonce: nonceAlice++ });
         await api.tx.pwNftSale.claimSpirit().signAndSend(bob, { nonce: nonceBob++ });
@@ -135,9 +135,9 @@ async function main() {
         console.log(`Purchase Prime Origin of Shells Whitelist...`);
         await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
             .signAndSend(overlord, { nonce: nonceOverlord++ });
-        const purposeType = api.createType('PurposeType', 'BuyPrimeOriginOfShells');
-        const ferdieWlMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
-        const eveWlMessage = api.createType('OverlordMessage', {'account': eve.address, 'purpose': purposeType});
+        const purpose = api.createType('Purpose', 'BuyPrimeOriginOfShells');
+        const ferdieWlMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
+        const eveWlMessage = api.createType('OverlordMessage', {'account': eve.address, 'purpose': purpose});
         const ferdieWlSig = overlord.sign(ferdieWlMessage.toU8a());
         const eveWlSig = overlord.sign(eveWlMessage.toU8a());
         await api.tx.pwNftSale.buyPrimeOriginOfShell(ferdieWlSig, 'Cyborg', 'HackerWizard')

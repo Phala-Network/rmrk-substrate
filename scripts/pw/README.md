@@ -61,11 +61,11 @@ await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonc
 ```
 
 ### Generate RedeemSpirit and BuyPrimeOriginOfShells Signatures
-To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the claim and proceed with minting of a given NFT. Here is an example of signing the `OverlordMessage` with the account address and a purpose enum `PurposeType` with values of `RedeemSpirit` or `BuyPrimeOriginOfShells`.
+To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the claim and proceed with minting of a given NFT. Here is an example of signing the `OverlordMessage` with the account address and a purpose enum `Purpose` with values of `RedeemSpirit` or `BuyPrimeOriginOfShells`.
 ```javascript
 // RedeemSpirit
-const purposeType = api.createType('PurposeType', 'RedeemSpirit');
-const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
+const purpose = api.createType('Purpose', 'RedeemSpirit');
+const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
 const overlordSig = overlord.sign(overlordMessage.toU8a());
 ```
 
@@ -117,8 +117,8 @@ await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
 Here is an example of creating a `Signature` for the `ferdie` account where a `purpose` of `BuyPrimeOriginOfShells` is added to the account address. This is what `ferdie` will use to pass into the `buyPrimeOriginOfShell` function. 
 ```javascript
 // BuyPrimeOriginOfShells
-const purposeType = api.createType('PurposeType', 'BuyPrimeOriginOfShells');
-const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purposeType});
+const purpose = api.createType('Purpose', 'BuyPrimeOriginOfShells');
+const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
 const overlordSig = overlord.sign(overlordMessage.toU8a());
 ```
 This will enable `ferdie` to call `PurchasePrimeOriginOfShells` and here is an explanation of the valid parameters:

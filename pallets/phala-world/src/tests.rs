@@ -10,7 +10,7 @@ use sp_core::{crypto::AccountId32, sr25519, Pair};
 use mock::{Call, Event as MockEvent, ExtBuilder, Origin, PWNftSale, Test};
 use rmrk_traits::{
 	career::CareerType,
-	message::{OverlordMessage, PurposeType},
+	message::{OverlordMessage, Purpose},
 	origin_of_shell::OriginOfShellType,
 	preorders::PreorderStatus,
 	primitives::*,
@@ -58,7 +58,7 @@ fn mint_spirit(account: AccountId32, spirit_signature: Option<sr25519::Signature
 	let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 	if let Some(spirit_signature) = spirit_signature {
 		let message =
-			OverlordMessage { account: account.clone(), purpose: PurposeType::RedeemSpirit };
+			OverlordMessage { account: account.clone(), purpose: Purpose::RedeemSpirit };
 		let enc_msg = Encode::encode(&message);
 		let signature = overlord_pair.sign(&enc_msg);
 		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), signature));
@@ -154,7 +154,7 @@ fn claimed_spirit_works() {
 		// let overlord_pub = overlord_pair.public();
 		// Set Overlord and configuration then enable spirits to be claimed
 		setup_config(StatusType::ClaimSpirits);
-		let message = OverlordMessage { account: BOB, purpose: PurposeType::RedeemSpirit };
+		let message = OverlordMessage { account: BOB, purpose: Purpose::RedeemSpirit };
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
 		let claim = Encode::encode(&message);
 		let overlord_signature = overlord_pair.sign(&claim);
@@ -343,8 +343,8 @@ fn purchase_prime_origin_of_shell_works() {
 		let mut charlie_metadata = BoundedVec::default();
 		metadata_accounts(alice_metadata, bob_metadata.clone(), charlie_metadata);
 		let bob_message =
-			OverlordMessage { account: BOB, purpose: PurposeType::BuyPrimeOriginOfShells };
-		let bob_spirit_msg = OverlordMessage { account: BOB, purpose: PurposeType::RedeemSpirit };
+			OverlordMessage { account: BOB, purpose: Purpose::BuyPrimeOriginOfShells };
+		let bob_spirit_msg = OverlordMessage { account: BOB, purpose: Purpose::RedeemSpirit };
 		// Sign BOB's Public Key and Metadata encoding with OVERLORD account
 		let claim = Encode::encode(&bob_message);
 		let fake_claim = Encode::encode(&bob_spirit_msg);
