@@ -44,7 +44,7 @@ pub use pallet_rmrk_core;
 pub use pallet_rmrk_equip;
 pub use pallet_rmrk_market;
 
-pub use pallet_phala_world::{self, pallet_pw_nft_sale};
+pub use pallet_phala_world::{pallet_pw_incubation, pallet_pw_nft_sale};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -347,6 +347,10 @@ impl pallet_pw_nft_sale::Config for Runtime {
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
 	type PrimeOriginOfShellPrice = PrimeOriginOfShellPrice;
 	type IterLimit = IterLimit;
+}
+
+impl pallet_pw_incubation::Config for Runtime {
+	type Event = Event;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
@@ -463,6 +467,7 @@ construct_runtime!(
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>, Storage},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Storage, Event<T>},
 		PWNftSale: pallet_pw_nft_sale::{Pallet, Call, Storage, Event<T>},
+		PWIncubation: pallet_pw_incubation::{Pallet, Call, Storage, Event<T>},
 		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
 		Utility: pallet_utility::{Pallet, Call, Storage, Event},
 		// Governance

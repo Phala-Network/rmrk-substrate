@@ -1,5 +1,5 @@
 use super::*;
-use crate::pallet_pw_nft_sale;
+use crate::{pallet_pw_incubation, pallet_pw_nft_sale};
 
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -37,6 +37,7 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Event<T>},
 		PWNftSale: pallet_pw_nft_sale::{Pallet, Call, Storage, Event<T>},
+		PWIncubation: pallet_pw_incubation::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -181,6 +182,10 @@ impl pallet_pw_nft_sale::Config for Test {
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
 	type PrimeOriginOfShellPrice = PrimeOriginOfShellPrice;
 	type IterLimit = IterLimit;
+}
+
+impl pallet_pw_incubation::Config for Test {
+	type Event = Event;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;

@@ -3,6 +3,7 @@
 pub mod base;
 pub mod career;
 pub mod collection;
+pub mod food;
 pub mod message;
 pub mod nft;
 pub mod nft_sale;
@@ -17,6 +18,7 @@ pub mod status_type;
 pub mod theme;
 
 pub use base::{Base, BaseInfo};
+pub use food::FoodInfo;
 pub use part::{EquippableList, FixedPart, PartType, SlotPart};
 pub use theme::{Theme, ThemeProperty};
 // pub use part::{PartInfo};
