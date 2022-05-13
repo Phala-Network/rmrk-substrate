@@ -62,50 +62,63 @@ async function main() {
     const user = keyring.addFromUri(userPrivkey);
     const overlord = keyring.addFromUri(overlordPrivkey);
     let nonceRoot = await getNonce(root.address);
+    let nonceOverlord = await getNonce(overlord.address);
 
     // prep
     {
+        console.log("Add funds to overlord account...");
         await api.tx.balances.transfer(overlord.address, token(1_000_000)).signAndSend(root, {nonce: nonceRoot++});
         await waitTxAccepted(root.address, nonceRoot - 1);
+        console.log("Add funds to overlord account...Done.");
+        console.log("Setting new overlord...");
         await api.tx.sudo.sudo(
             api.tx.pwNftSale.setOverlord(overlord.address)
-        ).signAndSend(root, {nonce: -1});
+        ).signAndSend(root, {nonce: nonceRoot++});
         await sleep(6000);
-
+        await waitTxAccepted(root.address, nonceRoot - 1);
+        console.log("Setting new overlord...Done.");
+        console.log("Initialize Phala World Clock...");
         await api.tx.pwNftSale.initializeWorldClock()
-            .signAndSend(overlord, {nonce: -1});
-
+            .signAndSend(overlord, {nonce: nonceOverlord++});
+        await waitTxAccepted(overlord.address, nonceOverlord - 1);
+        console.log("Initialize Phala World Clock...Done");
+        console.log("Set ClaimSpirits status to true...");
         // available states:
         // ClaimSpirits,
         // PurchaseRareOriginOfShells,
         // PurchasePrimeOriginOfShells,
         // PreorderOriginOfShells,
         await api.tx.pwNftSale.setStatusType(true, 'ClaimSpirits')
-            .signAndSend(overlord, {nonce: -1});
-
+            .signAndSend(overlord, {nonce: nonceOverlord++});
+        await waitTxAccepted(overlord.address, nonceOverlord - 1);
+        console.log("Set ClaimSpirits Status to true...Done");
+        console.log("Create Spirits and Origin of Shell Collections...");
         // mint spirits NFTs with overlord
         // collection 0: spirits
         await api.tx.rmrkCore.createCollection(
             '0x',
             null,
             'PWSPRT'
-        ).signAndSend(overlord, {nonce: -1});
+        ).signAndSend(overlord, {nonce: nonceOverlord++});
         // set the spirits collection id
         await api.tx.pwNftSale.setSpiritCollectionId(
             0
-        ).signAndSend(overlord, {nonce: -1});
+        ).signAndSend(overlord, {nonce: nonceOverlord++});
         // collection 1: origin of shells
         await api.tx.rmrkCore.createCollection(
             '0x',
             null,
             'PWOAS'
-        ).signAndSend(overlord, {nonce: -1});
+        ).signAndSend(overlord, {nonce: nonceOverlord++});
         // set the origin of shell collection id
         await api.tx.pwNftSale.setOriginOfShellCollectionId(
             1
-        ).signAndSend(overlord, {nonce: -1});
+        ).signAndSend(overlord, {nonce: nonceOverlord++});
+        console.log("Create Spirits and Origin of Shell Collections...Done");
+        console.log("Initialize Origin of Shell NFT sale inventory...");
         // set the initial inventory numbers that will be used until the preorder phase
-        await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
+        await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: nonceOverlord++});
+        console.log("Initialize Origin of Shell NFT sale inventory...Done");
     }
 
     // // produce spirit whitelist
