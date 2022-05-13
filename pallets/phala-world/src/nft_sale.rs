@@ -511,12 +511,7 @@ pub mod pallet {
 			let overlord = Self::get_overlord_account()?;
 			// verify the claim ticket
 			ensure!(
-				Self::verify_claim(
-					&overlord,
-					&sender,
-					signature,
-					PurposeType::RedeemSpirit
-				),
+				Self::verify_claim(&overlord, &sender, signature, PurposeType::RedeemSpirit),
 				Error::<T>::InvalidSpiritClaim
 			);
 			// Mint Spirit NFT
@@ -1150,10 +1145,7 @@ where
 		signature: sr25519::Signature,
 		purpose: PurposeType,
 	) -> bool {
-		let message = OverlordMessage {
-			account: sender.clone(),
-			purpose
-		};
+		let message = OverlordMessage { account: sender.clone(), purpose };
 		let encoded_message = Encode::encode(&message);
 		let encode_overlord = T::AccountId::encode(overlord);
 		let h256_overlord = H256::from_slice(&encode_overlord);
@@ -1661,6 +1653,6 @@ where
 
 	/// Helper function to get empty metadata boundedvec
 	fn get_empty_metadata() -> BoundedVec<u8, T::StringLimit> {
-		"".as_bytes().to_vec().try_into().unwrap()
+		Default::default()
 	}
 }
