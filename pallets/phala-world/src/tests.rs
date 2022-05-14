@@ -12,7 +12,6 @@ use rmrk_traits::{
 	career::CareerType,
 	message::{OverlordMessage, Purpose},
 	origin_of_shell::OriginOfShellType,
-	preorders::PreorderStatus,
 	primitives::*,
 	race::RaceType,
 	status_type::StatusType,
@@ -57,8 +56,7 @@ fn mint_collection(account: AccountId32) {
 fn mint_spirit(account: AccountId32, spirit_signature: Option<sr25519::Signature>) {
 	let overlord_pair = sr25519::Pair::from_seed(b"28133080042813308004281330800428");
 	if let Some(spirit_signature) = spirit_signature {
-		let message =
-			OverlordMessage { account: account.clone(), purpose: Purpose::RedeemSpirit };
+		let message = OverlordMessage { account: account.clone(), purpose: Purpose::RedeemSpirit };
 		let enc_msg = Encode::encode(&message);
 		let signature = overlord_pair.sign(&enc_msg);
 		assert_ok!(PWNftSale::redeem_spirit(Origin::signed(account), signature));
@@ -542,17 +540,13 @@ fn mint_preorder_origin_of_shell_works() {
 			RaceType::AISpectre,
 			CareerType::HackerWizard,
 		));
-		let preorder_statuses: Vec<(PreorderId, PreorderStatus)> = vec![
-			(0u32, PreorderStatus::Chosen),
-			(1u32, PreorderStatus::NotChosen),
-			(2u32, PreorderStatus::Chosen),
-		];
+		let preorders: Vec<PreorderId> = vec![0u32, 1u32, 2u32];
 		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
-		assert_ok!(PWNftSale::set_preorder_status(Origin::signed(OVERLORD), preorder_statuses));
+		assert_ok!(PWNftSale::mint_chosen_preorders(Origin::signed(OVERLORD), preorders));
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
+			crate::pallet_pw_nft_sale::Event::ChosenPreorderMinted {
 				preorder_id: 2u32,
-				status: PreorderStatus::Chosen,
+				owner: ALICE,
 			},
 		));
 		// Reassign PreorderIndex to max value
@@ -571,52 +565,11 @@ fn mint_preorder_origin_of_shell_works() {
 			false,
 			StatusType::PreorderOriginOfShells
 		));
-		// ALICE claims origin of shells
-		assert_ok!(PWNftSale::claim_chosen_preorders(Origin::signed(ALICE)));
-		// Check if event triggered
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Prime,
-				collection_id: 1,
-				nft_id: 0,
-				owner: ALICE,
-				race: RaceType::AISpectre,
-				career: CareerType::HackerWizard,
-			},
-		));
-		// BOB claims origin of shells
-		assert_ok!(PWNftSale::claim_chosen_preorders(Origin::signed(BOB)));
-		// Check if event triggered
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Prime,
-				collection_id: 1,
-				nft_id: 1,
-				owner: BOB,
-				race: RaceType::Cyborg,
-				career: CareerType::HardwareDruid,
-			},
-		));
-		// CHARLIE should be able to make a call, but the transaction will not trigger an error
-		// since all valid preorders are minted and the account could have NotChosen preorders in
-		// their storage
-		assert_ok!(PWNftSale::claim_chosen_preorders(Origin::signed(CHARLIE)));
-		// Check that last event is the same because CHARLIE was NotChosen
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Prime,
-				collection_id: 1,
-				nft_id: 1,
-				owner: BOB,
-				race: RaceType::Cyborg,
-				career: CareerType::HardwareDruid,
-			},
-		));
 		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
 		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
 		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
-		assert_eq!(Balances::total_balance(&CHARLIE), 150_000 * PHA);
-		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_024 * PHA);
+		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
 	});
 }
 
@@ -662,17 +615,13 @@ fn claim_refund_preorder_origin_of_shell_works() {
 			CareerType::HackerWizard,
 		));
 		// Preorder status Vec
-		let preorder_statuses: Vec<(PreorderId, PreorderStatus)> = vec![
-			(0u32, PreorderStatus::Chosen),
-			(1u32, PreorderStatus::NotChosen),
-			(2u32, PreorderStatus::Chosen),
-		];
+		let preorders: Vec<PreorderId> = vec![0u32, 1u32, 2u32];
 		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
-		assert_ok!(PWNftSale::set_preorder_status(Origin::signed(OVERLORD), preorder_statuses,));
+		assert_ok!(PWNftSale::refund_not_chosen_preorders(Origin::signed(OVERLORD), preorders));
 		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::PreorderResultChanged {
+			crate::pallet_pw_nft_sale::Event::NotChosenPreorderRefunded {
 				preorder_id: 2u32,
-				status: PreorderStatus::Chosen,
+				owner: ALICE,
 			},
 		));
 		// Reassign PreorderIndex to max value
@@ -691,60 +640,10 @@ fn claim_refund_preorder_origin_of_shell_works() {
 			false,
 			StatusType::PreorderOriginOfShells
 		));
-		// ALICE claims origin of shells
-		assert_ok!(PWNftSale::claim_chosen_preorders(Origin::signed(ALICE)));
-		// Check if event triggered
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Prime,
-				collection_id: 1,
-				nft_id: 0,
-				owner: ALICE,
-				race: RaceType::AISpectre,
-				career: CareerType::HackerWizard,
-			},
-		));
-		// BOB claims origin of shells
-		assert_ok!(PWNftSale::claim_chosen_preorders(Origin::signed(BOB)));
-		// Check if event triggered
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Prime,
-				collection_id: 1,
-				nft_id: 1,
-				owner: BOB,
-				race: RaceType::Cyborg,
-				career: CareerType::HardwareDruid,
-			},
-		));
-		// CHARLIE should be able to make a call, but the transaction will not trigger an error
-		// since all valid preorders are minted and the account could have NotChosen preorders in
-		// their storage
-		assert_ok!(PWNftSale::claim_chosen_preorders(Origin::signed(CHARLIE)));
-		// Check that last event is the same because CHARLIE was NotChosen
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::OriginOfShellMinted {
-				origin_of_shell_type: OriginOfShellType::Prime,
-				collection_id: 1,
-				nft_id: 1,
-				owner: BOB,
-				race: RaceType::Cyborg,
-				career: CareerType::HardwareDruid,
-			},
-		));
-		// CHARLIE still has a reserved balance so he can claim his refund
-		assert_ok!(PWNftSale::claim_refund_preorders(Origin::signed(CHARLIE)));
-		// Check that last event is the same because CHARLIE was NotChosen
-		System::assert_last_event(MockEvent::PWNftSale(
-			crate::pallet_pw_nft_sale::Event::RefundWasClaimed {
-				preorder_id: 1u32,
-				amount: mock::PrimeOriginOfShellPrice::get(),
-			},
-		));
 		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
-		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
-		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
+		assert_eq!(Balances::total_balance(&ALICE), 20_000_000 * PHA);
+		assert_eq!(Balances::total_balance(&BOB), 15_000 * PHA);
 		assert_eq!(Balances::total_balance(&CHARLIE), 150_000 * PHA);
-		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_024 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_004 * PHA);
 	});
 }
