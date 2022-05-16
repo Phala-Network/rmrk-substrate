@@ -167,8 +167,8 @@ parameter_types! {
 	pub const MaxMintPerRace: u32 = 2;
 	pub const IterLimit: u32 = 200;
 	pub const FoodPerEra: u8 = 2;
-	pub const MaxFoodFedPerEra: u16 = 2;
 	pub const MaxFoodFeedSelf: u8 = 1;
+	pub const IncubationDuration: u64 = 600;
 }
 
 impl pallet_pw_nft_sale::Config for Test {
@@ -187,8 +187,8 @@ impl pallet_pw_nft_sale::Config for Test {
 impl pallet_pw_incubation::Config for Test {
 	type Event = Event;
 	type FoodPerEra = FoodPerEra;
-	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
+	type IncubationDuration = IncubationDuration;
 }
 
 pub type SystemCall = frame_system::Call<Test>;

@@ -32,12 +32,12 @@ pub mod pallet {
 		/// Amount of food per Era
 		#[pallet::constant]
 		type FoodPerEra: Get<u8>;
-		/// Max food an Origin of Shell can be fed per day
-		#[pallet::constant]
-		type MaxFoodFedPerEra: Get<u16>;
 		/// Max food to feed your own Origin of Shell
 		#[pallet::constant]
 		type MaxFoodFeedSelf: Get<u8>;
+		/// Duration of incubation process
+		#[pallet::constant]
+		type IncubationDuration: Get<u64>;
 	}
 
 	#[pallet::pallet]
@@ -49,12 +49,24 @@ pub mod pallet {
 	#[pallet::getter(fn get_food_by_owner)]
 	pub type FoodByOwner<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, FoodInfo>;
 
+	/// Expected hatch Timestamp for an Origin of Shell that started the incubation process
+	#[pallet::storage]
+	#[pallet::getter(fn get_hatch_time)]
+	pub type HatchTime<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, u64>;
+
 	// Pallets use events to inform users when important changes are made.
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Origin of Shell owner has initiated the incubation sequence
-		StartedIncubation { collection_id: CollectionId, nft_id: NftId, owner: T::AccountId },
+		StartedIncubation {
+			collection_id: CollectionId,
+			nft_id: NftId,
+			owner: T::AccountId,
+			start_time: u64,
+			hatch_time: u64,
+		},
 		/// Origin of Shell received food from an account
 		OriginOfShellReceivedFood {
 			collection_id: CollectionId,
@@ -67,7 +79,8 @@ pub mod pallet {
 			collection_id: CollectionId,
 			nft_id: NftId,
 			owner: T::AccountId,
-			incubation_time: T::BlockNumber,
+			old_hatch_time: u64,
+			new_hatch_time: u64,
 		},
 		/// An origin_of_shell has been awakened
 		OriginOfShellHatched { collection_id: CollectionId, nft_id: NftId, owner: T::AccountId },
@@ -88,6 +101,8 @@ pub mod pallet {
 		CannotHatchOriginOfShell,
 		CannotSendFoodToOriginOfShell,
 		NoFoodAvailable,
+		NotOwner,
+		WrongCollectionId,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -115,7 +130,32 @@ pub mod pallet {
 			nft_id: NftId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			// TODO: Move to incubation.rs
+			// Ensure that the collection is an Origin of Shell Collection
+			ensure!(
+				Self::is_origin_of_shell_collection_id(collection_id),
+				Error::<T>::WrongCollectionId
+			);
+			// Ensure sender is owner
+			ensure!(Self::is_owner(sender.clone(), collection_id, nft_id), Error::<T>::NotOwner);
+			// Ensure incubation process hasn't been started already
+			ensure!(
+				HatchTime::<T>::contains_key(collection_id, nft_id),
+				Error::<T>::HatchingInProgress
+			);
+			// Get time to start hatching process
+			let start_time = T::Time::now().as_secs();
+			let incubation_duration = T::IncubationDuration::get();
+			let hatch_time = start_time + incubation_duration;
+			// Update Hatch Time storage
+			HatchTime::<T>::insert(collection_id, nft_id, hatch_time);
+
+			Self::deposit_event(Event::StartedIncubation {
+				owner: sender,
+				collection_id,
+				nft_id,
+				start_time,
+				hatch_time,
+			});
 
 			Ok(())
 		}
@@ -136,7 +176,11 @@ pub mod pallet {
 			nft_id: NftId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			// TODO: Move to incubation.rs
+			// Ensure that the collection is an Origin of Shell Collection
+			ensure!(
+				Self::is_origin_of_shell_collection_id(collection_id),
+				Error::<T>::WrongCollectionId
+			);
 
 			Ok(())
 		}
@@ -186,4 +230,45 @@ pub mod pallet {
 			Ok(())
 		}
 	}
+}
+
+impl<T: Config> Pallet<T>
+where
+	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
+{
+	/// Helper function to ensure that the sender owns the origin of shell NFT.
+	///
+	/// Parameters:
+	/// - `sender`: Sender to check if owns the NFT
+	/// - `collection_id`: Collection ID of the NFT
+	/// - `nft_id`: NFT ID of the NFT
+	fn is_owner(sender: T::AccountId, collection_id: CollectionId, nft_id: NftId) -> bool {
+		if let Some(owner) = pallet_uniques::Pallet::<T>::owner(collection_id, nft_id) {
+			sender == owner
+		} else {
+			// No owner detected return false
+			false
+		}
+	}
+
+	/// Helper function to check the Collection ID matches Origin of Shell Collection ID.
+	///
+	/// Parameters:
+	/// - `collection_id`: Collection ID to check
+	fn is_origin_of_shell_collection_id(collection_id: CollectionId) -> bool {
+		if let Some(origin_of_shell_collection_id) =
+			pallet_pw_nft_sale::OriginOfShellCollectionId::<T>::get()
+		{
+			collection_id == origin_of_shell_collection_id
+		} else {
+			false
+		}
+	}
+
+	/// Helper function to check an accounts FoodInfo. This will check if they have updated their
+	/// FoodInfo since the last Era that has passed and update the information if needed.
+	///
+	/// Parameters:
+	/// - `sender`: Account owner of the FoodInfo
+	fn update_account_food_info(sender: T::AccountId) {}
 }
