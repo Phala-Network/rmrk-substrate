@@ -1,6 +1,8 @@
 //! Phala World Incubation Pallet
 
 use frame_support::{
+	ensure,
+	pallet_prelude::Get,
 	traits::{
 		tokens::{nonfungibles::InspectEnumerable, ExistenceRequirement},
 		Currency, UnixTime,
@@ -8,6 +10,7 @@ use frame_support::{
 	transactional, BoundedVec,
 };
 use frame_system::{ensure_signed, pallet_prelude::*};
+use sp_runtime::DispatchResult;
 
 pub use crate::pallet_pw_nft_sale;
 pub use pallet_rmrk_core::types::*;
@@ -55,10 +58,17 @@ pub mod pallet {
 	pub type HatchTime<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, u64>;
 
+	/// A bool value to determine if accounts can start incubation of Origin of Shells
+	#[pallet::storage]
+	#[pallet::getter(fn can_start_incubation)]
+	pub type CanStartIncubation<T: Config> = StorageValue<_, bool, ValueQuery>;
+
 	// Pallets use events to inform users when important changes are made.
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// CanStartIncubation status changed
+		CanStartIncubationStatusChanged { status: bool },
 		/// Origin of Shell owner has initiated the incubation sequence
 		StartedIncubation {
 			collection_id: CollectionId,
@@ -97,6 +107,7 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
+		StartIncubationNotAvailable,
 		HatchingInProgress,
 		CannotHatchOriginOfShell,
 		CannotSendFoodToOriginOfShell,
@@ -130,6 +141,8 @@ pub mod pallet {
 			nft_id: NftId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
+			// Check if IncubationPhase is enabled
+			ensure!(CanStartIncubation::<T>::get(), Error::<T>::StartIncubationNotAvailable);
 			// Ensure that the collection is an Origin of Shell Collection
 			ensure!(
 				Self::is_origin_of_shell_collection_id(collection_id),
@@ -139,7 +152,7 @@ pub mod pallet {
 			ensure!(Self::is_owner(sender.clone(), collection_id, nft_id), Error::<T>::NotOwner);
 			// Ensure incubation process hasn't been started already
 			ensure!(
-				HatchTime::<T>::contains_key(collection_id, nft_id),
+				!HatchTime::<T>::contains_key(collection_id, nft_id),
 				Error::<T>::HatchingInProgress
 			);
 			// Get time to start hatching process
@@ -229,6 +242,28 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Privileged function to enable incubation phase for accounts to start the incubation
+		/// process for their Origin of Shells
+		///
+		/// Parameters:
+		/// `origin`: Expected to be the `Overlord` account
+		/// `status`: `bool` value to set for the status in storage
+		#[pallet::weight(0)]
+		pub fn set_can_start_incubation_status(
+			origin: OriginFor<T>,
+			status: bool,
+		) -> DispatchResultWithPostInfo {
+			// Ensure Overlord account is the sender
+			let sender = ensure_signed(origin)?;
+			pallet_pw_nft_sale::Pallet::<T>::ensure_overlord(sender)?;
+			// Set status in storage
+			<CanStartIncubation<T>>::put(status);
+
+			Self::deposit_event(Event::CanStartIncubationStatusChanged { status });
+
+			Ok(Pays::No.into())
+		}
 	}
 }
 
@@ -265,10 +300,71 @@ where
 		}
 	}
 
-	/// Helper function to check an accounts FoodInfo. This will check if they have updated their
+	/// Helper function to refill an accounts FoodInfo. This will check if they have updated their
 	/// FoodInfo since the last Era that has passed and update the information if needed.
 	///
 	/// Parameters:
 	/// - `sender`: Account owner of the FoodInfo
-	fn update_account_food_info(sender: T::AccountId) {}
+	/// - `food_count`: Food count for the current Era left
+	/// - `food_count_for_self`: Food count to feed to owned Origin of Shells in current Era
+	/// - `food_received_this_era`: Food received this current Era
+	fn refill_account_food_info(
+		sender: T::AccountId,
+		food_count: u8,
+		food_count_for_self: u8,
+	) -> DispatchResult {
+		// Check if owner owns an Origin of Shell
+		let origin_of_shell_collection_id =
+			pallet_pw_nft_sale::OriginOfShellCollectionId::<T>::get()
+				.ok_or(pallet_pw_nft_sale::Error::<T>::OriginOfShellCollectionNotSet)?;
+		ensure!(
+			pallet_pw_nft_sale::Pallet::<T>::owns_nft_in_collection(
+				&sender,
+				origin_of_shell_collection_id
+			),
+			Error::<T>::NotOwner
+		);
+		// Get Current Era
+		let current_era = pallet_pw_nft_sale::Era::<T>::get();
+		if let Some(mut food_info) = FoodByOwner::<T>::get(sender) {
+			// Check if FoodInfo is up to date with current Era
+			if current_era > food_info.era {}
+		} else {
+			// Create FoodInfo for owner
+			let new_food_info = FoodInfo {
+				era: current_era,
+				food_count: T::FoodPerEra::get(),
+				food_count_for_self: T::MaxFoodFeedSelf::get(),
+			};
+		}
+
+		Ok(())
+	}
+
+	/// Helper function to create an accounts FoodInfo. This will check if they own an Origin of
+	/// Shell NFT then create a FoodInfo type for the account.
+	///
+	/// Parameters:
+	/// - `sender`: Account owner of the FoodInfo
+	fn create_account_food_info(sender: T::AccountId) -> DispatchResult {
+		// Check if owner owns an Origin of Shell
+		let origin_of_shell_collection_id =
+			pallet_pw_nft_sale::OriginOfShellCollectionId::<T>::get()
+				.ok_or(pallet_pw_nft_sale::Error::<T>::OriginOfShellCollectionNotSet)?;
+		ensure!(
+			pallet_pw_nft_sale::Pallet::<T>::owns_nft_in_collection(
+				&sender,
+				origin_of_shell_collection_id
+			),
+			Error::<T>::NotOwner
+		);
+		// Create FoodInfo for owner
+		let new_food_info = FoodInfo {
+			era: pallet_pw_nft_sale::Era::<T>::get(),
+			food_count: T::FoodPerEra::get(),
+			food_count_for_self: T::MaxFoodFeedSelf::get(),
+		};
+
+		Ok(())
+	}
 }

@@ -15,6 +15,4 @@ pub struct FoodInfo {
 	pub food_count: u8,
 	/// Food left to feed to self. Max of 2 to feed self per day.
 	pub food_count_for_self: u8,
-	/// Number of times fed in the current era.
-	pub food_received: u32,
 }

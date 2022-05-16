@@ -94,7 +94,7 @@ pub(super) type ZeroDay<T: Config> = StorageValue<_, u64>;
 /// The current Era from the initial ZeroDay BlockNumber
 #[pallet::storage]
 #[pallet::getter(fn era)]
-pub type Era<T: Config> = StorageValue<_, u64, ValueQuery>;
+pub type Era<T: Config> = StorageValue<_, EraId, ValueQuery>;
 
 /// Spirits can be claimed
 #[pallet::storage]

@@ -108,7 +108,7 @@ pub mod pallet {
 	/// The current Era from the initial ZeroDay BlockNumber
 	#[pallet::storage]
 	#[pallet::getter(fn era)]
-	pub type Era<T: Config> = StorageValue<_, u64, ValueQuery>;
+	pub type Era<T: Config> = StorageValue<_, EraId, ValueQuery>;
 
 	/// Spirits can be claimed
 	#[pallet::storage]
@@ -1407,7 +1407,7 @@ where
 	/// `sender`: reference to the account id to check
 	/// `collection_id`: Collection id to check if sender owns a NFT in the collection
 	/// `error`: Error type to throw if there is an error detected
-	fn owns_nft_in_collection(sender: &T::AccountId, collection_id: CollectionId) -> bool {
+	pub fn owns_nft_in_collection(sender: &T::AccountId, collection_id: CollectionId) -> bool {
 		pallet_uniques::Pallet::<T>::owned_in_class(&collection_id, sender).count() > 0
 	}
 
