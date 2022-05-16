@@ -29,15 +29,11 @@ async function main() {
             OriginOfShellType: {
                 _enum: ['Prime', 'Magic', 'Legendary']
             },
-            PreorderStatus: {
-                _enum: ['Pending', 'Chosen', 'NotChosen']
-            },
             PreorderInfo: {
                 owner: "AccountId",
                 race: "RaceType",
                 career: "CareerType",
                 metadata: "BoundedString",
-                preorder_status: "PreorderStatus",
             },
             NftSaleInfo: {
                 race_count: "u32",

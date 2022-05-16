@@ -166,24 +166,26 @@ preorderKeys
     })
 })
 ```
-Next create a script to randomly select `Chosen` Preorder IDs. This transaction will allow for the Preorder to change its `PreorderStatus`
+Next, create a script to randomly select chosen Preorder IDs. Then create an array of chosen Preorder IDs to automatically mint the preorders to the owner of the preorders. 
 - `PreorderId`: A number ID mapped to the preorder.
-- `PreorderStatus`: A status with a value of either `Chosen` or `NotChosen`
+- `Preorders`: A Vec of chosen preorders
 ```javascript
-await api.tx.pwNftSale.setPreorderStatus(0, 'Chosen')
+const chosenPreorders = api.createType('Vec<u32>', [0, 1, 2, 4, 10, 6, 12, 11]);
+await api.tx.pwNftSale.mintChosenPreorders(chosenPreorders)
     .signAndSend(overlord);
 ```
-After assigning the preorder statuses, query for all the Preorders sorted by account.
+
+Lastly, create take the not chosen Preorder IDs and refund the account owners that reserved payment for the preorder.
+- `PreorderId`: A number ID mapped to the preorder.
+- `Preorders`: A Vec of chosen preorders
 ```javascript
-const userPreorderResults = await api.query.pwNftSale.preorderResults.entries(ferdie.address);
-userPreorderResults
-    .map(([key, value]) =>
-        [key.args[0].toString(), key.args[1].toNumber(), value.toHuman()]
-    ).forEach(([account, preorderId, preorderInfo]) => {
-    console.log({
-        account,
-        preorderId,
-        preorderInfo,
-    })
-})
+const notChosenPreorders = api.createType('Vec<u32>', [7, 3, 5, 8, 9, 13]);
+await api.tx.pwNftSale.refundNotChosenPreorders(notChosenPreorders)
+    .signAndSend(overlord);
+```
+
+## [4] Enable Last Day of Sale for unlimited purchases for all 3 levels of the remaining Origin of Shell supply.
+```javascript
+await api.tx.pwNftSale.setStatusType(true, 'LastDayOfSale')
+    .signAndSend(overlord);
 ```

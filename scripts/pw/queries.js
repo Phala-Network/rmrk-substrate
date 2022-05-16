@@ -30,15 +30,11 @@ async function main() {
             OriginOfShellType: {
                 _enum: ['Prime', 'Magic', 'Legendary']
             },
-            PreorderStatus: {
-                _enum: ['Pending', 'Chosen', 'NotChosen']
-            },
             PreorderInfo: {
                 owner: "AccountId",
                 race: "RaceType",
                 career: "CareerType",
                 metadata: "BoundedString",
-                preorder_status: "PreorderStatus",
             },
             NftSaleInfo: {
                 race_count: "u32",
@@ -81,11 +77,6 @@ async function main() {
     const tradeNegotiator = api.createType('CareerType', 'TradeNegotiator');
     const hackerWizard = api.createType('CareerType', 'HackerWizard');
     const web3Monk = api.createType('CareerType', 'Web3Monk');
-
-    // PreorderStatus
-    const pending = api.createType('PreorderStatus', 'Pending');
-    const chosen = api.createType('PreorderStatus', 'Chosen');
-    const notChosen = api.createType('PreorderStatus', 'NotChosen');
 
     // list spirit
     {
@@ -176,7 +167,6 @@ async function main() {
     //         race: 'Pandroid',
     //         career: 'HackerWizard',
     //         metadata: 'I am Prime',
-    //         preorderStatus: 'Chosen'
     //      }
     // }
     {

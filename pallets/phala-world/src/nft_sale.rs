@@ -19,9 +19,8 @@ pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
 
 use rmrk_traits::{
-	career::CareerType, message::Purpose, origin_of_shell::OriginOfShellType,
-	preorders::PreorderStatus, primitives::*, race::RaceType, status_type::StatusType, NftSaleInfo,
-	OverlordMessage, PreorderInfo,
+	career::CareerType, message::Purpose, origin_of_shell::OriginOfShellType, primitives::*,
+	race::RaceType, status_type::StatusType, NftSaleInfo, OverlordMessage, PreorderInfo,
 };
 
 pub type BalanceOf<T> =
@@ -88,28 +87,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn preorders)]
 	pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, PreorderInfoOf<T>>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn chosen_preorders)]
-	pub type ChosenPreorders<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		Blake2_128Concat,
-		PreorderId,
-		PreorderInfoOf<T>,
-	>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn not_chosen_preorders)]
-	pub type NotChosenPreorders<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		Blake2_128Concat,
-		PreorderId,
-		PreorderInfoOf<T>,
-	>;
 
 	/// Origin of Shells inventory
 	#[pallet::storage]
@@ -324,16 +301,6 @@ pub mod pallet {
 		OriginOfShellCollectionIdSet {
 			collection_id: CollectionId,
 		},
-		/// Preorder result revealed
-		PreorderResultChanged {
-			preorder_id: PreorderId,
-			status: PreorderStatus,
-		},
-		/// Refund has been claimed
-		RefundWasClaimed {
-			preorder_id: PreorderId,
-			amount: BalanceOf<T>,
-		},
 		/// Origin of Shell inventory updated
 		OriginOfShellInventoryUpdated {
 			origin_of_shell_type: OriginOfShellType,
@@ -353,6 +320,16 @@ pub mod pallet {
 		/// Preorder Origin of Shells status has changed
 		PreorderOriginOfShellsStatusChanged {
 			status: bool,
+		},
+		/// Chosen preorder was minted to owner
+		ChosenPreorderMinted {
+			preorder_id: PreorderId,
+			owner: T::AccountId,
+		},
+		/// Not chosen preorder was refunded to owner
+		NotChosenPreorderRefunded {
+			preorder_id: PreorderId,
+			owner: T::AccountId,
 		},
 		/// Last Day of Sale status has changed
 		LastDayOfSaleStatusChanged {
@@ -595,13 +572,7 @@ pub mod pallet {
 				})?;
 			// Verify metadata
 			let metadata = Self::get_empty_metadata();
-			let preorder = PreorderInfo {
-				owner: sender.clone(),
-				race,
-				career,
-				metadata,
-				preorder_status: PreorderStatus::Pending,
-			};
+			let preorder = PreorderInfo { owner: sender.clone(), race, career, metadata };
 			// Reserve currency for the preorder at the Prime origin_of_shell price
 			<T as pallet::Config>::Currency::reserve(&sender, T::PrimeOriginOfShellPrice::get())?;
 
@@ -612,57 +583,53 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// This is an admin only function that will be used to set a preorder's status from Pending
-		/// to either Chosen or NotChosen
+		/// This is an admin only function that will mint the list of `Chosen` preorders and will
+		/// mint the Origin of Shell NFT to the preorder owner.
 		///
 		/// Parameters:
 		/// `origin`: Expected to come from Overlord admin account
-		/// `preorder_id`: Preorder id to change preorder status
-		/// `status`: Either Chosen or NotChosen
+		/// `preorders`: Vec of Preorder IDs that were `Chosen`
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn set_preorder_status(
+		pub fn mint_chosen_preorders(
 			origin: OriginFor<T>,
-			preorder_statuses: Vec<(PreorderId, PreorderStatus)>,
+			preorders: Vec<PreorderId>,
 		) -> DispatchResult {
 			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
-			Self::ensure_overlord(sender)?;
+			Self::ensure_overlord(sender.clone())?;
+			// Get price of prime origin of shell
+			let origin_of_shell_price = T::PrimeOriginOfShellPrice::get();
 			// Get iter limit
 			let iter_limit = T::IterLimit::get();
 			let mut index = 0;
 			// Iterate through the preorder_statuses Vec
-			for (preorder_id, preorder_status) in preorder_statuses {
+			for preorder_id in preorders {
 				if index < iter_limit {
-					// Ensure value exists
-					ensure!(
-						Preorders::<T>::contains_key(preorder_id),
-						Error::<T>::NoAvailablePreorderId
-					);
-					// Change status of preorder and add to PreorderResult
-					let mut preorder_info = Preorders::<T>::take(preorder_id)
+					// Get the chosen preorder
+					let preorder_info = Preorders::<T>::take(preorder_id)
 						.ok_or(Error::<T>::NoAvailablePreorderId)?;
-					preorder_info.preorder_status = preorder_status;
-					match preorder_status {
-						PreorderStatus::Chosen => {
-							// Insert into ChosenPreorders and decrement available race
-							ChosenPreorders::<T>::insert(
-								&preorder_info.owner,
-								preorder_id,
-								&preorder_info,
-							);
-						},
-						PreorderStatus::NotChosen => NotChosenPreorders::<T>::insert(
-							&preorder_info.owner,
-							preorder_id,
-							&preorder_info,
-						),
-						PreorderStatus::Pending => return Err(Error::<T>::PreorderIsPending.into()),
-					}
+					// Get owner of preorder
+					let preorder_owner = preorder_info.owner.clone();
+					// Unreserve from owner account
+					<T as pallet::Config>::Currency::unreserve(
+						&preorder_owner,
+						origin_of_shell_price,
+					);
+					// Mint origin of shell
+					Self::do_mint_origin_of_shell_nft(
+						sender.clone(),
+						preorder_owner.clone(),
+						OriginOfShellType::Prime,
+						preorder_info.race,
+						preorder_info.career,
+						origin_of_shell_price,
+						false,
+					)?;
 
-					Self::deposit_event(Event::PreorderResultChanged {
+					Self::deposit_event(Event::ChosenPreorderMinted {
 						preorder_id,
-						status: preorder_status,
+						owner: preorder_owner,
 					});
 					index += 1;
 				} else {
@@ -675,101 +642,42 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Claim function for bulk minting chosen preorders for the sender
+		/// This is an admin only function that will be used to refund the preorders that were not
+		/// selected during the preorders drawing.
 		///
 		/// Parameters:
-		/// `origin`: Sender
+		/// `origin`: Expected to come from Overlord admin account
+		/// `preorders`: Preorder ids of the not chosen preorders
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn claim_chosen_preorders(origin: OriginFor<T>) -> DispatchResult {
+		pub fn refund_not_chosen_preorders(
+			origin: OriginFor<T>,
+			preorders: Vec<PreorderId>,
+		) -> DispatchResult {
+			// Ensure Overlord account makes call
 			let sender = ensure_signed(origin)?;
-			ensure!(
-				!CanPreorderOriginOfShells::<T>::get(),
-				Error::<T>::PreorderOriginOfShellNotAvailable
-			);
-			// Get iter limit
-			let iter_limit = T::IterLimit::get();
-			let overlord = Self::get_overlord_account()?;
+			Self::ensure_overlord(sender)?;
 			// Get price of prime origin of shell
 			let origin_of_shell_price = T::PrimeOriginOfShellPrice::get();
-			// Check if any preorders were chosen
-			let preorders_iter = ChosenPreorders::<T>::drain_prefix(sender.clone());
-			let mut index = 0;
-			for (_preorder_id, preorder) in preorders_iter {
-				if index < iter_limit {
-					let preorder_clone = preorder.clone();
-					let preorder_status = preorder_clone.preorder_status;
-					let race = preorder_clone.race;
-					let career = preorder_clone.career;
-					match preorder_status {
-						PreorderStatus::Chosen => {
-							// Get payment from owner's reserve
-							<T as pallet::Config>::Currency::unreserve(
-								&sender,
-								origin_of_shell_price,
-							);
-							// Mint origin of shell
-							Self::do_mint_origin_of_shell_nft(
-								overlord.clone(),
-								sender.clone(),
-								OriginOfShellType::Prime,
-								race,
-								career,
-								origin_of_shell_price,
-								false,
-							)?;
-						},
-						_ => return Err(Error::<T>::PreordersCorrupted.into()),
-					}
-					index += 1;
-				} else {
-					// Break from iterator to ensure block size doesn't grow too large. Re-call this
-					// function and it will start from where it left off.
-					break
-				}
-			}
-
-			Ok(())
-		}
-
-		/// Claim function for refunds for not chosen preorders for the sender
-		///
-		/// Parameters:
-		/// `origin`: Sender
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		#[transactional]
-		pub fn claim_refund_preorders(origin: OriginFor<T>) -> DispatchResult {
-			ensure!(
-				!CanPreorderOriginOfShells::<T>::get(),
-				Error::<T>::PreorderOriginOfShellNotAvailable
-			);
 			// Get iter limit
 			let iter_limit = T::IterLimit::get();
-			let sender = ensure_signed(origin)?;
-			// Get the amount cost for Preorder
-			let prime_origin_of_shell_price = T::PrimeOriginOfShellPrice::get();
-			// Check if any preorders were chosen
-			let preorders_iter = NotChosenPreorders::<T>::drain_prefix(sender.clone());
 			let mut index = 0;
-			for (preorder_id, preorder) in preorders_iter {
+			// Iterate through the preorder_statuses Vec
+			for preorder_id in preorders {
 				if index < iter_limit {
-					let preorder_status = preorder.clone().preorder_status;
-					match preorder_status {
-						PreorderStatus::NotChosen => {
-							ensure!(&sender == &preorder.owner, Error::<T>::NotPreorderOwner);
-							// Get payment from owner's reserve
-							<T as pallet::Config>::Currency::unreserve(
-								&sender,
-								prime_origin_of_shell_price,
-							);
+					// Get the PreorderInfoOf<T>
+					let preorder_info = Preorders::<T>::take(preorder_id)
+						.ok_or(Error::<T>::NoAvailablePreorderId)?;
+					// Refund reserved currency back to owner account
+					<T as pallet::Config>::Currency::unreserve(
+						&preorder_info.owner,
+						origin_of_shell_price,
+					);
 
-							Self::deposit_event(Event::RefundWasClaimed {
-								preorder_id,
-								amount: prime_origin_of_shell_price,
-							});
-						},
-						_ => return Err(Error::<T>::PreordersCorrupted.into()),
-					}
+					Self::deposit_event(Event::NotChosenPreorderRefunded {
+						preorder_id,
+						owner: preorder_info.owner,
+					});
 					index += 1;
 				} else {
 					// Break from iterator to ensure block size doesn't grow too large. Re-call this
@@ -777,6 +685,7 @@ pub mod pallet {
 					break
 				}
 			}
+
 			Ok(())
 		}
 

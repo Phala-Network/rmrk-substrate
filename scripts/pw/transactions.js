@@ -29,15 +29,11 @@ async function main() {
             OriginOfShellType: {
                 _enum: ['Prime', 'Magic', 'Legendary']
             },
-            PreorderStatus: {
-                _enum: ['Pending', 'Chosen', 'NotChosen']
-            },
             PreorderInfo: {
                 owner: "AccountId",
                 race: "RaceType",
                 career: "CareerType",
                 metadata: "BoundedString",
-                preorder_status: "PreorderStatus",
             },
             NftSaleInfo: {
                 race_count: "u32",
@@ -88,10 +84,6 @@ async function main() {
     const hackerWizard = api.createType('CareerType', 'HackerWizard');
     const web3Monk = api.createType('CareerType', 'Web3Monk');
 
-    // PreorderStatus
-    const pending = api.createType('PreorderStatus', 'Pending');
-    const chosen = api.createType('PreorderStatus', 'Chosen');
-    const notChosen = api.createType('PreorderStatus', 'NotChosen');
 
     // // produce whitelist
     // {
@@ -167,24 +159,18 @@ async function main() {
             .signAndSend(ferdie);
     }
 
-    // privileged function preorder status to declare Chosen or NotChosen preorders
+    // privileged function to mint chosen preorders
     {
-        // Preorder id
-        // status ['Chosen', 'NotChosen']
-        await api.tx.pwNftSale.setPreorderStatus()
+        const chosenPreorders = api.createType('Vec<u32>', [0, 1, 2, 4, 10, 6, 12, 11]);
+        await api.tx.pwNftSale.mintChosenPreorders(chosenPreorders)
             .signAndSend(overlord);
     }
 
-    // Claim chosen preorders
+    // privileged function to refund not chosen preorders
     {
-        await api.tx.pwNftSale.claimChosenPreorders()
-            .signAndSend(user);
-    }
-
-    // Claim refund for not chosen preorders
-    {
-        await api.tx.pwNftSale.claimRefundPreorders()
-            .signAndSend(user);
+        const notChosenPreorders = api.createType('Vec<u32>', [7, 3, 5, 8, 9, 13]);
+        await api.tx.pwNftSale.refundNotChosenPreorders(notChosenPreorders)
+            .signAndSend(overlord);
     }
 
     // Update the Prime Origin of Shell NFTs based on the number of Whitelist NFTs claimed
