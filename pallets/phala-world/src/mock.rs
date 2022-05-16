@@ -1,5 +1,5 @@
 use super::*;
-use crate as pallet_phala_world;
+use crate::{pallet_pw_incubation, pallet_pw_nft_sale};
 
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -36,7 +36,8 @@ frame_support::construct_runtime!(
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Event<T>},
-		PhalaWorld: pallet_phala_world::{Pallet, Call, Storage, Event<T>},
+		PWNftSale: pallet_pw_nft_sale::{Pallet, Call, Storage, Event<T>},
+		PWIncubation: pallet_pw_incubation::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -162,25 +163,29 @@ parameter_types! {
 	pub const MinBalanceToClaimSpirit: Balance = 10 * PHA;
 	pub const LegendaryOriginOfShellPrice: Balance = 1_000_000 * PHA;
 	pub const MagicOriginOfShellPrice: Balance = 1_000 * PHA;
-	pub const HeroOriginOfShellPrice: Balance = 10 * PHA;
+	pub const PrimeOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
-	pub const MaxMintPerCareer: u32 = 2;
+	pub const IterLimit: u32 = 200;
 	pub const FoodPerEra: u8 = 2;
 	pub const MaxFoodFedPerEra: u16 = 2;
 	pub const MaxFoodFeedSelf: u8 = 1;
 }
 
-impl Config for Test {
+impl pallet_pw_nft_sale::Config for Test {
 	type Event = Event;
 	type OverlordOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
-	type SecondsPerEra = SecondsPerEra;
 	type Time = pallet_timestamp::Pallet<Test>;
+	type SecondsPerEra = SecondsPerEra;
 	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
-	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
-	type MaxMintPerRace = MaxMintPerRace;
+	type PrimeOriginOfShellPrice = PrimeOriginOfShellPrice;
+	type IterLimit = IterLimit;
+}
+
+impl pallet_pw_incubation::Config for Test {
+	type Event = Event;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
@@ -193,7 +198,7 @@ pub fn fast_forward_to(n: u64) {
 	while System::block_number() < n {
 		System::set_block_number(System::block_number() + 1);
 		System::on_finalize(System::block_number());
-		PhalaWorld::on_finalize(System::block_number());
+		PWNftSale::on_finalize(System::block_number());
 		Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
 	}
 }
@@ -239,13 +244,13 @@ impl ExtBuilder {
 	pub fn build(self, overlord_key: AccountId32) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
-		pallet_phala_world::GenesisConfig::<Test> {
+		pallet_pw_nft_sale::GenesisConfig::<Test> {
 			zero_day: None,
 			overlord: Some(overlord_key),
 			era: 0,
 			can_claim_spirits: false,
 			can_purchase_rare_origin_of_shells: false,
-			can_purchase_hero_origin_of_shells: false,
+			can_purchase_prime_origin_of_shells: false,
 			can_preorder_origin_of_shells: false,
 			last_day_of_sale: false,
 			spirit_collection_id: None,

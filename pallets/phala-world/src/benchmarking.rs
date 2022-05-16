@@ -2,11 +2,15 @@
 
 use super::*;
 
-#[allow(unused)]
 use crate::Pallet as PhalaWorld;
-use frame_benchmarking::{benchmarks, whitelisted_caller, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_system::RawOrigin as SystemOrigin;
+#[allow(unused)]
+use sp_std::prelude::*;
 
+const SEED: u32 = 0;
+
+// fn init_phala_world<T: Config>(CollectionId, CollectionId, T::AccountId)
 
 benchmarks! {
 	where_clause { where
@@ -14,7 +18,11 @@ benchmarks! {
 	}
 	set_overlord {
 		let caller: T::AccountId = whitelisted_caller();
-	}: _(SystemOrigin::Root, caller.clone())
+		let target: T::AccountId = account("target", 0, SEED);
+	}: _(SystemOrigin::Root, target)
+	// initialize_world_clock {
+	// 	let target: T::AccountId = account("target", 0, SEED);
+	// }: _(SystemOrigin::Signed(target.clone()))
 
 impl_benchmark_test_suite!(PhalaWorld, crate::mock::ExtBuilder::default().build(whitelisted_caller()), crate::mock::Test);
 }

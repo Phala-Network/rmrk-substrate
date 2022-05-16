@@ -9,7 +9,7 @@ By default, the `init.js` script will assign the `root` account as `ALICE`, the 
 Sudo transaction from `root` account aka `ALICE` that will call the privileged transaction `setOverlord` to set the `overlord` account to `BOB`
 ```javascript
 await api.tx.sudo.sudo(
-    api.tx.phalaWorld.setOverlord(overlord.address)
+    api.tx.pwNftSale.setOverlord(overlord.address)
 ).signAndSend(root, {nonce: -1});
 await sleep(6000);
 ```
@@ -17,14 +17,14 @@ await sleep(6000);
 ### Initialize Phala World Clock
 Overlord account then starts the Phala World Clock to initialize the `ZeroDay` Timestamp in transaction `initializeWorldClock()` to signify the official beginning of Phala World
 ```javascript
-await api.tx.phalaWorld.initializeWorldClock()
+await api.tx.pwNftSale.initializeWorldClock()
     .signAndSend(overlord, {nonce: -1});
 ```
 
 ### Enable Spirit Claims
-Overlord account will then enable the Spirit Claims for accounts to claim a non-transferable NFT representing their Spirit. This is done by calling transaction `setStatusType` with parameters `bool, StatusType` where `StatusType` is an enum containing `ClaimSpirits, PurchaseRareOriginOfShells, PurchaseHeroOriginOfShells, PreorderOriginOfShells, LastDayOfSale`. Here we use `ClaimSpirits` and set it to `true`.
+Overlord account will then enable the Spirit Claims for accounts to claim a non-transferable NFT representing their Spirit. This is done by calling transaction `setStatusType` with parameters `bool, StatusType` where `StatusType` is an enum containing `ClaimSpirits, PurchaseRareOriginOfShells, PurchasePrimeOriginOfShells, PreorderOriginOfShells, LastDayOfSale`. Here we use `ClaimSpirits` and set it to `true`.
 ```javascript
-await api.tx.phalaWorld.setStatusType(true, 'ClaimSpirits')
+await api.tx.pwNftSale.setStatusType(true, 'ClaimSpirits')
     .signAndSend(overlord, {nonce: -1});
 ```
 
@@ -39,7 +39,7 @@ await api.tx.rmrkCore.createCollection(
     'PWSPRT'
 ).signAndSend(overlord, {nonce: -1});
 // set the spirits collection id
-await api.tx.phalaWorld.setSpiritCollectionId(
+await api.tx.pwNftSale.setSpiritCollectionId(
     0
 ).signAndSend(overlord, {nonce: -1});
 // collection 1: origin of shells
@@ -49,7 +49,7 @@ await api.tx.rmrkCore.createCollection(
     'PWOAS'
 ).signAndSend(overlord, {nonce: -1});
 // set the origin of shell collection id
-await api.tx.phalaWorld.setOriginOfShellCollectionId(
+await api.tx.pwNftSale.setOriginOfShellCollectionId(
     1
 ).signAndSend(overlord, {nonce: -1});
 ```
@@ -57,127 +57,105 @@ await api.tx.phalaWorld.setOriginOfShellCollectionId(
 ### Initialize the Inventory counts
 In the `init.js` script there is a transaction that will set the starting inventory counts for the initial sales until the preorder phase. This script will populate the StorageDoubleMap called `originOfShellsInventory`.
 ```javascript
-await api.tx.phalaWorld.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
+await api.tx.pwNftSale.initOriginOfShellTypeCounts().signAndSend(overlord, {nonce: -1});
 ```
 
-### Signing Metadata
-To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the metadata and proceed with minting of a given NFT. Here is an example of signing metadata and storing it in a new type called `NftSaleMetadata`. The `nftSignedMetadata` is used in the next section to claim a spirit.
+### Generate RedeemSpirit and BuyPrimeOriginOfShells Signatures
+To avoid accounts transacting with the runtime directly via polkadot.js or scripts, the metadata is signed by the `overlord` account. This will allow for the backend to verify the claim and proceed with minting of a given NFT. Here is an example of signing the `OverlordMessage` with the account address and a purpose enum `Purpose` with values of `RedeemSpirit` or `BuyPrimeOriginOfShells`.
 ```javascript
-const metadata = 'I am Spirit';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {
-    'metadata': metadataType,
-    'signature': metadataSig
-});
+// RedeemSpirit
+const purpose = api.createType('Purpose', 'RedeemSpirit');
+const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
+const overlordSig = overlord.sign(overlordMessage.toU8a());
 ```
 
 ### Claim a Spirit
-This is an example of generating the signed metadata for a Spirit NFT with `overlord` account then using the `ferdie` account to claim the spirit.
+This is an example of generating the `Signature` for a Spirit NFT by adding a prefix `"RS"` to `ferdie.address` then sign the encoding with `overlord` account then using the `ferdie` account to claim the spirit.
 ```javascript
-const metadata = 'I am Spirit';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const isValid = overlord.verify(metadata, metadataSig, overlord.address);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-// Mint a Spirit
-await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(ferdie);
+// Mint a Spirit with at lest 10 PHA
+await api.tx.pwNftSale.claimSpirit().signAndSend(ferdie);
+// Redeem a Spirit with a valid Signature
+await api.tx.pwNftSale.redeemSpirit(overlordSig).signAndSend(ferdie);
 ```
 
 ### Status Types
 There are a few `StatusType` to note with different meanings. These status types can be changed by utilizing the `Overlord` admin account to execute a transaction called `setStatusType(bool, StatusType)`.
 Here is an example of enabling Spirit claims:
 ```javascript
-await api.tx.phalaWorld.setStatusType(true, 'ClaimSpirits')
+await api.tx.pwNftSale.setStatusType(true, 'ClaimSpirits')
     .signAndSend(overlord);
 ```
 Next we will go into some details on the different `StatusType`:
 - `ClaimSpirits`: Determines the status of the current Spirit Claim process. When this is set, there is a `bool` in storage to signify if Spirits can be claimed at the given moment.
 - `PurchaseRareOriginOfShells`: Determines the status of Rare (Legendary or Magic) Origin of Shells being able to be purchased. A `bool` in storage represents the current status.
-- `PurchaseHeroOriginOfShells`: Determines the status of Whitelist accounts being able to purchase a Hero Origin of Shell. This is mapped to a `bool` in storage to determine if Whitelist users can purchase.
+- `PurchasePrimeOriginOfShells`: Determines the status of Whitelist accounts being able to purchase a Prime Origin of Shell. This is mapped to a `bool` in storage to determine if Whitelist users can purchase.
 - `PreorderOriginOfShells`: Determines the status of the Preorders for a chance to mint an Origin of Shell. A `bool` in storage represents the current status.
 - `LastDayOfSale`: Determines if the last day of Origin of Shell sales is true and allows for unlimited purchases of Origin of Shell without previous restrictions based on available quantity.
 
 ## [1] Enable Rare Origin of Shells Sale
 Next, there will be a phase that allows accounts to purchase a rare Origin of Shell NFT. First the `overlord` account will enable the `StatusType` `PurchaseRareOriginOfShells`.
 ```javascript
-await api.tx.phalaWorld.setStatusType(true, 'PurchaseRareOriginOfShells')
+await api.tx.pwNftSale.setStatusType(true, 'PurchaseRareOriginOfShells')
     .signAndSend(overlord);
 ```
 Here is an example of a user executing a transaction called `buyRareOriginOfShell` to purchase a rare Origin of Shell NFT. The Parameters can be as follows:
 - `OriginOfShellType`: Origin of Shell Type and in this case the 2 acceptable values are `'Legendary'` or `'Magic'`.
 - `RaceType`: A pick of any of the 4 Races `'Cyborg'`, `'AISpectre'`, `'Pandroid'`, `'XGene'`.
 - `CareerType`: A pick of any of the 5 Careers `'HardwareDruid'`, `'RoboWarrior'`, `'TradeNegotiator'`, `'HackerWizard'`, `'Web3Monk'`.
-- `NftSaleMetadata`: Metadata and the `Signature` from the `overlord` account to validate metdata.
 ```javascript
-const metadata = 'I am Legendary';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
 // Purchase rare Origin of Shell
-await api.tx.phalaWorld.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
+await api.tx.pwNftSale.buyRareOriginOfShell('Legendary', 'Cyborg', 'HackerWizard', nftSignedMetadata)
     .signAndSend(user);
 ```
 
 ## [2] Enable Whitelist Sale
-After the rare Origin of Shell purchases, we will then move to the Whitelist purchases. This will involve another validation effort by the `overlord` account signing some metadata along with the whitelisted account ID. This will be a new type called `WhitelistClaim` and will be passed into the transaction called `buyHeroOriginOfShell`. First, the `StatusType` `PurchaseHeroOriginOfShells` before proceeding.
+After the rare Origin of Shell purchases, we will then move to the Whitelist purchases. This will involve another validation effort by the `overlord` account signing some metadata along with the whitelisted account ID. This will be a valid `Signature` and will be passed into the transaction called `buyPrimeOriginOfShell`. First, enable the `StatusType` `PurchasePrimeOriginOfShells` before proceeding.
 ```javascript
-await api.tx.phalaWorld.setStatusType(true, 'PurchaseHeroOriginOfShells')
+await api.tx.pwNftSale.setStatusType(true, 'PurchasePrimeOriginOfShells')
     .signAndSend(overlord);
 ```
-Here is an example of creating a `WhitelistClaim` for the `ferdie` account. This is what `ferdie` will use to pass into the `buyHeroOriginOfShell` function.
+Here is an example of creating a `Signature` for the `ferdie` account where a `purpose` of `BuyPrimeOriginOfShells` is added to the account address. This is what `ferdie` will use to pass into the `buyPrimeOriginOfShell` function. 
 ```javascript
-const metadata = 'Whitelist for FERDIE';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata);
-const userMetadataType = api.createType('(AccountId,BoundedVec<u8, T::StringLimit>)', [ferdie.address, metadataType]).toU8a();
-const metadataSign = overlord.sign(userMetadataType);
-const whitelistType = api.createType('WhitelistClaim', {
-    'account': ferdie.address,
-    'metadata': metadataType,
-    'signature': metadataSign,
-});
+// BuyPrimeOriginOfShells
+const purpose = api.createType('Purpose', 'BuyPrimeOriginOfShells');
+const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
+const overlordSig = overlord.sign(overlordMessage.toU8a());
 ```
-This will enable `ferdie` to call `PurchaseHeroOriginOfShells` and here is an explanation of the valid parameters:
-- `WhitelistClaim`: a `signature` of the `&(account, metadata)` by the `overlord` account to validate the whitelist claim by a given account.
+This will enable `ferdie` to call `PurchasePrimeOriginOfShells` and here is an explanation of the valid parameters:
+- `sr25519::Signature`: a `signature` of the `&OverlordMessage` by the `overlord` account to validate the whitelist claim by a given account.
+- `OverlordMessage`: a struct message that is encoded & signed by `Overlord` account that holds the `account` and `purpose` of the message
 - `RaceType`: A pick of any of the 4 Races `'Cyborg'`, `'AISpectre'`, `'Pandroid'`, `'XGene'`.
 - `CareerType`: A pick of any of the 5 Careers `'HardwareDruid'`, `'RoboWarrior'`, `'TradeNegotiator'`, `'HackerWizard'`, `'Web3Monk'`.
-- `NftSaleMetadata`: Metadata and the `Signature` from the `overlord` account to validate metdata.
 ```javascript
-const metadataHero = 'I am Hero';
-const metadataHeroType = api.createType('BoundedVec<u8, T::StringLimit>', metadataHero).toU8a();
-const metadataHeroSig = overlord.sign(metadataHeroType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {
-    'metadata': metadataHeroType,
-    'signature': metadataHeroSig
-});
-await api.tx.phalaWorld.buyHeroOriginOfShell(whitelistType, 'Cyborg', 'HackerWizard', nftSignedMetadata)
+await api.tx.pwNftSale.buyPrimeOriginOfShell(overlordSig, 'Cyborg', 'HackerWizard')
     .signAndSend(ferdie);
 ```
 
 ## [3] Enable Preorders of Origin of Shell
-Preorders will be similar in simplicity like the rare Origin of Shell purchases. First, enable the `StatusType` `PreorderOriginOfShells`.
+Preorders will be similar in simplicity like the rare Origin of Shell purchases. First, disable the `StatusType` for `PurchasePrimeOriginOfShells` then we will calculate the remaining `Prime` Origin of Shell NFTs and add an addition 900 Prime Origin of Shell NFT to inventory. Lastly, enable the `StatusType` `PreorderOriginOfShells` to allow for users to begin preordering tickets for the Non-WL drawing.
 ```javascript
-await api.tx.phalaWorld.setStatusType(true, 'PreorderOriginOfShells')
+// Disable Whitelist purchases
+await api.tx.pwNftSale.setStatusType(false, 'PurchasePrimeOriginOfShells')
+    .signAndSend(overlord);
+// Update inventory with 900 extra `Prime` Origin of Shell NFTs to sell and 50 per species to giveaway
+await api.tx.pwNftSale.updateOriginOfShellTypeCounts('Prime', 900, 50).signAndSend(overlord);
+await api.tx.pwNftSale.setStatusType(true, 'PreorderOriginOfShells')
     .signAndSend(overlord);
 ```
 Here is an example of a Preorder transaction `preorderOriginOfShell`:
 ```javascript
-const metadata = 'I am Hero';
-const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-const metadataSig = overlord.sign(metadataType);
-const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-await api.tx.phalaWorld.preorderOriginOfShell('Pandroid', 'HackerWizard', nftSignedMetadata)
+await api.tx.pwNftSale.preorderOriginOfShell('Pandroid', 'HackerWizard')
     .signAndSend(ferdie);
 ```
 ### After Preorders Are Finalized
 After the preorders are finalized, disable the `StatusType` `PreorderOriginOfShells`. Then run a query on all the Preorders in storage.
 ```javascript
-await api.tx.phalaWorld.setStatusType(false, 'PreorderOriginOfShells')
+await api.tx.pwNftSale.setStatusType(false, 'PreorderOriginOfShells')
     .signAndSend(overlord);
 // Query all preorders
-const preorderIndex = await api.query.phalaWorld.preorderIndex();
+const preorderIndex = await api.query.pwNftSale.preorderIndex();
 console.log(`Current preorder index: ${preorderIndex}`);
-const preorderKeys = await api.query.phalaWorld.preorders.entries();
+const preorderKeys = await api.query.pwNftSale.preorders.entries();
 preorderKeys
     .map(([key, value]) =>
         [key.args[0].toNumber(), value.toHuman()]
@@ -188,24 +166,26 @@ preorderKeys
     })
 })
 ```
-Next create a script to randomly select `Chosen` Preorder IDs. This transaction will allow for the Preorder to change its `PreorderStatus`
+Next, create a script to randomly select chosen Preorder IDs. Then create an array of chosen Preorder IDs to automatically mint the preorders to the owner of the preorders. 
 - `PreorderId`: A number ID mapped to the preorder.
-- `PreorderStatus`: A status with a value of either `Chosen` or `NotChosen`
+- `Preorders`: A Vec of chosen preorders
 ```javascript
-await api.tx.phalaWorld.setPreorderStatus(0, 'Chosen')
+const chosenPreorders = api.createType('Vec<u32>', [0, 1, 2, 4, 10, 6, 12, 11]);
+await api.tx.pwNftSale.mintChosenPreorders(chosenPreorders)
     .signAndSend(overlord);
 ```
-After assigning the preorder statuses, query for all the Preorders sorted by account.
+
+Lastly, create take the not chosen Preorder IDs and refund the account owners that reserved payment for the preorder.
+- `PreorderId`: A number ID mapped to the preorder.
+- `Preorders`: A Vec of chosen preorders
 ```javascript
-const userPreorderResults = await api.query.phalaWorld.preorderResults.entries(ferdie.address);
-userPreorderResults
-    .map(([key, value]) =>
-        [key.args[0].toString(), key.args[1].toNumber(), value.toHuman()]
-    ).forEach(([account, preorderId, preorderInfo]) => {
-    console.log({
-        account,
-        preorderId,
-        preorderInfo,
-    })
-})
+const notChosenPreorders = api.createType('Vec<u32>', [7, 3, 5, 8, 9, 13]);
+await api.tx.pwNftSale.refundNotChosenPreorders(notChosenPreorders)
+    .signAndSend(overlord);
+```
+
+## [4] Enable Last Day of Sale for unlimited purchases for all 3 levels of the remaining Origin of Shell supply.
+```javascript
+await api.tx.pwNftSale.setStatusType(true, 'LastDayOfSale')
+    .signAndSend(overlord);
 ```

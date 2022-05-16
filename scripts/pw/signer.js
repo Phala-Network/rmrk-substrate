@@ -6,6 +6,7 @@ const { stringToU8a, u8aToHex } = require('@polkadot/util');
 const rootPrivkey = process.env.ROOT_PRIVKEY;
 const userPrivkey = process.env.USER_PRIVKEY;
 const overlordPrivkey = process.env.OVERLOAD_PRIVKEY;
+const ferdiePrivkey = process.env.FERDIE_PRIVKEY;
 const endpoint = process.env.ENDPOINT;
 
 async function main() {
@@ -20,12 +21,8 @@ async function main() {
                 _enum: ['HardwareDruid', 'RoboWarrior', 'TradeNegotiator', 'HackerWizard', 'Web3Monk']
             },
             StatusType: {
-                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchaseHeroOriginOfShells', 'PreorderOriginOfShells']
+                _enum: ['ClaimSpirits', 'PurchaseRareOriginOfShells', 'PurchasePrimeOriginOfShells', 'PreorderOriginOfShells']
             },
-            NftSaleMetadata: {
-                metadata: "BoundedVec<u8, T::StringLimit>",
-                signature: "sr25519::Signature"
-            }
         }
     });
     const keyring = new Keyring({type: 'sr25519'});
@@ -33,18 +30,22 @@ async function main() {
     const claimSpirits = api.createType('StatusType', 'ClaimSpirits');
     const root = keyring.addFromUri(rootPrivkey);
     const user = keyring.addFromUri(userPrivkey);
+    const ferdie = keyring.addFromUri(ferdiePrivkey);
     const overlord = keyring.addFromUri(overlordPrivkey);
 
-    const metadata = 'I am Spirit';
-    const metadataType = api.createType('BoundedVec<u8, T::StringLimit>', metadata).toU8a();
-    const metadataSig = overlord.sign(metadataType);
-    const isValid = overlord.verify(metadata, metadataSig, overlord.address);
-    const nftSignedMetadata = api.createType('NftSaleMetadata', {'metadata': metadataType, 'signature': metadataSig});
-    
-    // output the result
-    console.log(`${u8aToHex(metadataSig)}\n${u8aToHex(metadataType)} is ${isValid ? 'valid' : 'invalid'}`);
-    // Mint a Spirit
-    //await api.tx.phalaWorld.claimSpirit(null, nftSignedMetadata).signAndSend(user);
+    {
+        const purpose = api.createType('Purpose', 'RedeemSpirit');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
+        const metadataSig = overlord.sign(overlordMessage.toU8a());
+    }
+
+    // Create Whitelist for user account
+    {
+
+        const purpose = api.createType('Purpose', 'BuyPrimeOriginOfShells');
+        const overlordMessage = api.createType('OverlordMessage', {'account': ferdie.address, 'purpose': purpose});
+        const overlordSig = overlord.sign(overlordMessage.toU8a());
+    }
 }
 
 main().catch(console.error).finally(() => process.exit());

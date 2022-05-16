@@ -3,8 +3,8 @@
 ## Types
 ```rust
 pub enum OriginOfShellType {
-    /// Origin of Shell type is Hero
-    Hero,
+    /// Origin of Shell type is Prime
+    Prime,
     /// Origin of Shell type is Magic
     Magic,
     /// Origin of Shell is Legendary
@@ -42,9 +42,9 @@ type LegendaryOriginOfShellPrice: Get<BalanceOf<Self>>;
 /// Price of Magic Origin of Shell
 #[pallet::constant]
 type MagicOriginOfShellPrice: Get<BalanceOf<Self>>;
-/// Price of Hero Origin of Shell
+/// Price of Prime Origin of Shell
 #[pallet::constant]
-type HeroOriginOfShellPrice: Get<BalanceOf<Self>>;
+type PrimeOriginOfShellPrice: Get<BalanceOf<Self>>;
 /// Max mint per Race
 #[pallet::constant]
 type MaxMintPerRace: Get<u32>;
@@ -170,11 +170,16 @@ pub enum Error<T> {
 
 ## Calls
 ### claim_spirit
-Claim a spirit for users that are on the whitelist.
+Claim a spirit for users that have at least 10 PHA in account
 ```rust
 origin: OriginFor<T>,
-ticket: Option<ClaimSpiritTicket<T::AccountId>>,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
+```
+
+### redeem_spirit
+Redeem a spirit for users that have a valid signed signature
+```rust
+origin: OriginFor<T>,
+signature: sr25519::Signature,
 ```
 
 ### buy_rare_origin_of_shell
@@ -184,16 +189,14 @@ origin: OriginFor<T>,
 origin_of_shell_type: OriginOfShellType,
 race: RaceType,
 career: CareerType,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
-### purchase_hero_origin_of_shell
+### purchase_prime_origin_of_shell
 ```rust
 origin: OriginFor<T>,
-whitelist_claim: WhitelistClaim<T::AccountId, BoundedVec<u8, T::StringLimit>>,
+signature: sr25519::Signature,
 race: RaceType,
 career: CareerType,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 
@@ -203,7 +206,6 @@ Preorder an OriginOfShell for eligible users
 origin: OriginFor<T>,
 race: RaceType,
 career: CareerType,
-metadata: NftSaleMetadata<BoundedVec<u8, T::StringLimit>>,
 ```
 
 ### mint_origin_of_shells

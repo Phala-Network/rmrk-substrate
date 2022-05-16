@@ -2,6 +2,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
+use frame_system::EnsureRoot;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -18,11 +19,10 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{KeyOwnerProofSystem, Randomness, StorageInfo},
+	traits::{EnsureOneOf, KeyOwnerProofSystem, Randomness, StorageInfo},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
@@ -44,7 +44,7 @@ pub use pallet_rmrk_core;
 pub use pallet_rmrk_equip;
 pub use pallet_rmrk_market;
 
-pub use pallet_phala_world;
+pub use pallet_phala_world::{pallet_pw_incubation, pallet_pw_nft_sale};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -66,6 +66,12 @@ pub type Index = u32;
 
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
+
+/// Root or Half Council for the Admin role
+type EnsureRootOrHalfCouncil = EnsureOneOf<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+>;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -324,23 +330,27 @@ parameter_types! {
 	pub const MinBalanceToClaimSpirit: Balance = 10 * DOLLARS;
 	pub const LegendaryOriginOfShellPrice: Balance = 3_000 * DOLLARS;
 	pub const MagicOriginOfShellPrice: Balance = 2_000 * DOLLARS;
-	pub const HeroOriginOfShellPrice: Balance = 300 * DOLLARS;
-	pub const MaxMintPerRace: u32 = 2_200;
+	pub const PrimeOriginOfShellPrice: Balance = 300 * DOLLARS;
+	pub const IterLimit: u32 = 1_000;
 	pub const FoodPerEra: u8 = 5;
 	pub const MaxFoodFedPerEra: u16 = 20;
 	pub const MaxFoodFeedSelf: u8 = 2;
 }
-impl pallet_phala_world::Config for Runtime {
+impl pallet_pw_nft_sale::Config for Runtime {
 	type Event = Event;
-	type OverlordOrigin = frame_system::EnsureRoot<AccountId>;
+	type OverlordOrigin = EnsureRootOrHalfCouncil;
 	type Currency = Balances;
 	type Time = pallet_timestamp::Pallet<Runtime>;
 	type SecondsPerEra = SecondsPerEra;
 	type MinBalanceToClaimSpirit = MinBalanceToClaimSpirit;
 	type LegendaryOriginOfShellPrice = LegendaryOriginOfShellPrice;
 	type MagicOriginOfShellPrice = MagicOriginOfShellPrice;
-	type HeroOriginOfShellPrice = HeroOriginOfShellPrice;
-	type MaxMintPerRace = MaxMintPerRace;
+	type PrimeOriginOfShellPrice = PrimeOriginOfShellPrice;
+	type IterLimit = IterLimit;
+}
+
+impl pallet_pw_incubation::Config for Runtime {
+	type Event = Event;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
@@ -400,6 +410,42 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const CouncilMotionDuration: BlockNumber = 3 * DAYS;
+	pub const CouncilMaxProposals: u32 = 100;
+	pub const CouncilMaxMembers: u32 = 100;
+}
+
+type CouncilCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<CouncilCollective> for Runtime {
+	type Origin = Origin;
+	type Proposal = Call;
+	type Event = Event;
+	type MotionDuration = CouncilMotionDuration;
+	type MaxProposals = CouncilMaxProposals;
+	type MaxMembers = CouncilMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const TechnicalMotionDuration: BlockNumber = 3 * DAYS;
+	pub const TechnicalMaxProposals: u32 = 100;
+	pub const TechnicalMaxMembers: u32 = 100;
+}
+
+type TechnicalCollective = pallet_collective::Instance2;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+	type Origin = Origin;
+	type Proposal = Call;
+	type Event = Event;
+	type MotionDuration = TechnicalMotionDuration;
+	type MaxProposals = TechnicalMaxProposals;
+	type MaxMembers = TechnicalMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -420,9 +466,13 @@ construct_runtime!(
 		RmrkEquip: pallet_rmrk_equip::{Pallet, Call, Event<T>, Storage},
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>, Storage},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Storage, Event<T>},
-		PhalaWorld: pallet_phala_world::{Pallet, Call, Storage, Event<T>},
+		PWNftSale: pallet_pw_nft_sale::{Pallet, Call, Storage, Event<T>},
+		PWIncubation: pallet_pw_incubation::{Pallet, Call, Storage, Event<T>},
 		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
 		Utility: pallet_utility::{Pallet, Call, Storage, Event},
+		// Governance
+		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>},
+		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>},
 	}
 );
 
@@ -600,9 +650,11 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_benchmarking, BaselineBench::<Runtime>);
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_collective, Council);
+			list_benchmark!(list, extra, pallet_collective, TechnicalCommittee);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			list_benchmark!(list, extra, pallet_template, TemplateModule);
-			list_benchmark!(list, extra, pallet_phala_world, PhalaWorld);
+			//list_benchmark!(list, extra, pallet_pw_nft_sale, PWNftSale);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -639,9 +691,11 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
+			add_benchmark!(params, batches, pallet_collective, Council);
+			add_benchmark!(params, batches, pallet_collective, TechnicalCommittee);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_template, TemplateModule);
-			add_benchmark!(params, batches, pallet_phala_world, PhalaWorld);
+			//add_benchmark!(params, batches, pallet_phala_world, PhalaWorld);
 
 			Ok(batches)
 		}
