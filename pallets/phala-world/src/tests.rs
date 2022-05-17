@@ -758,3 +758,128 @@ fn can_initiate_incubation_process() {
 		);
 	});
 }
+
+#[test]
+fn can_update_incubation_hatch_time() {
+	ExtBuilder::default().build(OVERLORD).execute_with(|| {
+		// Set Overlord and configuration then enable preorder origin of shells
+		setup_config(StatusType::PreorderOriginOfShells);
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, None);
+		mint_spirit(CHARLIE, None);
+		// BOB preorders an origin of shell
+		assert_ok!(PWNftSale::preorder_origin_of_shell(
+			Origin::signed(BOB),
+			RaceType::Cyborg,
+			CareerType::HardwareDruid,
+		));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PWNftSale(
+			crate::pallet_pw_nft_sale::Event::OriginOfShellPreordered {
+				owner: BOB,
+				preorder_id: 0,
+			},
+		));
+		// CHARLIE preorders an origin of shell
+		assert_ok!(PWNftSale::preorder_origin_of_shell(
+			Origin::signed(CHARLIE),
+			RaceType::Pandroid,
+			CareerType::HardwareDruid,
+		));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PWNftSale(
+			crate::pallet_pw_nft_sale::Event::OriginOfShellPreordered {
+				owner: CHARLIE,
+				preorder_id: 1,
+			},
+		));
+		// ALICE preorders an origin of shell successfully
+		assert_ok!(PWNftSale::preorder_origin_of_shell(
+			Origin::signed(ALICE),
+			RaceType::AISpectre,
+			CareerType::HackerWizard,
+		));
+		let preorders: Vec<PreorderId> = vec![0u32, 1u32, 2u32];
+		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
+		assert_ok!(PWNftSale::mint_chosen_preorders(Origin::signed(OVERLORD), preorders));
+		System::assert_last_event(MockEvent::PWNftSale(
+			crate::pallet_pw_nft_sale::Event::ChosenPreorderMinted {
+				preorder_id: 2u32,
+				owner: ALICE,
+			},
+		));
+		// Reassign PreorderIndex to max value
+		pallet_pw_nft_sale::PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
+		// ALICE preorders an origin of shell but max value is reached
+		assert_noop!(
+			PWNftSale::preorder_origin_of_shell(
+				Origin::signed(ALICE),
+				RaceType::Cyborg,
+				CareerType::HackerWizard,
+			),
+			pallet_pw_nft_sale::Error::<Test>::NoAvailablePreorderId
+		);
+		assert_ok!(PWNftSale::set_status_type(
+			Origin::signed(OVERLORD),
+			false,
+			StatusType::PreorderOriginOfShells
+		));
+		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
+		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
+		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
+		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
+		// ALICE cannot start incubation process before it is enabled
+		assert_noop!(
+			PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32),
+			pallet_pw_incubation::Error::<Test>::StartIncubationNotAvailable
+		);
+		assert_ok!(PWIncubation::set_can_start_incubation_status(Origin::signed(OVERLORD), true));
+		// ALICE initiates incubation process
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
+		let alice_now = INIT_TIMESTAMP_SECONDS;
+		let alice_hatch_time = alice_now + INCUBATION_DURATION;
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				owner: ALICE,
+				start_time: alice_now,
+				hatch_time: alice_hatch_time,
+			},
+		));
+		// BOB initiates during next block
+		fast_forward_to(2);
+		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
+		let bob_hatch_time = bob_now + INCUBATION_DURATION;
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				owner: BOB,
+				start_time: bob_now,
+				hatch_time: bob_hatch_time,
+			},
+		));
+		// CHARLIE fails if trying to start incubation of non-owned Origin of Shell
+		assert_noop!(
+			PWIncubation::start_incubation(Origin::signed(CHARLIE), 1u32, 0u32),
+			pallet_pw_incubation::Error::<Test>::NotOwner
+		);
+		// Update ALICE hatch time
+		let update_hatch_time_vec = vec![((1u32, 2u32), 10)];
+		assert_ok!(PWIncubation::update_incubation_time(
+			Origin::signed(OVERLORD),
+			update_hatch_time_vec
+		));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::HatchTimeUpdated {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				old_hatch_time: alice_hatch_time,
+				new_hatch_time: alice_hatch_time - 10,
+			},
+		));
+	});
+}

@@ -44,19 +44,34 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
+	#[pallet::without_storage_info]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// Food per Owner/Spirit where an owner gets 5 food per era
+	/// Info on Origin of Shells that the Owner has fed
 	#[pallet::storage]
 	#[pallet::getter(fn get_food_by_owner)]
-	pub type FoodByOwner<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, FoodInfo>;
+	pub type FoodByOwner<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, FoodInfo, OptionQuery>;
+
+	/// Total food fed to an Origin of Shell per Era
+	#[pallet::storage]
+	#[pallet::getter(fn origin_of_shell_food_stats)]
+	pub type OriginOfShellFoodStats<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, (CollectionId, NftId), Blake2_128Concat, EraId, u32>;
 
 	/// Expected hatch Timestamp for an Origin of Shell that started the incubation process
 	#[pallet::storage]
 	#[pallet::getter(fn get_hatch_time)]
-	pub type HatchTime<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, u64>;
+	pub type HatchTime<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		CollectionId,
+		Blake2_128Concat,
+		NftId,
+		u64,
+		ValueQuery,
+	>;
 
 	/// A bool value to determine if accounts can start incubation of Origin of Shells
 	#[pallet::storage]
@@ -88,7 +103,6 @@ pub mod pallet {
 		HatchTimeUpdated {
 			collection_id: CollectionId,
 			nft_id: NftId,
-			owner: T::AccountId,
 			old_hatch_time: u64,
 			new_hatch_time: u64,
 		},
@@ -114,6 +128,7 @@ pub mod pallet {
 		NoFoodAvailable,
 		NotOwner,
 		WrongCollectionId,
+		NoHatchTimeDetected,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -214,7 +229,12 @@ pub mod pallet {
 			nft_id: NftId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			// TODO: Move to incubation.rs
+			// Ensure that the collection is an Origin of Shell Collection
+			ensure!(
+				Self::is_origin_of_shell_collection_id(collection_id),
+				Error::<T>::WrongCollectionId
+			);
+			// Check if HatchTime is less than or equal to current Timestamp
 
 			Ok(())
 		}
@@ -224,21 +244,42 @@ pub mod pallet {
 		///
 		/// Parameters:
 		/// - origin: The origin of the extrinsic updating the origin_of_shells incubation times
-		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
-		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
-		/// - reduced_time: The amount of time the origin_of_shell will be reduced by
+		/// - `origin_of_shells`: Vec of a tuple of Origin of Shells and the time to reduce their
+		///   hatch times by
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn update_incubation_time(
 			origin: OriginFor<T>,
-			collection_id: CollectionId,
-			nft_id: NftId,
-			reduced_time: u64,
+			origin_of_shells: Vec<((CollectionId, NftId), u64)>,
 		) -> DispatchResult {
 			// Ensure OverlordOrigin makes call
 			let sender = ensure_signed(origin)?;
 			pallet_pw_nft_sale::Pallet::<T>::ensure_overlord(sender)?;
-			// TODO: Move to incubation.rs
+			// Iterate through Origin of Shells
+			for ((collection_id, nft_id), reduced_time) in origin_of_shells {
+				// Ensure that the collection is an Origin of Shell Collection
+				ensure!(
+					Self::is_origin_of_shell_collection_id(collection_id),
+					Error::<T>::WrongCollectionId
+				);
+				let old_hatch_time = HatchTime::<T>::get(collection_id, nft_id);
+				ensure!(old_hatch_time > 0, Error::<T>::NoHatchTimeDetected);
+
+				let new_hatch_time = HatchTime::<T>::try_mutate(
+					collection_id,
+					nft_id,
+					|hatch_time| -> Result<u64, Error<T>> {
+						*hatch_time = hatch_time.saturating_sub(reduced_time);
+						Ok(*hatch_time)
+					},
+				)?;
+				Self::deposit_event(Event::HatchTimeUpdated {
+					collection_id,
+					nft_id,
+					old_hatch_time,
+					new_hatch_time,
+				})
+			}
 
 			Ok(())
 		}
@@ -326,17 +367,6 @@ where
 		);
 		// Get Current Era
 		let current_era = pallet_pw_nft_sale::Era::<T>::get();
-		if let Some(mut food_info) = FoodByOwner::<T>::get(sender) {
-			// Check if FoodInfo is up to date with current Era
-			if current_era > food_info.era {}
-		} else {
-			// Create FoodInfo for owner
-			let new_food_info = FoodInfo {
-				era: current_era,
-				food_count: T::FoodPerEra::get(),
-				food_count_for_self: T::MaxFoodFeedSelf::get(),
-			};
-		}
 
 		Ok(())
 	}
@@ -358,12 +388,6 @@ where
 			),
 			Error::<T>::NotOwner
 		);
-		// Create FoodInfo for owner
-		let new_food_info = FoodInfo {
-			era: pallet_pw_nft_sale::Era::<T>::get(),
-			food_count: T::FoodPerEra::get(),
-			food_count_for_self: T::MaxFoodFeedSelf::get(),
-		};
 
 		Ok(())
 	}
