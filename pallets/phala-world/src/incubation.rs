@@ -11,6 +11,7 @@ use frame_support::{
 };
 use frame_system::{ensure_signed, pallet_prelude::*};
 use sp_runtime::DispatchResult;
+use sp_std::vec::Vec;
 
 pub use crate::pallet_pw_nft_sale;
 pub use pallet_rmrk_core::types::*;
