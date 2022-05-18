@@ -218,11 +218,8 @@ pub mod pallet {
 				Error::<T>::WrongCollectionId
 			);
 			// Ensure that Origin of Shell exists or is not past the hatch time
-			let hatch_time = HatchTime::<T>::get(collection_id, nft_id);
-			ensure!(
-				hatch_time > 0 && !Self::can_hatch(hatch_time),
-				Error::<T>::CannotSendFoodToOriginOfShell
-			);
+			let hatch_time = Self::has_valid_hatch_time(collection_id, nft_id)?;
+			ensure!(!Self::can_hatch(hatch_time), Error::<T>::CannotSendFoodToOriginOfShell);
 			// Check if account owns an Origin of Shell NFT
 			ensure!(
 				pallet_uniques::pallet::Pallet::<T>::owned_in_class(&collection_id, &sender)
@@ -292,12 +289,17 @@ pub mod pallet {
 			nft_id: NftId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
+			// Get Overlord account
+			let overlord = pallet_pw_nft_sale::pallet::Pallet::<T>::get_overlord_account()?;
 			// Ensure that the collection is an Origin of Shell Collection
 			ensure!(
 				Self::is_origin_of_shell_collection_id(collection_id),
 				Error::<T>::WrongCollectionId
 			);
 			// Check if HatchTime is less than or equal to current Timestamp
+			// Ensure that Origin of Shell exists or is not past the hatch time
+			let hatch_time = Self::has_valid_hatch_time(collection_id, nft_id)?;
+			ensure!(Self::can_hatch(hatch_time), Error::<T>::CannotHatchOriginOfShell);
 
 			Ok(())
 		}
@@ -325,8 +327,7 @@ pub mod pallet {
 					Self::is_origin_of_shell_collection_id(collection_id),
 					Error::<T>::WrongCollectionId
 				);
-				let old_hatch_time = HatchTime::<T>::get(collection_id, nft_id);
-				ensure!(old_hatch_time > 0, Error::<T>::NoHatchTimeDetected);
+				let old_hatch_time = Self::has_valid_hatch_time(collection_id, nft_id)?;
 
 				let new_hatch_time = HatchTime::<T>::try_mutate(
 					collection_id,
@@ -402,6 +403,19 @@ where
 		} else {
 			false
 		}
+	}
+
+	/// Helper function to check if hatch time has been assigned for an Origin of Shell.
+	///
+	/// Parameters:
+	/// `collection_id`: Collection ID of the Origin of Shell
+	/// `nft_id`: NFT ID of the Origin of Shell
+	fn has_valid_hatch_time(collection_id: CollectionId, nft_id: NftId) -> Result<u64, Error<T>> {
+		let hatch_time = HatchTime::<T>::get(collection_id, nft_id);
+		if hatch_time == 0 {
+			return Err(Error::<T>::NoHatchTimeDetected)
+		}
+		Ok(hatch_time)
 	}
 
 	/// Helper function to check if the Origin of Shell can hatch

@@ -931,7 +931,7 @@ where
 	}
 
 	/// Helper function to get the Overlord admin account
-	fn get_overlord_account() -> Result<T::AccountId, Error<T>> {
+	pub(crate) fn get_overlord_account() -> Result<T::AccountId, Error<T>> {
 		Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)
 	}
 
