@@ -50,7 +50,7 @@ pub mod pallet {
 		type MaxFoodFeedSelf: Get<u8>;
 		/// Duration of incubation process
 		#[pallet::constant]
-		type IncubationDuration: Get<u64>;
+		type IncubationDurationSec: Get<u64>;
 	}
 
 	#[pallet::pallet]
@@ -194,7 +194,7 @@ pub mod pallet {
 			);
 			// Get time to start hatching process
 			let start_time = T::Time::now().as_secs();
-			let incubation_duration = T::IncubationDuration::get();
+			let incubation_duration = T::IncubationDurationSec::get();
 			let hatch_time = start_time + incubation_duration;
 			// Update Hatch Time storage
 			HatchTime::<T>::insert(collection_id, nft_id, hatch_time);

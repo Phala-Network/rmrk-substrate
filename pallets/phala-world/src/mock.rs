@@ -166,9 +166,9 @@ parameter_types! {
 	pub const PrimeOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
 	pub const IterLimit: u32 = 200;
-	pub const FoodPerEra: u8 = 2;
-	pub const MaxFoodFeedSelf: u8 = 1;
-	pub const IncubationDuration: u64 = 600;
+	pub const FoodPerEra: u8 = 5;
+	pub const MaxFoodFeedSelf: u8 = 2;
+	pub const IncubationDurationSec: u64 = 600;
 }
 
 impl pallet_pw_nft_sale::Config for Test {
@@ -188,7 +188,7 @@ impl pallet_pw_incubation::Config for Test {
 	type Event = Event;
 	type FoodPerEra = FoodPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
-	type IncubationDuration = IncubationDuration;
+	type IncubationDurationSec = IncubationDurationSec;
 }
 
 pub type SystemCall = frame_system::Call<Test>;
@@ -231,7 +231,7 @@ pub const MILLISECS_PER_BLOCK: u64 = 3_000;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const INCUBATION_DURATION: u64 = 600;
+pub const INCUBATION_DURATION_SEC: u64 = 600;
 
 pub struct ExtBuilder;
 

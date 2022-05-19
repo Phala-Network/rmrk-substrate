@@ -727,7 +727,7 @@ fn can_initiate_incubation_process() {
 		// ALICE initiates incubation process
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
 		let alice_now = INIT_TIMESTAMP_SECONDS;
-		let alice_hatch_time = alice_now + INCUBATION_DURATION;
+		let alice_hatch_time = alice_now + INCUBATION_DURATION_SEC;
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::StartedIncubation {
 				collection_id: 1u32,
@@ -740,7 +740,7 @@ fn can_initiate_incubation_process() {
 		// BOB initiates during next block
 		fast_forward_to(2);
 		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
-		let bob_hatch_time = bob_now + INCUBATION_DURATION;
+		let bob_hatch_time = bob_now + INCUBATION_DURATION_SEC;
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::StartedIncubation {
@@ -838,7 +838,7 @@ fn can_update_incubation_hatch_time() {
 		// ALICE initiates incubation process
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
 		let alice_now = INIT_TIMESTAMP_SECONDS;
-		let alice_hatch_time = alice_now + INCUBATION_DURATION;
+		let alice_hatch_time = alice_now + INCUBATION_DURATION_SEC;
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::StartedIncubation {
 				collection_id: 1u32,
@@ -851,7 +851,7 @@ fn can_update_incubation_hatch_time() {
 		// BOB initiates during next block
 		fast_forward_to(2);
 		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
-		let bob_hatch_time = bob_now + INCUBATION_DURATION;
+		let bob_hatch_time = bob_now + INCUBATION_DURATION_SEC;
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::StartedIncubation {
@@ -963,7 +963,7 @@ fn can_send_food_to_origin_of_shell() {
 		// ALICE initiates incubation process
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
 		let alice_now = INIT_TIMESTAMP_SECONDS;
-		let alice_hatch_time = alice_now + INCUBATION_DURATION;
+		let alice_hatch_time = alice_now + INCUBATION_DURATION_SEC;
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::StartedIncubation {
 				collection_id: 1u32,
@@ -976,7 +976,7 @@ fn can_send_food_to_origin_of_shell() {
 		// BOB initiates during next block
 		fast_forward_to(2);
 		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
-		let bob_hatch_time = bob_now + INCUBATION_DURATION;
+		let bob_hatch_time = bob_now + INCUBATION_DURATION_SEC;
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::StartedIncubation {
