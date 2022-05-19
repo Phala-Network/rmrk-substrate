@@ -718,44 +718,17 @@ fn can_initiate_incubation_process() {
 		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
 		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
 		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
-		// ALICE cannot start incubation process before it is enabled
-		assert_noop!(
-			PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32),
-			pallet_pw_incubation::Error::<Test>::StartIncubationNotAvailable
-		);
+		// Set CanStartIncubationStatus to true
 		assert_ok!(PWIncubation::set_can_start_incubation_status(Origin::signed(OVERLORD), true));
-		// ALICE initiates incubation process
-		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
-		let alice_now = INIT_TIMESTAMP_SECONDS;
-		let alice_hatch_time = alice_now + INCUBATION_DURATION_SEC;
+		let now = INIT_TIMESTAMP_SECONDS;
+		let official_hatch_time = now + INCUBATION_DURATION_SEC;
 		System::assert_last_event(MockEvent::PWIncubation(
-			crate::pallet_pw_incubation::Event::StartedIncubation {
-				collection_id: 1u32,
-				nft_id: 2u32,
-				owner: ALICE,
-				start_time: alice_now,
-				hatch_time: alice_hatch_time,
+			crate::pallet_pw_incubation::Event::CanStartIncubationStatusChanged {
+				status: true,
+				start_time: now,
+				official_hatch_time,
 			},
 		));
-		// BOB initiates during next block
-		fast_forward_to(2);
-		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
-		let bob_hatch_time = bob_now + INCUBATION_DURATION_SEC;
-		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
-		System::assert_last_event(MockEvent::PWIncubation(
-			crate::pallet_pw_incubation::Event::StartedIncubation {
-				collection_id: 1u32,
-				nft_id: 0u32,
-				owner: BOB,
-				start_time: bob_now,
-				hatch_time: bob_hatch_time,
-			},
-		));
-		// CHARLIE fails if trying to start incubation of non-owned Origin of Shell
-		assert_noop!(
-			PWIncubation::start_incubation(Origin::signed(CHARLIE), 1u32, 0u32),
-			pallet_pw_incubation::Error::<Test>::NotOwner
-		);
 	});
 }
 
@@ -829,44 +802,16 @@ fn can_update_incubation_hatch_time() {
 		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
 		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
 		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
-		// ALICE cannot start incubation process before it is enabled
-		assert_noop!(
-			PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32),
-			pallet_pw_incubation::Error::<Test>::StartIncubationNotAvailable
-		);
 		assert_ok!(PWIncubation::set_can_start_incubation_status(Origin::signed(OVERLORD), true));
-		// ALICE initiates incubation process
-		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
-		let alice_now = INIT_TIMESTAMP_SECONDS;
-		let alice_hatch_time = alice_now + INCUBATION_DURATION_SEC;
+		let now = INIT_TIMESTAMP_SECONDS;
+		let official_hatch_time = now + INCUBATION_DURATION_SEC;
 		System::assert_last_event(MockEvent::PWIncubation(
-			crate::pallet_pw_incubation::Event::StartedIncubation {
-				collection_id: 1u32,
-				nft_id: 2u32,
-				owner: ALICE,
-				start_time: alice_now,
-				hatch_time: alice_hatch_time,
+			crate::pallet_pw_incubation::Event::CanStartIncubationStatusChanged {
+				status: true,
+				start_time: now,
+				official_hatch_time,
 			},
 		));
-		// BOB initiates during next block
-		fast_forward_to(2);
-		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
-		let bob_hatch_time = bob_now + INCUBATION_DURATION_SEC;
-		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
-		System::assert_last_event(MockEvent::PWIncubation(
-			crate::pallet_pw_incubation::Event::StartedIncubation {
-				collection_id: 1u32,
-				nft_id: 0u32,
-				owner: BOB,
-				start_time: bob_now,
-				hatch_time: bob_hatch_time,
-			},
-		));
-		// CHARLIE fails if trying to start incubation of non-owned Origin of Shell
-		assert_noop!(
-			PWIncubation::start_incubation(Origin::signed(CHARLIE), 1u32, 0u32),
-			pallet_pw_incubation::Error::<Test>::NotOwner
-		);
 		// Update ALICE hatch time
 		let update_hatch_time_vec = vec![((1u32, 2u32), 10)];
 		assert_ok!(PWIncubation::update_incubation_time(
@@ -877,8 +822,8 @@ fn can_update_incubation_hatch_time() {
 			crate::pallet_pw_incubation::Event::HatchTimeUpdated {
 				collection_id: 1u32,
 				nft_id: 2u32,
-				old_hatch_time: alice_hatch_time,
-				new_hatch_time: alice_hatch_time - 10,
+				old_hatch_time: official_hatch_time,
+				new_hatch_time: official_hatch_time - 10,
 			},
 		));
 	});
@@ -954,44 +899,30 @@ fn can_send_food_to_origin_of_shell() {
 		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
 		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
 		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
-		// ALICE cannot start incubation process before it is enabled
-		assert_noop!(
-			PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32),
-			pallet_pw_incubation::Error::<Test>::StartIncubationNotAvailable
-		);
 		assert_ok!(PWIncubation::set_can_start_incubation_status(Origin::signed(OVERLORD), true));
-		// ALICE initiates incubation process
-		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
-		let alice_now = INIT_TIMESTAMP_SECONDS;
-		let alice_hatch_time = alice_now + INCUBATION_DURATION_SEC;
+		let now = INIT_TIMESTAMP_SECONDS;
+		let official_hatch_time = now + INCUBATION_DURATION_SEC;
 		System::assert_last_event(MockEvent::PWIncubation(
-			crate::pallet_pw_incubation::Event::StartedIncubation {
+			crate::pallet_pw_incubation::Event::CanStartIncubationStatusChanged {
+				status: true,
+				start_time: now,
+				official_hatch_time,
+			},
+		));
+		// Update ALICE hatch time
+		let update_hatch_time_vec = vec![((1u32, 2u32), 10)];
+		assert_ok!(PWIncubation::update_incubation_time(
+			Origin::signed(OVERLORD),
+			update_hatch_time_vec
+		));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::HatchTimeUpdated {
 				collection_id: 1u32,
 				nft_id: 2u32,
-				owner: ALICE,
-				start_time: alice_now,
-				hatch_time: alice_hatch_time,
+				old_hatch_time: official_hatch_time,
+				new_hatch_time: official_hatch_time - 10,
 			},
 		));
-		// BOB initiates during next block
-		fast_forward_to(2);
-		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
-		let bob_hatch_time = bob_now + INCUBATION_DURATION_SEC;
-		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
-		System::assert_last_event(MockEvent::PWIncubation(
-			crate::pallet_pw_incubation::Event::StartedIncubation {
-				collection_id: 1u32,
-				nft_id: 0u32,
-				owner: BOB,
-				start_time: bob_now,
-				hatch_time: bob_hatch_time,
-			},
-		));
-		// CHARLIE fails if trying to start incubation of non-owned Origin of Shell
-		assert_noop!(
-			PWIncubation::start_incubation(Origin::signed(CHARLIE), 1u32, 0u32),
-			pallet_pw_incubation::Error::<Test>::NotOwner
-		);
 		// CHARLIE feeds ALICE's Origin of Shell Twice and fails on the third
 		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
 		System::assert_last_event(MockEvent::PWIncubation(

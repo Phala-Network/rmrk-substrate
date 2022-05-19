@@ -26,7 +26,6 @@ pub use collection::{Collection, CollectionInfo};
 pub use message::{OverlordMessage, Purpose};
 pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
 pub use nft_sale::NftSaleInfo;
-pub use origin_of_shell::OriginOfShell;
 pub use preorders::PreorderInfo;
 pub use priority::Priority;
 pub use property::Property;

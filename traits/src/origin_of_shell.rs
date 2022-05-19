@@ -16,21 +16,3 @@ pub enum OriginOfShellType {
 	Magic,
 	Legendary,
 }
-
-pub trait OriginOfShell<AccountId, BlockNumber> {
-	/// When a user initiates the incubation process, this function will set the start time for the
-	/// incubation process.
-	fn set_start_incubation_time(
-		sender: AccountId,
-		collection_id: CollectionId,
-		nft_id: NftId,
-	) -> Result<BlockNumber, DispatchError>;
-	/// Get the `incubation_duration` of the Origin of Shell RMRK NFT and reduce it by
-	/// `reduce_time_by` This will be executed by the admin account
-	fn update_incubation_time(
-		admin: AccountId,
-		collection_id: CollectionId,
-		nft_id: NftId,
-		reduce_time_by: u64,
-	) -> Result<BlockNumber, DispatchError>;
-}

@@ -211,14 +211,6 @@ This is an admin only function that will be called to do a bulk minting of all p
 origin: OriginFor<T>
 ```
 
-### start_incubation
-Initiate the incubation phase for an owner's OriginOfShell
-```rust
-origin: OriginFor<T>,
-collection_id: CollectionId,
-nft_id: NftId,
-```
-
 ### feed_origin_of_shell
 Feed another origin of shell to the current origin of shell being incubated.
 ```rust
