@@ -84,7 +84,7 @@ pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, Preorder
 /// Food per Owner where an owner gets 5 food per era
 #[pallet::storage]
 #[pallet::getter(fn get_food_by_owner)]
-pub type FoodByOwner<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, u8>;
+pub type FoodByOwners<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, u8>;
 
 /// Phala World Zero Day `BlockNumber` this will be used to determine Eras
 #[pallet::storage]

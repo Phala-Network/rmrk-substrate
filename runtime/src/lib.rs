@@ -328,9 +328,9 @@ impl pallet_rmrk_core::Config for Runtime {
 parameter_types! {
 	pub const SecondsPerEra: u64 = SECONDS_PER_DAY;
 	pub const MinBalanceToClaimSpirit: Balance = 10 * DOLLARS;
-	pub const LegendaryOriginOfShellPrice: Balance = 3_000 * DOLLARS;
-	pub const MagicOriginOfShellPrice: Balance = 2_000 * DOLLARS;
-	pub const PrimeOriginOfShellPrice: Balance = 300 * DOLLARS;
+	pub const LegendaryOriginOfShellPrice: Balance = 15_000 * DOLLARS;
+	pub const MagicOriginOfShellPrice: Balance = 10_000 * DOLLARS;
+	pub const PrimeOriginOfShellPrice: Balance = 500 * DOLLARS;
 	pub const IterLimit: u32 = 1_000;
 	pub const FoodPerEra: u8 = 5;
 	pub const MaxFoodFeedSelf: u8 = 2;
