@@ -25,8 +25,11 @@ use rmrk_traits::{
 	race::RaceType, resource::ResourceInfo, AccountIdOrCollectionNftTuple,
 };
 
-pub type ResourceOf<T, R> =
-	ResourceInfo<BoundedVec<u8, R>, BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>>;
+pub type ResourceOf<T, R, P> = ResourceInfo<
+	BoundedVec<u8, R>,
+	BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
+	BoundedVec<PartId, P>,
+>;
 
 pub use self::pallet::*;
 
