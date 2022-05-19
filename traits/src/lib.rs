@@ -24,7 +24,7 @@ pub use theme::{Theme, ThemeProperty};
 // pub use part::{PartInfo};
 pub use collection::{Collection, CollectionInfo};
 pub use message::{OverlordMessage, Purpose};
-pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
+pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo, RoyaltyInfo};
 pub use nft_sale::NftSaleInfo;
 pub use preorders::PreorderInfo;
 pub use priority::Priority;
