@@ -1,4 +1,5 @@
 use super::*;
+use frame_support::traits::tokens::Locker;
 
 impl<T: Config> Pallet<T> {
 	/// Helper function for getting next base ID
@@ -12,9 +13,7 @@ impl<T: Config> Pallet<T> {
 			Ok(current_id)
 		})
 	}
-}
 
-impl<T: Config> Pallet<T> {
 	/// Helper function for getting next part ID for a base
 	/// Like BaseId, PartId is auto-incremented from zero, which similarly may be worth changing
 	/// to BoundedVec to allow arbitrary/unique naming, making cross-chain functionality
@@ -28,7 +27,15 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T: Config> Base<T::AccountId, CollectionId, NftId, StringLimitOf<T>> for Pallet<T>
+impl<T: Config> Base<
+	T::AccountId,
+	CollectionId,
+	NftId,
+	StringLimitOf<T>,
+	BoundedVec<PartType<StringLimitOf<T>, BoundedVec<CollectionId, T::MaxCollectionsEquippablePerPart>>,
+	T::PartsLimit>,
+	BoundedVec<CollectionId, T::MaxCollectionsEquippablePerPart>
+	> for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
@@ -45,7 +52,7 @@ where
 		issuer: T::AccountId,
 		base_type: StringLimitOf<T>,
 		symbol: StringLimitOf<T>,
-		parts: Vec<PartType<StringLimitOf<T>>>,
+		parts: BoundedVec<PartType<StringLimitOf<T>, BoundedVec<CollectionId, T::MaxCollectionsEquippablePerPart>>, T::PartsLimit>,
 	) -> Result<BaseId, DispatchError> {
 		let base_id = Self::get_next_base_id()?;
 		for part in parts.clone() {
@@ -63,9 +70,31 @@ where
 		Ok(base_id)
 	}
 
+	/// Implementation of the base_change_issuer function for the Base trait
+	/// Called by the change_base_issuer extrinsic to change the issuer of a base
+	///
+	/// Parameters:
+	/// - base_id: The Base ID to change the issuer of
+	/// - new_issuer: The Account to become the new issuer
+	fn base_change_issuer(
+		base_id: BaseId,
+		new_issuer: T::AccountId,
+	) -> Result<(T::AccountId, CollectionId), DispatchError> {
+		ensure!(Bases::<T>::contains_key(base_id), Error::<T>::NoAvailableBaseId);
+
+		Bases::<T>::try_mutate_exists(base_id, |base| -> DispatchResult {
+			if let Some(b) = base {
+				b.issuer = new_issuer.clone();
+			}
+			Ok(())
+		})?;
+
+		Ok((new_issuer, base_id))
+	}
+
 	/// Implementation of the do_equip function for the Base trait
-	/// Called by the equip extrinsic to equip a child NFT's resource to a parent's slot, if all are available.
-	/// Also can be called to unequip, which can be successful if
+	/// Called by the equip extrinsic to equip a child NFT's resource to a parent's slot, if all are
+	/// available. Also can be called to unequip, which can be successful if
 	/// - Item has beeen burned
 	/// - Item is equipped and extrinsic called by equipping item owner
 	/// - Item is equipped and extrinsic called by equipper NFT owner
@@ -89,6 +118,16 @@ where
 		let item_nft_id = item.1;
 		let equipper_collection_id = equipper.0;
 		let equipper_nft_id = equipper.1;
+		// Check item NFT lock status
+		ensure!(
+			!pallet_rmrk_core::Pallet::<T>::is_locked(item_collection_id, item_nft_id),
+			pallet_uniques::Error::<T>::Locked
+		);
+		// Check equipper NFT lock status
+		ensure!(
+			!pallet_rmrk_core::Pallet::<T>::is_locked(equipper_collection_id, equipper_nft_id),
+			pallet_uniques::Error::<T>::Locked
+		);
 
 		let item_is_equipped =
 			Equippings::<T>::get(((equipper_collection_id, equipper_nft_id), base_id, slot_id))
@@ -277,7 +316,7 @@ where
 		issuer: T::AccountId,
 		base_id: BaseId,
 		part_id: PartId,
-		equippables: EquippableList,
+		equippables: EquippableList<BoundedVec<CollectionId, T::MaxCollectionsEquippablePerPart>>,
 	) -> Result<(BaseId, SlotId), DispatchError> {
 		// Base must exist
 		ensure!(Bases::<T>::get(base_id).is_some(), Error::<T>::BaseDoesntExist);
@@ -308,7 +347,7 @@ where
 	/// Modeled after [themeadd interaction](https://github.com/rmrk-team/rmrk-spec/blob/master/standards/rmrk2.0.0/interactions/themeadd.md)
 	/// Themes are stored in the Themes storage
 	/// A "default" theme is required prior to adding other Themes.
-	/// 
+	///
 	/// Parameters:
 	/// - issuer: The caller of the function, must be issuer of the base
 	/// - base_id: The Base containing the Theme to be updated

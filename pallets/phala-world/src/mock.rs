@@ -3,7 +3,10 @@ use crate::{pallet_pw_incubation, pallet_pw_nft_sale};
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, ConstU64, Everything, GenesisBuild, OnFinalize, OnInitialize},
+	traits::{
+		AsEnsureOriginWithArg, ConstU32, ConstU64, Everything, GenesisBuild, OnFinalize,
+		OnInitialize,
+	},
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
@@ -96,6 +99,8 @@ parameter_types! {
 	pub MaxMetadataLength: u32 = 256;
 	pub const MaxRecursions: u32 = 10;
 	pub const ResourceSymbolLimit: u32 = 10;
+	pub const PartsLimit: u32 = 10;
+	pub const MaxPriorities: u32 = 3;
 	pub const CollectionSymbolLimit: u32 = 100;
 }
 
@@ -104,6 +109,8 @@ impl pallet_rmrk_core::Config for Test {
 	type ProtocolOrigin = EnsureRoot<AccountId>;
 	type MaxRecursions = MaxRecursions;
 	type ResourceSymbolLimit = ResourceSymbolLimit;
+	type PartsLimit = PartsLimit;
+	type MaxPriorities = MaxPriorities;
 	type CollectionSymbolLimit = CollectionSymbolLimit;
 }
 
@@ -124,6 +131,8 @@ impl pallet_uniques::Config for Test {
 	type InstanceId = u32;
 	type Currency = Balances;
 	type ForceOrigin = EnsureRoot<AccountId>;
+	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<AccountId>>;
+	type Locker = pallet_rmrk_core::Pallet<Test>;
 	type ClassDeposit = ClassDeposit;
 	type InstanceDeposit = InstanceDeposit;
 	type MetadataDepositBase = UniquesMetadataDepositBase;
