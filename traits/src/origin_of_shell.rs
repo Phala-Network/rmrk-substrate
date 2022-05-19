@@ -16,3 +16,14 @@ pub enum OriginOfShellType {
 	Magic,
 	Legendary,
 }
+
+impl OriginOfShellType {
+	pub fn from_u8(num: u8) -> Option<OriginOfShellType> {
+		match num {
+			0u8 => Some(OriginOfShellType::Prime),
+			1u8 => Some(OriginOfShellType::Magic),
+			2u8 => Some(OriginOfShellType::Legendary),
+			_ => None,
+		}
+	}
+}

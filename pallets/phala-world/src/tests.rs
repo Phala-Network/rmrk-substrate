@@ -7,7 +7,7 @@ use codec::Encode;
 use frame_support::{assert_noop, assert_ok, error::BadOrigin, traits::Currency, BoundedVec};
 use sp_core::{crypto::AccountId32, sr25519, Pair};
 
-use mock::{Call, Event as MockEvent, ExtBuilder, Origin, PWIncubation, PWNftSale, Test};
+use mock::{Call, Event as MockEvent, ExtBuilder, Origin, PWIncubation, PWNftSale, RmrkCore, Test};
 use rmrk_traits::{
 	career::CareerType,
 	message::{OverlordMessage, Purpose},
@@ -959,5 +959,167 @@ fn can_send_food_to_origin_of_shell() {
 			PWIncubation::feed_origin_of_shell(Origin::signed(OVERLORD), 1u32, 0u32),
 			pallet_pw_incubation::Error::<Test>::CannotSendFoodToOriginOfShell
 		);
+	});
+}
+
+#[test]
+fn can_hatch_origin_of_shell() {
+	ExtBuilder::default().build(OVERLORD).execute_with(|| {
+		// Set Overlord and configuration then enable preorder origin of shells
+		setup_config(StatusType::PreorderOriginOfShells);
+		mint_spirit(ALICE, None);
+		mint_spirit(BOB, None);
+		mint_spirit(CHARLIE, None);
+		// BOB preorders an origin of shell
+		assert_ok!(PWNftSale::preorder_origin_of_shell(
+			Origin::signed(BOB),
+			RaceType::Cyborg,
+			CareerType::HardwareDruid,
+		));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PWNftSale(
+			crate::pallet_pw_nft_sale::Event::OriginOfShellPreordered {
+				owner: BOB,
+				preorder_id: 0,
+			},
+		));
+		// CHARLIE preorders an origin of shell
+		assert_ok!(PWNftSale::preorder_origin_of_shell(
+			Origin::signed(CHARLIE),
+			RaceType::Pandroid,
+			CareerType::HardwareDruid,
+		));
+		// Check if event triggered
+		System::assert_last_event(MockEvent::PWNftSale(
+			crate::pallet_pw_nft_sale::Event::OriginOfShellPreordered {
+				owner: CHARLIE,
+				preorder_id: 1,
+			},
+		));
+		// ALICE preorders an origin of shell successfully
+		assert_ok!(PWNftSale::preorder_origin_of_shell(
+			Origin::signed(ALICE),
+			RaceType::AISpectre,
+			CareerType::HackerWizard,
+		));
+		let preorders: Vec<PreorderId> = vec![0u32, 1u32, 2u32];
+		// Set ALICE & BOB has Chosen and CHARLIE as NotChosen
+		assert_ok!(PWNftSale::mint_chosen_preorders(Origin::signed(OVERLORD), preorders));
+		System::assert_last_event(MockEvent::PWNftSale(
+			crate::pallet_pw_nft_sale::Event::ChosenPreorderMinted {
+				preorder_id: 2u32,
+				owner: ALICE,
+			},
+		));
+		// Reassign PreorderIndex to max value
+		pallet_pw_nft_sale::PreorderIndex::<Test>::mutate(|id| *id = PreorderId::max_value());
+		// ALICE preorders an origin of shell but max value is reached
+		assert_noop!(
+			PWNftSale::preorder_origin_of_shell(
+				Origin::signed(ALICE),
+				RaceType::Cyborg,
+				CareerType::HackerWizard,
+			),
+			pallet_pw_nft_sale::Error::<Test>::NoAvailablePreorderId
+		);
+		assert_ok!(PWNftSale::set_status_type(
+			Origin::signed(OVERLORD),
+			false,
+			StatusType::PreorderOriginOfShells
+		));
+		// Check Balances of ALICE, BOB, CHARLIE & OVERLORD
+		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
+		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
+		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
+		assert_ok!(PWIncubation::set_can_start_incubation_status(Origin::signed(OVERLORD), true));
+		let now = INIT_TIMESTAMP_SECONDS;
+		let official_hatch_time = now + INCUBATION_DURATION_SEC;
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::CanStartIncubationStatusChanged {
+				status: true,
+				start_time: now,
+				official_hatch_time,
+			},
+		));
+		// Update ALICE hatch time
+		let update_hatch_time_vec = vec![((1u32, 2u32), 10)];
+		assert_ok!(PWIncubation::update_incubation_time(
+			Origin::signed(OVERLORD),
+			update_hatch_time_vec
+		));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::HatchTimeUpdated {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				old_hatch_time: official_hatch_time,
+				new_hatch_time: official_hatch_time - 10,
+			},
+		));
+		// CHARLIE feeds ALICE's Origin of Shell Twice and fails on the third
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				sender: CHARLIE,
+			},
+		));
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				sender: CHARLIE,
+			},
+		));
+		assert_noop!(
+			PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32),
+			pallet_pw_incubation::Error::<Test>::AlreadySentFoodTwice
+		);
+		// CHARLIE can feed now that a new Era has started
+		fast_forward_to(7);
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				sender: CHARLIE,
+			},
+		));
+		// OVERLORD cannot send food bc they do not own an Origin of Shell
+		assert_noop!(
+			PWIncubation::feed_origin_of_shell(Origin::signed(OVERLORD), 1u32, 0u32),
+			pallet_pw_incubation::Error::<Test>::CannotSendFoodToOriginOfShell
+		);
+		// Update ALICE hatch time
+		let update_hatch_time_vec = vec![((1u32, 2u32), now - 10)];
+		assert_ok!(PWIncubation::update_incubation_time(
+			Origin::signed(OVERLORD),
+			update_hatch_time_vec
+		));
+		let shell_collection_id = RmrkCore::collection_index();
+		// Mint Shell Collection
+		mint_collection(OVERLORD);
+		assert_ok!(PWIncubation::set_shell_collection_id(
+			Origin::signed(OVERLORD),
+			shell_collection_id
+		));
+		fast_forward_to(600);
+		// ALICE can hatch origin of shell from OVERLORD admin call
+		assert_ok!(PWIncubation::hatch_origin_of_shell(
+			Origin::signed(OVERLORD),
+			ALICE,
+			1u32,
+			2u32,
+			bvec![0u8; 15]
+		));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::ShellAwakened {
+				collection_id: 2u32,
+				nft_id: 0u32,
+				owner: ALICE,
+			},
+		));
 	});
 }

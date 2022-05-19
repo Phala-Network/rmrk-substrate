@@ -34,6 +34,8 @@ pub use self::pallet::*;
 pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+	use frame_system::Origin;
+	use pallet_rmrk_core::BoundedResource;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -255,86 +257,79 @@ pub mod pallet {
 			// Check if Shell Collection ID is set
 			let shell_collection_id = Self::get_shell_collection_id()?;
 			// Get race, key and origin of shell type before burning origin of shell NFT
-			// let race_key = pallet_pw_nft_sale::pallet::Pallet::<T>::to_boundedvec_key("race")?;
-			// let career_key =
-			// pallet_pw_nft_sale::pallet::Pallet::<T>::to_boundedvec_key("career")?;
-			// let origin_of_shell_type_key =
-			// 	pallet_pw_nft_sale::Pallet::<T>::to_boundedvec_key("origin_of_shell_type")?;
-			// let race = pallet_uniques::Pallet::<T>::attribute(&collection_id, &nft_id, &race_key)
-			// 	.ok_or(Error::<T>::RaceNotDetected)?;
-			// let career =
-			// 	pallet_uniques::Pallet::<T>::attribute(&collection_id, &nft_id, &career_key)
-			// 		.ok_or(Error::<T>::CareerNotDetected)?;
-			// let origin_of_shell_type_value = pallet_uniques::Pallet::<T>::attribute(
-			// 	&collection_id,
-			// 	&nft_id,
-			// 	&origin_of_shell_type_key,
-			// )
-			// .ok_or(Error::<T>::OriginOfShellTypeNotDetected)?;
-			// let race_type = race
-			// 	.iter()
-			// 	.map(|x| x.clone())
-			// 	.collect()
-			// 	.try_into()
-			// 	.expect("[race] should not fail");
-			// let career_type = career
-			// 	.iter()
-			// 	.map(|x| x.clone())
-			// 	.collect()
-			// 	.try_into()
-			// 	.expect("[career] should not fail");
-			// let origin_of_shell_type = origin_of_shell_type_value
-			// 	.iter()
-			// 	.map(|x| x.clone())
-			// 	.collect()
-			// 	.try_into()
-			// 	.expect("[origin_of_shell_type] should not fail");
-			// // Get Shell Collection next NFT ID
-			let shell_nft_id = pallet_rmrk_core::Pallet::<T>::get_next_nft_id(shell_collection_id)?;
-			// Get empty
-			// metadata let metadata =
-			// pallet_pw_nft_sale::pallet::Pallet::<T>::get_empty_metadata(); // Get resource id
-			// let resource_id = pallet_rmrk_core::Pallet::<T>::get_next_resource_id()?;
-			// TODO: Burn Origin of Shell NFT then Mint Shell NFT
+			let race_key = pallet_pw_nft_sale::pallet::Pallet::<T>::to_boundedvec_key("race")?;
+			let career_key = pallet_pw_nft_sale::pallet::Pallet::<T>::to_boundedvec_key("career")?;
+			let origin_of_shell_type_key =
+				pallet_pw_nft_sale::Pallet::<T>::to_boundedvec_key("origin_of_shell_type")?;
+			let race = pallet_uniques::Pallet::<T>::attribute(&collection_id, &nft_id, &race_key)
+				.ok_or(Error::<T>::RaceNotDetected)?;
+			let career =
+				pallet_uniques::Pallet::<T>::attribute(&collection_id, &nft_id, &career_key)
+					.ok_or(Error::<T>::CareerNotDetected)?;
+			let origin_of_shell_type_value = pallet_uniques::Pallet::<T>::attribute(
+				&collection_id,
+				&nft_id,
+				&origin_of_shell_type_key,
+			)
+			.ok_or(Error::<T>::OriginOfShellTypeNotDetected)?;
+			let race_type: RaceType = RaceType::from_u8(race[0]).expect("[race] should not fail");
+			let career_type: CareerType =
+				CareerType::from_u8(career[0]).expect("[career] should not fail");
+			let origin_of_shell_type: OriginOfShellType =
+				OriginOfShellType::from_u8(origin_of_shell_type_value[0])
+					.expect("[origin_of_shell_type] should not fail");
+			// Get Shell Collection next NFT ID
+			let shell_nft_id = pallet_rmrk_core::NextNftId::<T>::get(shell_collection_id);
+			// Get empty metadata
+			let metadata = pallet_pw_nft_sale::pallet::Pallet::<T>::get_empty_metadata();
+			// Get resource id
+			let resource_id = pallet_rmrk_core::Pallet::<T>::get_next_resource_id()?;
+			let resource_id: BoundedResource<T::ResourceSymbolLimit> =
+				resource_id.encode().try_into().expect("[resource] id should work");
+			// Burn Origin of Shell NFT then Mint Shell NFT
+			pallet_rmrk_core::Pallet::<T>::burn_nft(
+				Origin::<T>::Signed(owner.clone()).into(),
+				collection_id,
+				nft_id,
+			)?;
 			// Mint Shell NFT to Overlord to add attributes and resource before sending to owner
-			// pallet_rmrk_core::Pallet::<T>::mint_nft(
-			// 	origin.clone(),
-			// 	sender.clone(),
-			// 	shell_collection_id,
-			// 	None,
-			// 	None,
-			// 	metadata,
-			// )?;
-			// // Set Origin of Shell Type, Race and Career attributes for NFT
-			// pallet_pw_nft_sale::Pallet::<T>::set_nft_attributes(
-			// 	shell_collection_id,
-			// 	shell_nft_id,
-			// 	origin_of_shell_type,
-			// 	race_type,
-			// 	career_type,
-			// )?;
-
+			pallet_rmrk_core::Pallet::<T>::mint_nft(
+				origin.clone(),
+				owner.clone(),
+				shell_collection_id,
+				None,
+				None,
+				metadata,
+			)?;
+			// Set Origin of Shell Type, Race and Career attributes for NFT
+			pallet_pw_nft_sale::Pallet::<T>::set_nft_attributes(
+				shell_collection_id,
+				shell_nft_id,
+				origin_of_shell_type,
+				race_type,
+				career_type,
+			)?;
 			// Set the resource for the Shell NFT
-			// pallet_rmrk_core::Pallet::<T>::add_resource(
-			// 	origin.clone(),
-			// 	shell_collection_id,
-			// 	shell_nft_id,
-			// 	resource_id.encode().try_into().expect("resource id should work"),
-			// 	None,
-			// 	Some(resource_src),
-			// 	None,
-			// 	None,
-			// 	None,
-			// 	None,
-			// 	None,
-			// )?;
+			pallet_rmrk_core::Pallet::<T>::add_resource(
+				origin.clone(),
+				shell_collection_id,
+				shell_nft_id,
+				resource_id.clone(),
+				None,
+				Some(resource_src),
+				None,
+				None,
+				None,
+				None,
+				None,
+			)?;
 			// Transfer to new owner
-			// pallet_rmrk_core::Pallet::<T>::send(
-			// 	origin,
-			// 	shell_collection_id,
-			// 	shell_nft_id,
-			// 	AccountIdOrCollectionNftTuple::AccountId(owner.clone()),
-			// )?;
+			pallet_rmrk_core::Pallet::<T>::accept_resource(
+				Origin::<T>::Signed(owner.clone()).into(),
+				shell_collection_id,
+				shell_nft_id,
+				resource_id,
+			)?;
 
 			Self::deposit_event(Event::ShellAwakened {
 				collection_id: shell_collection_id,
@@ -430,7 +425,7 @@ pub mod pallet {
 		/// - `origin` - Expected Overlord admin account to set the Shell Collection ID
 		/// - `collection_id` - Collection ID of the Shell Collection
 		#[pallet::weight(0)]
-		pub fn set_spirit_collection_id(
+		pub fn set_shell_collection_id(
 			origin: OriginFor<T>,
 			collection_id: CollectionId,
 		) -> DispatchResultWithPostInfo {
