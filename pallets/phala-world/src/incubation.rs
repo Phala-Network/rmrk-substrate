@@ -1,24 +1,19 @@
 //! Phala World Incubation Pallet
 
+pub use crate::pallet_pw_nft_sale;
 use frame_support::{
 	ensure,
 	pallet_prelude::Get,
 	traits::{
-		tokens::{
-			nonfungibles::{Inspect, InspectEnumerable},
-			ExistenceRequirement,
-		},
-		Currency, UnixTime,
+		tokens::nonfungibles::{Inspect, InspectEnumerable},
+		UnixTime,
 	},
 	transactional, BoundedVec,
 };
 use frame_system::{ensure_signed, pallet_prelude::*};
-use sp_runtime::DispatchResult;
-use sp_std::{vec, vec::Vec};
-
-pub use crate::pallet_pw_nft_sale;
 pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
+use sp_std::vec::Vec;
 
 use rmrk_traits::{
 	career::CareerType, food::FoodInfo, origin_of_shell::OriginOfShellType, primitives::*,
@@ -49,7 +44,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// Amount of food per Era
 		#[pallet::constant]
-		type FoodPerEra: Get<u8>;
+		type FoodPerEra: Get<u32>;
 		/// Max food to feed your own Origin of Shell
 		#[pallet::constant]
 		type MaxFoodFeedSelf: Get<u8>;
@@ -66,8 +61,12 @@ pub mod pallet {
 	/// Info on Origin of Shells that the Owner has fed
 	#[pallet::storage]
 	#[pallet::getter(fn food_by_owners)]
-	pub type FoodByOwners<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, FoodInfo, OptionQuery>;
+	pub type FoodByOwners<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		T::AccountId,
+		FoodInfo<BoundedVec<(CollectionId, NftId), <T as Config>::FoodPerEra>>,
+	>;
 
 	/// Total food fed to an Origin of Shell per Era
 	#[pallet::storage]
@@ -146,6 +145,7 @@ pub mod pallet {
 		RaceNotDetected,
 		CareerNotDetected,
 		OriginOfShellTypeNotDetected,
+		FoodInfoUpdateError,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -194,10 +194,11 @@ pub mod pallet {
 
 			// Update account FoodInfo if not updated or create new FoodInfo for account's first
 			// feeding
-			FoodByOwners::<T>::try_mutate(&sender, |food_info| -> Result<(), Error<T>> {
+			FoodByOwners::<T>::try_mutate(&sender, |food_info| -> DispatchResult {
 				let mut new_food_info = match food_info {
-					None => FoodInfo::new(current_era),
-					Some(food_info) if current_era > food_info.era => FoodInfo::new(current_era),
+					None => Self::get_new_food_info(current_era),
+					Some(food_info) if current_era > food_info.era =>
+						Self::get_new_food_info(current_era),
 					Some(food_info) => {
 						// Ensure sender hasn't fed the Origin of Shell 2 times
 						ensure!(
@@ -211,7 +212,10 @@ pub mod pallet {
 						food_info.clone()
 					},
 				};
-				new_food_info.origin_of_shells_fed.push((collection_id, nft_id));
+				ensure!(
+					new_food_info.origin_of_shells_fed.try_push((collection_id, nft_id)).is_ok(),
+					Error::<T>::FoodInfoUpdateError
+				);
 				*food_info = Some(new_food_info);
 
 				Ok(())
@@ -294,6 +298,25 @@ pub mod pallet {
 				Origin::<T>::Signed(owner.clone()).into(),
 				collection_id,
 				nft_id,
+			)?;
+			// Remove Attributes from Uniques pallet
+			pallet_uniques::Pallet::<T>::clear_attribute(
+				origin.clone(),
+				collection_id,
+				Some(nft_id),
+				race_key,
+			)?;
+			pallet_uniques::Pallet::<T>::clear_attribute(
+				origin.clone(),
+				collection_id,
+				Some(nft_id),
+				career_key,
+			)?;
+			pallet_uniques::Pallet::<T>::clear_attribute(
+				origin.clone(),
+				collection_id,
+				Some(nft_id),
+				origin_of_shell_type_key,
 			)?;
 			// Mint Shell NFT to Overlord to add attributes and resource before sending to owner
 			pallet_rmrk_core::Pallet::<T>::mint_nft(
@@ -453,21 +476,6 @@ impl<T: Config> Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
-	/// Helper function to ensure that the sender owns the origin of shell NFT.
-	///
-	/// Parameters:
-	/// - `sender`: Sender to check if owns the NFT
-	/// - `collection_id`: Collection ID of the NFT
-	/// - `nft_id`: NFT ID of the NFT
-	fn is_owner(sender: &T::AccountId, collection_id: CollectionId, nft_id: NftId) -> bool {
-		if let Some(owner) = pallet_uniques::Pallet::<T>::owner(collection_id, nft_id) {
-			sender == &owner
-		} else {
-			// No owner detected return false
-			false
-		}
-	}
-
 	/// Helper function to check the Collection ID matches Origin of Shell Collection ID.
 	///
 	/// Parameters:
@@ -510,5 +518,12 @@ where
 		let shell_collection_id =
 			ShellCollectionId::<T>::get().ok_or(Error::<T>::ShellCollectionIdNotSet)?;
 		Ok(shell_collection_id)
+	}
+
+	/// Helper function to get new FoodOf<T> struct
+	fn get_new_food_info(
+		era: EraId,
+	) -> FoodInfo<BoundedVec<(CollectionId, NftId), <T as Config>::FoodPerEra>> {
+		FoodInfo { era, origin_of_shells_fed: Default::default() }
 	}
 }

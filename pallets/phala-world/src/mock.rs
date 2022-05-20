@@ -175,7 +175,7 @@ parameter_types! {
 	pub const PrimeOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
 	pub const IterLimit: u32 = 200;
-	pub const FoodPerEra: u8 = 5;
+	pub const FoodPerEra: u32 = 5;
 	pub const MaxFoodFeedSelf: u8 = 2;
 	pub const IncubationDurationSec: u64 = 600;
 }

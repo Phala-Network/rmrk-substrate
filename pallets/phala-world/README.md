@@ -53,7 +53,7 @@ type MaxMintPerRace: Get<u32>;
 type MaxMintPerCareer: Get<u32>;
 /// Amount of food per Era
 #[pallet::constant]
-type FoodPerEra: Get<u8>;
+type FoodPerEra: Get<u32>;
 /// Max food to feed your own Origin Of Shell
 #[pallet::constant]
 type MaxFoodFeedSelf: Get<u8>;

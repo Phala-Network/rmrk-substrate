@@ -341,7 +341,7 @@ parameter_types! {
 	pub const MagicOriginOfShellPrice: Balance = 10_000 * DOLLARS;
 	pub const PrimeOriginOfShellPrice: Balance = 500 * DOLLARS;
 	pub const IterLimit: u32 = 1_000;
-	pub const FoodPerEra: u8 = 5;
+	pub const FoodPerEra: u32 = 5;
 	pub const MaxFoodFeedSelf: u8 = 2;
 	pub const IncubationDurationSec: u64 = 1209600;
 }
