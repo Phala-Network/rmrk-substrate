@@ -389,19 +389,11 @@ pub mod pallet {
 					Self::is_origin_of_shell_collection_id(collection_id),
 					Error::<T>::WrongCollectionId
 				);
+				// Update Hatch Time
+				let old_hatch_time = Self::get_hatch_time(collection_id, nft_id);
+				let new_hatch_time = old_hatch_time.saturating_sub(reduced_time);
+				HatchTimes::<T>::insert(collection_id, nft_id, new_hatch_time);
 
-				let (old_hatch_time, new_hatch_time) = HatchTimes::<T>::try_mutate(
-					collection_id,
-					nft_id,
-					|hatch_time| -> Result<(u64, u64), Error<T>> {
-						let old_hatch_time = match hatch_time {
-							None => OfficialHatchTime::<T>::get(),
-							Some(hatch_time) => hatch_time.clone(),
-						};
-						*hatch_time = Some(old_hatch_time.saturating_sub(reduced_time));
-						Ok((old_hatch_time, hatch_time.expect("hatch time is ok")))
-					},
-				)?;
 				Self::deposit_event(Event::HatchTimeUpdated {
 					collection_id,
 					nft_id,
