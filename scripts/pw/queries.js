@@ -233,6 +233,48 @@ async function main() {
         const isLastDayOfSale = await api.query.pwNftSale.lastDayOfSale();
         console.log(`Is last day of sale: ${isLastDayOfSale}`);
     }
+
+    // Check if Incubation Process has started
+    {
+        const canStartIncubation = await api.query.pwIncubation.canStartIncubation();
+        console.log(`Can start incubation process: ${canStartIncubation}`);
+    }
+
+    // Get Hatch Times
+    {
+        const currentEra = await api.query.pwNftSale.era();
+        console.log(`Current Era: ${currentEra}`);
+        // hatchTimes for the Collection ID
+        const hatchTimes = await api.query.pwIncubation.hatchTimes.entries(1);
+        hatchTimes
+            .map(([key, value]) =>
+                [key.args[0].toString(), key.args[1].toNumber(), value.toHuman()]
+            ).forEach(([collectionId, nftId, timestamp]) => {
+            console.log({
+                collectionId,
+                nftId,
+                timestamp,
+            })
+        })
+    }
+
+    // Query the Origin of Shell Stats
+    {
+        const currentEra = await api.query.pwNftSale.era();
+        console.log(`Current Era: ${currentEra}`);
+        // Times fed in era 0 for the [collectionId, nftId], era
+        const originOfShellFoodStats = await api.query.pwIncubation.originOfShellFoodStats.entries();
+        originOfShellFoodStats
+            .map(([key, value]) =>
+                [key.args[0].toHuman(), key.args[1].toNumber(), value.toNumber()]
+            ).forEach(([collectionIdNftId, era, value]) => {
+            console.log({
+                collectionIdNftId,
+                era,
+                value,
+            })
+        })
+    }
 }
 
 main().catch(console.error).finally(() => process.exit());

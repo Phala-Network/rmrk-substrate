@@ -87,7 +87,7 @@ pub mod pallet {
 
 	/// Expected hatch Timestamp for an Origin of Shell that started the incubation process
 	#[pallet::storage]
-	#[pallet::getter(fn hatch_time)]
+	#[pallet::getter(fn hatch_times)]
 	pub type HatchTimes<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, CollectionId, Blake2_128Concat, NftId, u64>;
 
