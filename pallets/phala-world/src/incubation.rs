@@ -172,6 +172,8 @@ pub mod pallet {
 			nft_id: NftId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
+			// Check if Incubation Phase has started
+			ensure!(CanStartIncubation::<T>::get(), Error::<T>::StartIncubationNotAvailable);
 			// Ensure that the collection is an Origin of Shell Collection
 			ensure!(
 				Self::is_origin_of_shell_collection_id(collection_id),
@@ -251,7 +253,9 @@ pub mod pallet {
 			resource_src: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
-			pallet_pw_nft_sale::pallet::Pallet::<T>::ensure_overlord(sender.clone())?;
+			pallet_pw_nft_sale::pallet::Pallet::<T>::ensure_overlord(sender)?;
+			// Check if Incubation Phase has started
+			ensure!(CanStartIncubation::<T>::get(), Error::<T>::StartIncubationNotAvailable);
 			// Ensure that the collection is an Origin of Shell Collection
 			ensure!(
 				Self::is_origin_of_shell_collection_id(collection_id),

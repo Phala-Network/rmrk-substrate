@@ -92,14 +92,40 @@ async function main() {
     let nonceFerdie = await getNonce(ferdie.address);
     let nonceOverlord = await getNonce(overlord.address);
 
-    // TODO Enable Incubation process and start hatching for accounts
+    // Enable Incubation process and start hatching for accounts
     {
-
+        // Use Overlord account to start the incubation phase
+        console.log(`Enabling the Incubation Process...`);
+        await api.tx.pwIncubation.setCanStartIncubationStatus(true)
+            .signAndSend(overlord, { nonce: nonceOverlord++ } );
+        console.log(`Enabling the Incubation Process...Done`);
     }
 
-    // TODO Send to food between accounts
+    // Send to food between accounts
     {
+        console.log(`Sending food among accounts...`);
+        await api.tx.pwIncubation.feedOriginOfShell(1, 0).signAndSend(alice, { nonce: nonceAlice++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 0).signAndSend(bob, { nonce: nonceBob++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 1).signAndSend(charlie, { nonce: nonceCharlie++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 2).signAndSend(david, { nonce: nonceDavid++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 3).signAndSend(eve, { nonce: nonceEve++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 4).signAndSend(ferdie, { nonce: nonceFerdie++ });
+        await waitTxAccepted(alice.address, nonceAlice - 1);
+        await api.tx.pwIncubation.feedOriginOfShell(1, 5).signAndSend(alice, { nonce: nonceAlice++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 1).signAndSend(bob, { nonce: nonceBob++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 3).signAndSend(charlie, { nonce: nonceCharlie++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 8).signAndSend(david, { nonce: nonceDavid++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 2).signAndSend(eve, { nonce: nonceEve++ });
+        await api.tx.pwIncubation.feedOriginOfShell(1, 10).signAndSend(ferdie, { nonce: nonceFerdie++ });
+        console.log(`Sending food among accounts...Done`);
+    }
 
+    // Update Incubation Times
+    {
+        console.log(`Update Incubation Times...`);
+        const originOfShells = api.createType('Vec<((u32,u32), u64)>', [[[1, 1], 10800], [[1,0], 7200], [[1, 3], 3600], [[1,2], 2400], [[1, 0], 2400], [[1, 4], 1400], [[1, 5], 1400], [[1, 8], 1400], [[1, 10], 1400]]);
+        await api.tx.pwIncubation.updateIncubationTime(originOfShells).signAndSend(overlord, { nonce: nonceOverlord++ });
+        console.log(`Update Incubation Times...Done`);
     }
 
 }
