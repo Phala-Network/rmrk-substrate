@@ -12,16 +12,3 @@ pub enum CareerType {
 	TradeNegotiator,
 	Web3Monk,
 }
-
-impl CareerType {
-	pub fn from_u8(num: u8) -> Option<CareerType> {
-		match num {
-			0u8 => Some(CareerType::HackerWizard),
-			1u8 => Some(CareerType::HardwareDruid),
-			2u8 => Some(CareerType::RoboWarrior),
-			3u8 => Some(CareerType::TradeNegotiator),
-			4u8 => Some(CareerType::Web3Monk),
-			_ => None,
-		}
-	}
-}

@@ -1,6 +1,7 @@
 //! Phala World Incubation Pallet
 
 pub use crate::pallet_pw_nft_sale;
+use codec::Decode;
 use frame_support::{
 	ensure,
 	pallet_prelude::Get,
@@ -13,12 +14,11 @@ use frame_support::{
 use frame_system::{ensure_signed, pallet_prelude::*};
 pub use pallet_rmrk_core::types::*;
 pub use pallet_rmrk_market;
-use sp_std::vec::Vec;
-
 use rmrk_traits::{
 	career::CareerType, food::FoodInfo, origin_of_shell::OriginOfShellType, primitives::*,
 	race::RaceType, resource::ResourceInfo, AccountIdOrCollectionNftTuple,
 };
+use sp_std::vec::Vec;
 
 pub type ResourceOf<T, R, P> = ResourceInfo<
 	BoundedVec<u8, R>,
@@ -33,7 +33,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::Origin;
-	use pallet_rmrk_core::BoundedResource;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -243,6 +242,7 @@ pub mod pallet {
 		/// - origin: The origin of the extrinsic incubation the origin_of_shell
 		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
 		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
+		/// - metadata: File resource URI in decentralized storage
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn hatch_origin_of_shell(
@@ -250,7 +250,7 @@ pub mod pallet {
 			owner: T::AccountId,
 			collection_id: CollectionId,
 			nft_id: NftId,
-			resource_src: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
+			metadata: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			pallet_pw_nft_sale::pallet::Pallet::<T>::ensure_overlord(sender)?;
@@ -283,20 +283,15 @@ pub mod pallet {
 				&origin_of_shell_type_key,
 			)
 			.ok_or(Error::<T>::OriginOfShellTypeNotDetected)?;
-			let race_type: RaceType = RaceType::from_u8(race[0]).expect("[race] should not fail");
+			let race_type: RaceType =
+				Decode::decode(&mut race.as_slice()).expect("[race] should not fail");
 			let career_type: CareerType =
-				CareerType::from_u8(career[0]).expect("[career] should not fail");
+				Decode::decode(&mut career.as_slice()).expect("[career] should not fail");
 			let origin_of_shell_type: OriginOfShellType =
-				OriginOfShellType::from_u8(origin_of_shell_type_value[0])
+				Decode::decode(&mut origin_of_shell_type_value.as_slice())
 					.expect("[origin_of_shell_type] should not fail");
 			// Get Shell Collection next NFT ID
 			let shell_nft_id = pallet_rmrk_core::NextNftId::<T>::get(shell_collection_id);
-			// Get empty metadata
-			let metadata = pallet_pw_nft_sale::pallet::Pallet::<T>::get_empty_metadata();
-			// Get resource id
-			let resource_id = pallet_rmrk_core::Pallet::<T>::get_next_resource_id()?;
-			let resource_id: BoundedResource<T::ResourceSymbolLimit> =
-				resource_id.encode().try_into().expect("[resource] id should work");
 			// Burn Origin of Shell NFT then Mint Shell NFT
 			pallet_rmrk_core::Pallet::<T>::burn_nft(
 				Origin::<T>::Signed(owner.clone()).into(),
@@ -338,27 +333,6 @@ pub mod pallet {
 				origin_of_shell_type,
 				race_type,
 				career_type,
-			)?;
-			// Set the resource for the Shell NFT
-			pallet_rmrk_core::Pallet::<T>::add_resource(
-				origin.clone(),
-				shell_collection_id,
-				shell_nft_id,
-				resource_id.clone(),
-				None,
-				Some(resource_src),
-				None,
-				None,
-				None,
-				None,
-				None,
-			)?;
-			// Transfer to new owner
-			pallet_rmrk_core::Pallet::<T>::accept_resource(
-				Origin::<T>::Signed(owner.clone()).into(),
-				shell_collection_id,
-				shell_nft_id,
-				resource_id,
 			)?;
 
 			Self::deposit_event(Event::ShellAwakened {
