@@ -956,6 +956,16 @@ fn can_send_food_to_origin_of_shell() {
 				official_hatch_time,
 			},
 		));
+		// ALICE cannot transfer her Origin of Shell to BOB
+		assert_noop!(
+			RmrkCore::send(
+				Origin::signed(ALICE),
+				1u32,
+				2u32,
+				rmrk_traits::AccountIdOrCollectionNftTuple::AccountId(BOB)
+			),
+			pallet_uniques::Error::<Test>::Frozen
+		);
 		// ALICE initiates incubation process
 		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
 		let alice_now = INIT_TIMESTAMP_SECONDS;
@@ -1220,5 +1230,30 @@ fn can_hatch_origin_of_shell() {
 				owner: ALICE,
 			},
 		));
+		// ALICE is not owner of hatch origin of shell from OVERLORD admin call
+		assert_noop!(
+			PWIncubation::hatch_origin_of_shell(
+				Origin::signed(OVERLORD),
+				ALICE,
+				1u32,
+				0u32,
+				bvec![0u8; 15]
+			),
+			pallet_pw_incubation::Error::<Test>::NotOwner
+		);
+		// BOB cannot trade his NFT
+		assert_noop!(
+			RmrkCore::send(
+				Origin::signed(BOB),
+				1u32,
+				0u32,
+				rmrk_traits::AccountIdOrCollectionNftTuple::AccountId(CHARLIE)
+			),
+			pallet_uniques::Error::<Test>::Frozen
+		);
+		assert_eq!(Balances::total_balance(&ALICE), 19_999_990 * PHA);
+		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
+		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
+		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
 	});
 }

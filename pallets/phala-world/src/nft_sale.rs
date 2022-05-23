@@ -1212,7 +1212,7 @@ where
 		)?;
 		// Mint Origin of Shell and transfer Origin of Shell to new owner
 		pallet_rmrk_core::Pallet::<T>::mint_nft(
-			Origin::<T>::Signed(overlord).into(),
+			Origin::<T>::Signed(overlord.clone()).into(),
 			sender.clone(),
 			origin_of_shell_collection_id,
 			None,
@@ -1231,6 +1231,13 @@ where
 		Self::decrement_race_type_left(origin_of_shell_type, race)?;
 		Self::increment_race_type(origin_of_shell_type, race)?;
 		Self::increment_career_type(career);
+
+		// Freeze NFT so it cannot be transferred
+		pallet_uniques::Pallet::<T>::freeze(
+			Origin::<T>::Signed(overlord).into(),
+			origin_of_shell_collection_id,
+			nft_id,
+		)?;
 
 		Self::deposit_event(Event::OriginOfShellMinted {
 			origin_of_shell_type,
