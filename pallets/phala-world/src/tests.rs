@@ -718,6 +718,11 @@ fn can_initiate_incubation_process() {
 		assert_eq!(Balances::total_balance(&BOB), 14_990 * PHA);
 		assert_eq!(Balances::total_balance(&CHARLIE), 149_990 * PHA);
 		assert_eq!(Balances::total_balance(&OVERLORD), 2_813_308_034 * PHA);
+		// ALICE cannot start incubation process before it is enabled
+		assert_noop!(
+			PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32),
+			pallet_pw_incubation::Error::<Test>::StartIncubationNotAvailable
+		);
 		// Set CanStartIncubationStatus to true
 		assert_ok!(PWIncubation::set_can_start_incubation_status(Origin::signed(OVERLORD), true));
 		let now = INIT_TIMESTAMP_SECONDS;
@@ -729,6 +734,36 @@ fn can_initiate_incubation_process() {
 				official_hatch_time,
 			},
 		));
+		// ALICE initiates incubation process
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
+		let alice_now = INIT_TIMESTAMP_SECONDS;
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				owner: ALICE,
+				start_time: alice_now,
+				hatch_time: official_hatch_time,
+			},
+		));
+		// BOB initiates during next block
+		fast_forward_to(2);
+		let bob_now = 2 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				owner: BOB,
+				start_time: bob_now,
+				hatch_time: official_hatch_time,
+			},
+		));
+		// CHARLIE fails if trying to start incubation of non-owned Origin of Shell
+		assert_noop!(
+			PWIncubation::start_incubation(Origin::signed(CHARLIE), 1u32, 0u32),
+			pallet_pw_incubation::Error::<Test>::NotOwner
+		);
 	});
 }
 
@@ -810,6 +845,18 @@ fn can_update_incubation_hatch_time() {
 				status: true,
 				start_time: now,
 				official_hatch_time,
+			},
+		));
+		// ALICE initiates incubation process
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
+		let alice_now = INIT_TIMESTAMP_SECONDS;
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				owner: ALICE,
+				start_time: alice_now,
+				hatch_time: official_hatch_time,
 			},
 		));
 		// Update ALICE hatch time
@@ -909,6 +956,18 @@ fn can_send_food_to_origin_of_shell() {
 				official_hatch_time,
 			},
 		));
+		// ALICE initiates incubation process
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
+		let alice_now = INIT_TIMESTAMP_SECONDS;
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				owner: ALICE,
+				start_time: alice_now,
+				hatch_time: official_hatch_time,
+			},
+		));
 		// Update ALICE hatch time
 		let update_hatch_time_vec = vec![((1u32, 2u32), 10)];
 		assert_ok!(PWIncubation::update_incubation_time(
@@ -924,28 +983,39 @@ fn can_send_food_to_origin_of_shell() {
 			},
 		));
 		// CHARLIE feeds ALICE's Origin of Shell Twice and fails on the third
-		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 2u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
 				collection_id: 1u32,
-				nft_id: 0u32,
+				nft_id: 2u32,
 				sender: CHARLIE,
 			},
 		));
-		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 2u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
 				collection_id: 1u32,
-				nft_id: 0u32,
+				nft_id: 2u32,
 				sender: CHARLIE,
 			},
 		));
 		assert_noop!(
-			PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32),
+			PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 2u32),
 			pallet_pw_incubation::Error::<Test>::AlreadySentFoodTwice
 		);
 		// CHARLIE can feed now that a new Era has started
 		fast_forward_to(7);
+		let bob_now = 7 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				owner: BOB,
+				start_time: bob_now,
+				hatch_time: official_hatch_time,
+			},
+		));
 		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
@@ -1042,6 +1112,18 @@ fn can_hatch_origin_of_shell() {
 				official_hatch_time,
 			},
 		));
+		// ALICE initiates incubation process
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(ALICE), 1u32, 2u32));
+		let alice_now = INIT_TIMESTAMP_SECONDS;
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 2u32,
+				owner: ALICE,
+				start_time: alice_now,
+				hatch_time: official_hatch_time,
+			},
+		));
 		// Update ALICE hatch time
 		let update_hatch_time_vec = vec![((1u32, 2u32), 10)];
 		assert_ok!(PWIncubation::update_incubation_time(
@@ -1057,28 +1139,45 @@ fn can_hatch_origin_of_shell() {
 			},
 		));
 		// CHARLIE feeds ALICE's Origin of Shell Twice and fails on the third
-		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 2u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
 				collection_id: 1u32,
-				nft_id: 0u32,
+				nft_id: 2u32,
 				sender: CHARLIE,
 			},
 		));
-		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
+		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 2u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
 				collection_id: 1u32,
-				nft_id: 0u32,
+				nft_id: 2u32,
 				sender: CHARLIE,
 			},
 		));
 		assert_noop!(
-			PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32),
+			PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 2u32),
 			pallet_pw_incubation::Error::<Test>::AlreadySentFoodTwice
+		);
+		// CHARLIE cannot send food to BOB since he hasn't started incubation process
+		assert_noop!(
+			PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32),
+			pallet_pw_incubation::Error::<Test>::NoHatchTimeDetected
 		);
 		// CHARLIE can feed now that a new Era has started
 		fast_forward_to(7);
+		let bob_now = 7 * BLOCK_TIME_SECONDS + INIT_TIMESTAMP_SECONDS;
+		assert_ok!(PWIncubation::start_incubation(Origin::signed(BOB), 1u32, 0u32));
+		System::assert_last_event(MockEvent::PWIncubation(
+			crate::pallet_pw_incubation::Event::StartedIncubation {
+				collection_id: 1u32,
+				nft_id: 0u32,
+				owner: BOB,
+				start_time: bob_now,
+				hatch_time: official_hatch_time,
+			},
+		));
+		// CHARLIE can feed BOB's Origin of Shell now
 		assert_ok!(PWIncubation::feed_origin_of_shell(Origin::signed(CHARLIE), 1u32, 0u32));
 		System::assert_last_event(MockEvent::PWIncubation(
 			crate::pallet_pw_incubation::Event::OriginOfShellReceivedFood {
@@ -1089,7 +1188,7 @@ fn can_hatch_origin_of_shell() {
 		));
 		// OVERLORD cannot send food bc they do not own an Origin of Shell
 		assert_noop!(
-			PWIncubation::feed_origin_of_shell(Origin::signed(OVERLORD), 1u32, 0u32),
+			PWIncubation::feed_origin_of_shell(Origin::signed(OVERLORD), 1u32, 2u32),
 			pallet_pw_incubation::Error::<Test>::CannotSendFoodToOriginOfShell
 		);
 		// Update ALICE hatch time

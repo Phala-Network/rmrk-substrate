@@ -107,6 +107,14 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// CanStartIncubation status changed and set official hatch time
 		CanStartIncubationStatusChanged { status: bool, start_time: u64, official_hatch_time: u64 },
+		/// Origin of Shell owner has initiated the incubation sequence
+		StartedIncubation {
+			collection_id: CollectionId,
+			nft_id: NftId,
+			owner: T::AccountId,
+			start_time: u64,
+			hatch_time: u64,
+		},
 		/// Origin of Shell received food from an account
 		OriginOfShellReceivedFood {
 			collection_id: CollectionId,
@@ -155,6 +163,54 @@ pub mod pallet {
 	where
 		T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 	{
+		/// Once users have received their origin_of_shells and the start incubation event has been
+		/// triggered, they can start the incubation process and a timer will start for the
+		/// origin_of_shell to awaken at a designated time. Origin of Shells can reduce their time
+		/// by being in the top 10 of origin_of_shell's fed per era.
+		///
+		/// Parameters:
+		/// - origin: The origin of the extrinsic starting the incubation process
+		/// - collection_id: The collection id of the Origin of Shell RMRK NFT
+		/// - nft_id: The NFT id of the Origin of Shell RMRK NFT
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[transactional]
+		pub fn start_incubation(
+			origin: OriginFor<T>,
+			collection_id: CollectionId,
+			nft_id: NftId,
+		) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+			// Check if IncubationPhase is enabled
+			ensure!(CanStartIncubation::<T>::get(), Error::<T>::StartIncubationNotAvailable);
+			// Ensure that the collection is an Origin of Shell Collection
+			ensure!(
+				Self::is_origin_of_shell_collection_id(collection_id),
+				Error::<T>::WrongCollectionId
+			);
+			// Ensure sender is owner
+			ensure!(Self::is_owner(&sender, collection_id, nft_id), Error::<T>::NotOwner);
+			// Ensure incubation process hasn't been started already
+			ensure!(
+				!HatchTimes::<T>::contains_key(collection_id, nft_id),
+				Error::<T>::HatchingInProgress
+			);
+			// Get time to start hatching process
+			let start_time = T::Time::now().as_secs();
+			let hatch_time = OfficialHatchTime::<T>::get();
+			// Update Hatch Time storage
+			HatchTimes::<T>::insert(collection_id, nft_id, hatch_time);
+
+			Self::deposit_event(Event::StartedIncubation {
+				owner: sender,
+				collection_id,
+				nft_id,
+				start_time,
+				hatch_time,
+			});
+
+			Ok(())
+		}
+
 		/// Feed another origin_of_shell to the current origin_of_shell being incubated. This will
 		/// reduce the time left to incubation if the origin_of_shell is in the top 10 of
 		/// origin_of_shells fed that era.
@@ -179,7 +235,7 @@ pub mod pallet {
 				Error::<T>::WrongCollectionId
 			);
 			// Ensure that Origin of Shell exists or is not past the hatch time
-			let hatch_time = Self::get_hatch_time(collection_id, nft_id);
+			let hatch_time = Self::get_hatch_time(collection_id, nft_id)?;
 			ensure!(!Self::can_hatch(hatch_time), Error::<T>::CannotSendFoodToOriginOfShell);
 			// Check if account owns an Origin of Shell NFT
 			ensure!(
@@ -261,9 +317,11 @@ pub mod pallet {
 				Self::is_origin_of_shell_collection_id(collection_id),
 				Error::<T>::WrongCollectionId
 			);
+			// Ensure owner is owner of Origin of Shell NFT
+			ensure!(Self::is_owner(&owner, collection_id, nft_id), Error::<T>::NotOwner);
 			// Check if HatchTimes is less than or equal to current Timestamp
 			// Ensure that Origin of Shell exists or is not past the hatch time
-			let hatch_time = Self::get_hatch_time(collection_id, nft_id);
+			let hatch_time = Self::get_hatch_time(collection_id, nft_id)?;
 			ensure!(Self::can_hatch(hatch_time), Error::<T>::CannotHatchOriginOfShell);
 			// Check if Shell Collection ID is set
 			let shell_collection_id = Self::get_shell_collection_id()?;
@@ -368,7 +426,7 @@ pub mod pallet {
 					Error::<T>::WrongCollectionId
 				);
 				// Update Hatch Time
-				let old_hatch_time = Self::get_hatch_time(collection_id, nft_id);
+				let old_hatch_time = Self::get_hatch_time(collection_id, nft_id)?;
 				let new_hatch_time = old_hatch_time.saturating_sub(reduced_time);
 				HatchTimes::<T>::insert(collection_id, nft_id, new_hatch_time);
 
@@ -446,6 +504,21 @@ impl<T: Config> Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = CollectionId, InstanceId = NftId>,
 {
+	/// Helper function to ensure that the sender owns the origin of shell NFT.
+	///
+	/// Parameters:
+	/// - `sender`: Sender to check if owns the NFT
+	/// - `collection_id`: Collection ID of the NFT
+	/// - `nft_id`: NFT ID of the NFT
+	fn is_owner(sender: &T::AccountId, collection_id: CollectionId, nft_id: NftId) -> bool {
+		if let Some(owner) = pallet_uniques::Pallet::<T>::owner(collection_id, nft_id) {
+			sender == &owner
+		} else {
+			// No owner detected return false
+			false
+		}
+	}
+
 	/// Helper function to check the Collection ID matches Origin of Shell Collection ID.
 	///
 	/// Parameters:
@@ -465,12 +538,8 @@ where
 	/// Parameters:
 	/// `collection_id`: Collection ID of the Origin of Shell
 	/// `nft_id`: NFT ID of the Origin of Shell
-	fn get_hatch_time(collection_id: CollectionId, nft_id: NftId) -> u64 {
-		let hatch_time = HatchTimes::<T>::get(collection_id, nft_id);
-		match hatch_time {
-			None => OfficialHatchTime::<T>::get(),
-			Some(hatch_time) => hatch_time,
-		}
+	fn get_hatch_time(collection_id: CollectionId, nft_id: NftId) -> Result<u64, Error<T>> {
+		HatchTimes::<T>::get(collection_id, nft_id).ok_or(Error::<T>::NoHatchTimeDetected)
 	}
 
 	/// Helper function to check if the Origin of Shell can hatch

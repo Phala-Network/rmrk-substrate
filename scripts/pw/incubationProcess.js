@@ -84,12 +84,6 @@ async function main() {
     const charlie = keyring.addFromUri(charliePrivkey);
     const david = keyring.addFromUri(davidPrivkey);
     const eve = keyring.addFromUri(evePrivkey);
-    let nonceAlice = await getNonce(alice.address);
-    let nonceBob = await getNonce(bob.address);
-    let nonceCharlie = await getNonce(charlie.address);
-    let nonceDavid = await getNonce(david.address);
-    let nonceEve = await getNonce(eve.address);
-    let nonceFerdie = await getNonce(ferdie.address);
     let nonceOverlord = await getNonce(overlord.address);
 
     // Enable Incubation process and start hatching for accounts
@@ -100,6 +94,47 @@ async function main() {
             .signAndSend(overlord, { nonce: nonceOverlord++ } );
         console.log(`Enabling the Incubation Process...Done`);
     }
+
+    // Start Incubation for all Origin of Shells
+    {
+        const addresses = [alice, bob, charlie, david, eve, ferdie];
+        for (const accountId of addresses) {
+            const originOfShellCollectionId = await api.query.pwNftSale.originOfShellCollectionId();
+            let nonceOwner = await getNonce(accountId.address);
+            let nfts = [];
+            if (originOfShellCollectionId.isSome) {
+                const spirit = await api.query.uniques.account.entries(accountId.address, originOfShellCollectionId.unwrap());
+                spirit
+                    .map(([key, _value]) =>
+                        [key.args[0].toString(), key.args[1].toNumber(), key.args[2].toNumber()]
+                    ).forEach(([acct, collectionId, nftId]) => {
+                    nfts.push(nftId);
+                    console.log({
+                        acct,
+                        collectionId,
+                        nftId,
+                    })
+                })
+            } else {
+                throw new Error(
+                    'Origin of Shell Collection ID not configured'
+                )
+            }
+            for (const nft of nfts) {
+                console.log(`${accountId.address} starting incubation for NFT ID: ${nft}...`);
+                await api.tx.pwIncubation.startIncubation(1, nft).signAndSend(accountId, { nonce: nonceOwner++});
+                console.log(`${accountId.address} starting incubation for NFT ID: ${nft}...Done`);
+            }
+            await waitTxAccepted(accountId.address, nonceOwner - 1);
+        }
+    }
+
+    let nonceAlice = await getNonce(alice.address);
+    let nonceBob = await getNonce(bob.address);
+    let nonceCharlie = await getNonce(charlie.address);
+    let nonceDavid = await getNonce(david.address);
+    let nonceEve = await getNonce(eve.address);
+    let nonceFerdie = await getNonce(ferdie.address);
 
     // Send to food between accounts
     {
