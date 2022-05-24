@@ -303,7 +303,6 @@ pub mod pallet {
 		#[transactional]
 		pub fn hatch_origin_of_shell(
 			origin: OriginFor<T>,
-			owner: T::AccountId,
 			collection_id: CollectionId,
 			nft_id: NftId,
 			metadata: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
@@ -317,8 +316,9 @@ pub mod pallet {
 				Self::is_origin_of_shell_collection_id(collection_id),
 				Error::<T>::WrongCollectionId
 			);
-			// Ensure owner is owner of Origin of Shell NFT
-			ensure!(Self::is_owner(&owner, collection_id, nft_id), Error::<T>::NotOwner);
+			// Get owner of the Origin of Shell NFT
+			let (owner, _) =
+				pallet_rmrk_core::Pallet::<T>::lookup_root_owner(collection_id, nft_id)?;
 			// Check if HatchTimes is less than or equal to current Timestamp
 			// Ensure that Origin of Shell exists or is not past the hatch time
 			let hatch_time = Self::get_hatch_time(collection_id, nft_id)?;

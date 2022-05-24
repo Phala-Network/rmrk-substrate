@@ -1218,7 +1218,6 @@ fn can_hatch_origin_of_shell() {
 		// ALICE can hatch origin of shell from OVERLORD admin call
 		assert_ok!(PWIncubation::hatch_origin_of_shell(
 			Origin::signed(OVERLORD),
-			ALICE,
 			1u32,
 			2u32,
 			bvec![0u8; 15]
@@ -1230,17 +1229,6 @@ fn can_hatch_origin_of_shell() {
 				owner: ALICE,
 			},
 		));
-		// ALICE is not owner of hatch origin of shell from OVERLORD admin call
-		assert_noop!(
-			PWIncubation::hatch_origin_of_shell(
-				Origin::signed(OVERLORD),
-				ALICE,
-				1u32,
-				0u32,
-				bvec![0u8; 15]
-			),
-			pallet_pw_incubation::Error::<Test>::NotOwner
-		);
 		// BOB cannot trade his NFT
 		assert_noop!(
 			RmrkCore::send(

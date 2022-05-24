@@ -125,11 +125,11 @@ async function main() {
     // Get NFT attributes
     {
         const col = 1;
-        const rol = api.createType('Option<ClassId>', 0);
+        const rol = api.createType('Option<u32>', 0);
         const attributes = await api.query.uniques.attribute.entries(col, rol);
         attributes
             .map(([key, value]) =>
-                [key.args[0].toNumber(), key.args[1].unwrap().toNumber(), key.args[2].toHuman(), value.toHuman()]
+                [key.args[0].toNumber(), key.args[1].unwrap().toNumber(), key.args[2].toHuman(), value.unwrap()[0].toHuman()]
             ).forEach(([collection, nft, attr, val]) => {
             console.log({
                 collection,
@@ -138,7 +138,38 @@ async function main() {
                 val
             })
         })
+    }
 
+    // Get RaceType
+    {
+        const collectionId = 1;
+        const nftId = api.createType('Option<u32>', 0);
+        const race = api.createType('BoundedVec<u8, T::KeyLimit>', 'race')
+        const attribute = await api.query.uniques.attribute(collectionId, nftId, race);
+        if (attribute.isSome) {
+            const nftAttribute = api.createType('RaceType', attribute.unwrap()[0].toHuman());
+            console.log(`Attribute race for Origin of Shell NFT ID ${nftId}: ${nftAttribute}`);
+        } else {
+            throw new Error(
+                'Origin of Shell race attribute not configured'
+            )
+        }
+    }
+
+    // Get CareerType
+    {
+        const collectionId = 1;
+        const nftId = api.createType('Option<u32>', 0);
+        const career = api.createType('BoundedVec<u8, T::KeyLimit>', 'career')
+        const attribute = await api.query.uniques.attribute(collectionId, nftId, career);
+        if (attribute.isSome) {
+            const nftAttribute = api.createType('CareerType', attribute.unwrap()[0].toHuman());
+            console.log(`Attribute career for Origin of Shell NFT ID ${nftId}: ${nftAttribute}`);
+        } else {
+            throw new Error(
+                'Origin of Shell career attribute not configured'
+            )
+        }
     }
 
     // List all preorders before drawing winners
