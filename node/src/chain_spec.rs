@@ -1,12 +1,15 @@
 use rmrk_substrate_runtime::{
-	AccountId, AuraConfig, BalancesConfig, CouncilConfig, GenesisConfig, GrandpaConfig, Signature,
-	SudoConfig, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
+	constants::currency::DOLLARS, AccountId, AuraConfig, BalancesConfig, CouncilConfig,
+	GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
+	WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
+
+pub type Balance = u128;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -141,6 +144,9 @@ fn testnet_genesis(
 		.take((endowed_accounts.len() + 1) / 2)
 		.cloned()
 		.collect();
+	// Fund accounts
+	const ENDOWMENT: Balance = 1_000_000 * DOLLARS;
+
 	GenesisConfig {
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
@@ -148,7 +154,7 @@ fn testnet_genesis(
 		},
 		balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),

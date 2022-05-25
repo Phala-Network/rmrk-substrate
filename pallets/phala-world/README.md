@@ -66,11 +66,6 @@ type MaxFoodFeedSelf: Get<u8>;
 #[pallet::getter(fn claimed_spirits)]
 pub type ClaimedSpirits<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
-/// Stores all of the valid claimed Origin Of Shells from the whitelist or preorder
-#[pallet::storage]
-#[pallet::getter(fn claimed_origin_of_shells)]
-pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
-
 /// Preorder index that is the key to the Preorders StorageMap
 #[pallet::storage]
 #[pallet::getter(fn preorder_index)]

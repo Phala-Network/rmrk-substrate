@@ -73,11 +73,6 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// Stores all of the valid claimed Origin of Shells from the whitelist or preorder
-	#[pallet::storage]
-	#[pallet::getter(fn claimed_origin_of_shells)]
-	pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
-
 	/// Preorder index that is the key to the Preorders StorageMap
 	#[pallet::storage]
 	#[pallet::getter(fn preorder_index)]
@@ -1024,17 +1019,17 @@ where
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
 			RaceType::AISpectre,
-			legendary_nft_sale_info.clone(),
+			legendary_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
 			RaceType::Cyborg,
-			legendary_nft_sale_info.clone(),
+			legendary_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
 			RaceType::Pandroid,
-			legendary_nft_sale_info.clone(),
+			legendary_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
@@ -1050,17 +1045,17 @@ where
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
 			RaceType::AISpectre,
-			magic_nft_sale_info.clone(),
+			magic_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
 			RaceType::Cyborg,
-			magic_nft_sale_info.clone(),
+			magic_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
 			RaceType::Pandroid,
-			magic_nft_sale_info.clone(),
+			magic_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
@@ -1076,17 +1071,17 @@ where
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
 			RaceType::AISpectre,
-			prime_nft_sale_info.clone(),
+			prime_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
 			RaceType::Cyborg,
-			prime_nft_sale_info.clone(),
+			prime_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
 			RaceType::Pandroid,
-			prime_nft_sale_info.clone(),
+			prime_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
@@ -1367,7 +1362,7 @@ where
 			race,
 			|nft_sale_info| -> DispatchResult {
 				if let Some(nft_sale_info) = nft_sale_info {
-					nft_sale_info.race_for_sale_count -= 1;
+					nft_sale_info.race_for_sale_count.saturating_sub(1);
 				}
 				Ok(())
 			},
