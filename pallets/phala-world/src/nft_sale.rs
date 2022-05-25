@@ -73,11 +73,6 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// Stores all of the valid claimed Origin of Shells from the whitelist or preorder
-	#[pallet::storage]
-	#[pallet::getter(fn claimed_origin_of_shells)]
-	pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
-
 	/// Preorder index that is the key to the Preorders StorageMap
 	#[pallet::storage]
 	#[pallet::getter(fn preorder_index)]
@@ -108,7 +103,7 @@ pub mod pallet {
 	/// The current Era from the initial ZeroDay BlockNumber
 	#[pallet::storage]
 	#[pallet::getter(fn era)]
-	pub type Era<T: Config> = StorageValue<_, u64, ValueQuery>;
+	pub type Era<T: Config> = StorageValue<_, EraId, ValueQuery>;
 
 	/// Spirits can be claimed
 	#[pallet::storage]
@@ -157,7 +152,6 @@ pub mod pallet {
 
 	/// Overlord Admin account of Phala World
 	#[pallet::storage]
-	#[pallet::getter(fn overlord)]
 	pub(super) type Overlord<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	#[pallet::hooks]
@@ -400,7 +394,7 @@ pub mod pallet {
 		pub fn claim_spirit(origin: OriginFor<T>) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
-			let overlord = Self::get_overlord_account()?;
+			let overlord = Self::overlord()?;
 			// Check Balance has minimum required
 			ensure!(
 				<T as pallet::Config>::Currency::can_reserve(
@@ -429,7 +423,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			ensure!(CanClaimSpirits::<T>::get(), Error::<T>::SpiritClaimNotAvailable);
-			let overlord = Self::get_overlord_account()?;
+			let overlord = Self::overlord()?;
 			// verify the claim ticket
 			ensure!(
 				Self::verify_claim(&overlord, &sender, signature, Purpose::RedeemSpirit),
@@ -464,7 +458,7 @@ pub mod pallet {
 				CanPurchaseRareOriginOfShells::<T>::get(),
 				Error::<T>::RareOriginOfShellPurchaseNotAvailable
 			);
-			let overlord = Self::get_overlord_account()?;
+			let overlord = Self::overlord()?;
 			// Get Origin of Shell Price based on Origin of ShellType
 			let origin_of_shell_price = match origin_of_shell_type {
 				OriginOfShellType::Legendary => T::LegendaryOriginOfShellPrice::get(),
@@ -509,7 +503,7 @@ pub mod pallet {
 				Error::<T>::PrimeOriginOfShellPurchaseNotAvailable
 			);
 
-			let overlord = Self::get_overlord_account()?;
+			let overlord = Self::overlord()?;
 			// Check if valid message purpose is 'BuyPrimeOriginOfShells' and verify whitelist
 			// account
 			ensure!(
@@ -931,7 +925,7 @@ where
 	}
 
 	/// Helper function to get the Overlord admin account
-	fn get_overlord_account() -> Result<T::AccountId, Error<T>> {
+	pub(crate) fn overlord() -> Result<T::AccountId, Error<T>> {
 		Overlord::<T>::get().ok_or(Error::<T>::OverlordNotSet)
 	}
 
@@ -1025,17 +1019,17 @@ where
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
 			RaceType::AISpectre,
-			legendary_nft_sale_info.clone(),
+			legendary_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
 			RaceType::Cyborg,
-			legendary_nft_sale_info.clone(),
+			legendary_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
 			RaceType::Pandroid,
-			legendary_nft_sale_info.clone(),
+			legendary_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Legendary,
@@ -1051,17 +1045,17 @@ where
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
 			RaceType::AISpectre,
-			magic_nft_sale_info.clone(),
+			magic_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
 			RaceType::Cyborg,
-			magic_nft_sale_info.clone(),
+			magic_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
 			RaceType::Pandroid,
-			magic_nft_sale_info.clone(),
+			magic_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Magic,
@@ -1077,17 +1071,17 @@ where
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
 			RaceType::AISpectre,
-			prime_nft_sale_info.clone(),
+			prime_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
 			RaceType::Cyborg,
-			prime_nft_sale_info.clone(),
+			prime_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
 			RaceType::Pandroid,
-			prime_nft_sale_info.clone(),
+			prime_nft_sale_info,
 		);
 		OriginOfShellsInventory::<T>::insert(
 			OriginOfShellType::Prime,
@@ -1213,7 +1207,7 @@ where
 		)?;
 		// Mint Origin of Shell and transfer Origin of Shell to new owner
 		pallet_rmrk_core::Pallet::<T>::mint_nft(
-			Origin::<T>::Signed(overlord).into(),
+			Origin::<T>::Signed(overlord.clone()).into(),
 			sender.clone(),
 			origin_of_shell_collection_id,
 			None,
@@ -1221,7 +1215,7 @@ where
 			metadata,
 		)?;
 		// Set Origin of Shell Type, Race and Career attributes for NFT
-		Self::set_origin_of_shell_attributes(
+		Self::set_nft_attributes(
 			origin_of_shell_collection_id,
 			nft_id,
 			origin_of_shell_type,
@@ -1232,6 +1226,13 @@ where
 		Self::decrement_race_type_left(origin_of_shell_type, race)?;
 		Self::increment_race_type(origin_of_shell_type, race)?;
 		Self::increment_career_type(career);
+
+		// Freeze NFT so it cannot be transferred
+		pallet_uniques::Pallet::<T>::freeze(
+			Origin::<T>::Signed(overlord).into(),
+			origin_of_shell_collection_id,
+			nft_id,
+		)?;
 
 		Self::deposit_event(Event::OriginOfShellMinted {
 			origin_of_shell_type,
@@ -1245,22 +1246,22 @@ where
 		Ok(())
 	}
 
-	/// Set the origin of shell type, race and career attributes for a Origin of Shell NFT
+	/// Set the attributes for Origin of Shell or Shell NFT's type, race and career.
 	///
 	/// Parameters:
-	/// - `collection_id`: Collection id of the Origin of Shell NFT
-	/// - `nft_id`: NFT id of the Origin of Shell NFT
-	/// - `origin_of_shell_type`: Origin of Shell type for the NFT
-	/// - `race`: Race attribute to set for the Origin of Shell NFT
-	/// - `career`: Career attribute to set for the Origin of Shell NFT
-	fn set_origin_of_shell_attributes(
+	/// - `collection_id`: Collection id of the Origin of Shell or Shell NFT
+	/// - `nft_id`: NFT id of the Origin of Shell or Shell NFT
+	/// - `origin_of_shell_type`: Origin of Shell or Shell type for the NFT
+	/// - `race`: Race attribute to set for the Origin of Shell or Shell NFT
+	/// - `career`: Career attribute to set for the Origin of Shell or Shell NFT
+	pub(crate) fn set_nft_attributes(
 		collection_id: CollectionId,
 		nft_id: NftId,
 		origin_of_shell_type: OriginOfShellType,
 		race: RaceType,
 		career: CareerType,
 	) -> DispatchResult {
-		let overlord = Self::get_overlord_account()?;
+		let overlord = Self::overlord()?;
 
 		let origin_of_shell_type_key: BoundedVec<u8, T::KeyLimit> =
 			Self::to_boundedvec_key("origin_of_shell_type")?;
@@ -1361,7 +1362,7 @@ where
 			race,
 			|nft_sale_info| -> DispatchResult {
 				if let Some(nft_sale_info) = nft_sale_info {
-					nft_sale_info.race_for_sale_count -= 1;
+					nft_sale_info.race_for_sale_count.saturating_sub(1);
 				}
 				Ok(())
 			},
@@ -1407,16 +1408,16 @@ where
 	/// `sender`: reference to the account id to check
 	/// `collection_id`: Collection id to check if sender owns a NFT in the collection
 	/// `error`: Error type to throw if there is an error detected
-	fn owns_nft_in_collection(sender: &T::AccountId, collection_id: CollectionId) -> bool {
+	pub fn owns_nft_in_collection(sender: &T::AccountId, collection_id: CollectionId) -> bool {
 		pallet_uniques::Pallet::<T>::owned_in_class(&collection_id, sender).count() > 0
 	}
 
-	fn to_boundedvec_key(name: &str) -> Result<BoundedVec<u8, T::KeyLimit>, Error<T>> {
+	pub fn to_boundedvec_key(name: &str) -> Result<BoundedVec<u8, T::KeyLimit>, Error<T>> {
 		name.as_bytes().to_vec().try_into().map_err(|_| Error::<T>::KeyTooLong)
 	}
 
 	/// Helper function to get empty metadata boundedvec
-	fn get_empty_metadata() -> BoundedVec<u8, T::StringLimit> {
+	pub(crate) fn get_empty_metadata() -> BoundedVec<u8, T::StringLimit> {
 		Default::default()
 	}
 }

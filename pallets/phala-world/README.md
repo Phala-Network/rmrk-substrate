@@ -53,10 +53,7 @@ type MaxMintPerRace: Get<u32>;
 type MaxMintPerCareer: Get<u32>;
 /// Amount of food per Era
 #[pallet::constant]
-type FoodPerEra: Get<u8>;
-/// Max food an Origin Of Shell can be fed per day
-#[pallet::constant]
-type MaxFoodFedPerEra: Get<u16>;
+type FoodPerEra: Get<u32>;
 /// Max food to feed your own Origin Of Shell
 #[pallet::constant]
 type MaxFoodFeedSelf: Get<u8>;
@@ -68,11 +65,6 @@ type MaxFoodFeedSelf: Get<u8>;
 #[pallet::storage]
 #[pallet::getter(fn claimed_spirits)]
 pub type ClaimedSpirits<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
-
-/// Stores all of the valid claimed Origin Of Shells from the whitelist or preorder
-#[pallet::storage]
-#[pallet::getter(fn claimed_origin_of_shells)]
-pub type ClaimedOriginOfShells<T: Config> = StorageMap<_, Twox64Concat, SerialId, bool>;
 
 /// Preorder index that is the key to the Preorders StorageMap
 #[pallet::storage]
@@ -87,7 +79,7 @@ pub type Preorders<T: Config> = StorageMap<_, Twox64Concat, PreorderId, Preorder
 /// Food per Owner where an owner gets 5 food per era
 #[pallet::storage]
 #[pallet::getter(fn get_food_by_owner)]
-pub type FoodByOwner<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, u8>;
+pub type FoodByOwners<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, u8>;
 
 /// Phala World Zero Day `BlockNumber` this will be used to determine Eras
 #[pallet::storage]
@@ -97,7 +89,7 @@ pub(super) type ZeroDay<T: Config> = StorageValue<_, u64>;
 /// The current Era from the initial ZeroDay BlockNumber
 #[pallet::storage]
 #[pallet::getter(fn era)]
-pub type Era<T: Config> = StorageValue<_, u64, ValueQuery>;
+pub type Era<T: Config> = StorageValue<_, EraId, ValueQuery>;
 
 /// Spirits can be claimed
 #[pallet::storage]
@@ -212,14 +204,6 @@ career: CareerType,
 This is an admin only function that will be called to do a bulk minting of all preordered origin of shell
 ```rust
 origin: OriginFor<T>
-```
-
-### start_incubation
-Initiate the incubation phase for an owner's OriginOfShell
-```rust
-origin: OriginFor<T>,
-collection_id: CollectionId,
-nft_id: NftId,
 ```
 
 ### feed_origin_of_shell

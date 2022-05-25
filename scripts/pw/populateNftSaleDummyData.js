@@ -122,7 +122,7 @@ async function main() {
             .signAndSend(charlie, { nonce: nonceCharlie++ });
         await api.tx.pwNftSale.buyRareOriginOfShell('Magic', 'XGene', 'TradeNegotiator')
             .signAndSend(david, { nonce: nonceDavid++ });
-        await waitTxAccepted(bob.address, nonceBob - 1);
+        await waitTxAccepted(david.address, nonceDavid - 1);
         console.log(`Purchase Rare Origin of Shells Done.`);
     }
 

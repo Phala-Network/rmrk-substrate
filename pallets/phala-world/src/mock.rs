@@ -3,7 +3,10 @@ use crate::{pallet_pw_incubation, pallet_pw_nft_sale};
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, ConstU64, Everything, GenesisBuild, OnFinalize, OnInitialize},
+	traits::{
+		AsEnsureOriginWithArg, ConstU32, ConstU64, Everything, GenesisBuild, OnFinalize,
+		OnInitialize,
+	},
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
@@ -96,6 +99,8 @@ parameter_types! {
 	pub MaxMetadataLength: u32 = 256;
 	pub const MaxRecursions: u32 = 10;
 	pub const ResourceSymbolLimit: u32 = 10;
+	pub const PartsLimit: u32 = 10;
+	pub const MaxPriorities: u32 = 3;
 	pub const CollectionSymbolLimit: u32 = 100;
 }
 
@@ -104,6 +109,8 @@ impl pallet_rmrk_core::Config for Test {
 	type ProtocolOrigin = EnsureRoot<AccountId>;
 	type MaxRecursions = MaxRecursions;
 	type ResourceSymbolLimit = ResourceSymbolLimit;
+	type PartsLimit = PartsLimit;
+	type MaxPriorities = MaxPriorities;
 	type CollectionSymbolLimit = CollectionSymbolLimit;
 }
 
@@ -124,6 +131,8 @@ impl pallet_uniques::Config for Test {
 	type InstanceId = u32;
 	type Currency = Balances;
 	type ForceOrigin = EnsureRoot<AccountId>;
+	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<AccountId>>;
+	type Locker = pallet_rmrk_core::Pallet<Test>;
 	type ClassDeposit = ClassDeposit;
 	type InstanceDeposit = InstanceDeposit;
 	type MetadataDepositBase = UniquesMetadataDepositBase;
@@ -166,9 +175,9 @@ parameter_types! {
 	pub const PrimeOriginOfShellPrice: Balance = 10 * PHA;
 	pub const MaxMintPerRace: u32 = 2;
 	pub const IterLimit: u32 = 200;
-	pub const FoodPerEra: u8 = 2;
-	pub const MaxFoodFedPerEra: u16 = 2;
-	pub const MaxFoodFeedSelf: u8 = 1;
+	pub const FoodPerEra: u32 = 5;
+	pub const MaxFoodFeedSelf: u8 = 2;
+	pub const IncubationDurationSec: u64 = 600;
 }
 
 impl pallet_pw_nft_sale::Config for Test {
@@ -187,8 +196,8 @@ impl pallet_pw_nft_sale::Config for Test {
 impl pallet_pw_incubation::Config for Test {
 	type Event = Event;
 	type FoodPerEra = FoodPerEra;
-	type MaxFoodFedPerEra = MaxFoodFedPerEra;
 	type MaxFoodFeedSelf = MaxFoodFeedSelf;
+	type IncubationDurationSec = IncubationDurationSec;
 }
 
 pub type SystemCall = frame_system::Call<Test>;
@@ -231,6 +240,7 @@ pub const MILLISECS_PER_BLOCK: u64 = 3_000;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
+pub const INCUBATION_DURATION_SEC: u64 = 600;
 
 pub struct ExtBuilder;
 

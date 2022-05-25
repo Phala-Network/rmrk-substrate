@@ -6,7 +6,7 @@ use sp_std::cmp::Eq;
 
 /// NftSaleInfo is used as the value in the StorageDoubleMap that takes key1 as the
 /// OriginOfShellType and key2 as the RaceType
-#[derive(Encode, Decode, Eq, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct NftSaleInfo {
 	/// Number of Race Type count
 	pub race_count: u32,

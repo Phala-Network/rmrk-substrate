@@ -179,4 +179,33 @@ async function main() {
     {
         await api.tx.pwNftSale.updateOriginOfShellTypeCounts('Prime', 900, 50).signAndSend(overlord);
     }
+
+    // Enable Incubation process and start the incubation phase
+    {
+        await api.tx.pwIncubation.setCanStartIncubationStatus(true)
+            .signAndSend(overlord);
+    }
+
+    // Feed an Origin of Shell. feedOriginOfShell(CollectionId, NftId)
+    {
+        await api.tx.pwIncubation.feedOriginOfShell(1, 0).signAndSend(ferdie);
+    }
+
+    // Update Origin of Shells Hatch Times. Send Vec of the top 10 ((CollectionId, NftId), u64) with the time reduction in seconds.
+    {
+        const originOfShells = api.createType('Vec<((u32,u32), u64)>', [[[1, 1], 10800], [[1,0], 7200], [[1, 3], 3600], [[1,2], 2400], [[1, 0], 2400], [[1, 4], 1400], [[1, 5], 1400], [[1, 8], 1400], [[1, 10], 1400]]);
+        await api.tx.pwIncubation.updateIncubationTime(originOfShells).signAndSend(overlord);
+    }
+
+    // Hatch origin of shell executed by Overlord
+    // hatchOriginOfShell parameters
+    // - owner: AccountId of the Origin of Shell to Hatch
+    // - collectionId: Collection ID of the Origin of Shell
+    // - nftId: NFT ID of the Origin of Shell
+    // - metadata: URI pointing to the File resource of the Shell NFT in decentralized storage
+    {
+        const metadata = api.createType('BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>', "https://a2l45nwayr2ij5g7aypdjw7sq2i4eceuowszzeqjw54fr3wu.arweave.net/BpfOtsDEdIT03wYeNNvy-hpHCCJR1pZySCbd4WO-7Uw/");
+        await api.tx.pwIncubation.hatchOriginOfShell(ferdie.address, 1, 0, metadata).signAndSend(overlord);
+    }
+
 }

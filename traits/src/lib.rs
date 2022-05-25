@@ -24,9 +24,8 @@ pub use theme::{Theme, ThemeProperty};
 // pub use part::{PartInfo};
 pub use collection::{Collection, CollectionInfo};
 pub use message::{OverlordMessage, Purpose};
-pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo};
+pub use nft::{AccountIdOrCollectionNftTuple, Nft, NftInfo, RoyaltyInfo};
 pub use nft_sale::NftSaleInfo;
-pub use origin_of_shell::OriginOfShell;
 pub use preorders::PreorderInfo;
 pub use priority::Priority;
 pub use property::Property;
@@ -42,5 +41,5 @@ pub mod primitives {
 	pub type ZIndex = u32;
 	pub type SerialId = u32;
 	pub type PreorderId = u32;
-	pub type EraId = u128;
+	pub type EraId = u64;
 }

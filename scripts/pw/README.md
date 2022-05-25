@@ -184,8 +184,108 @@ await api.tx.pwNftSale.refundNotChosenPreorders(notChosenPreorders)
     .signAndSend(overlord);
 ```
 
-## [4] Enable Last Day of Sale for unlimited purchases for all 3 levels of the remaining Origin of Shell supply.
+## [4] Enable Last Day of Sale
+Enable the last day of sale for unlimited purchases for all 3 levels of the remaining Origin of Shell supply.
 ```javascript
 await api.tx.pwNftSale.setStatusType(true, 'LastDayOfSale')
     .signAndSend(overlord);
+```
+
+## [5] Initiate the Incubation Phase
+Start the incubation phase so Origin of Shells can start feeding other Origin of Shells
+```javascript
+await api.tx.pwIncubation.setCanStartIncubationStatus(true)
+    .signAndSend(overlord);
+```
+
+## [6] Feed Other Origin of Shells
+Here is an example of accounts feeding other Origin of Shells.
+```javascript
+console.log(`Sending food among accounts...`);
+await api.tx.pwIncubation.feedOriginOfShell(1, 0).signAndSend(alice, { nonce: nonceAlice++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 0).signAndSend(bob, { nonce: nonceBob++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 1).signAndSend(charlie, { nonce: nonceCharlie++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 2).signAndSend(david, { nonce: nonceDavid++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 3).signAndSend(eve, { nonce: nonceEve++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 4).signAndSend(ferdie, { nonce: nonceFerdie++ });
+await waitTxAccepted(alice.address, nonceAlice - 1);
+await api.tx.pwIncubation.feedOriginOfShell(1, 5).signAndSend(alice, { nonce: nonceAlice++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 1).signAndSend(bob, { nonce: nonceBob++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 3).signAndSend(charlie, { nonce: nonceCharlie++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 8).signAndSend(david, { nonce: nonceDavid++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 2).signAndSend(eve, { nonce: nonceEve++ });
+await api.tx.pwIncubation.feedOriginOfShell(1, 10).signAndSend(ferdie, { nonce: nonceFerdie++ });
+console.log(`Sending food among accounts...Done`);
+```
+Here is a query to get the stats per era of the times an Origin of Shell was fed.
+```javascript
+const currentEra = await api.query.pwNftSale.era();
+console.log(`Current Era: ${currentEra}`);
+// Times fed in era 0 for the [collectionId, nftId], era
+const originOfShellFoodStats = await api.query.pwIncubation.originOfShellFoodStats.entries();
+originOfShellFoodStats
+    .map(([key, value]) =>
+        [key.args[0].toHuman(), key.args[1].toNumber(), value.toNumber()]
+    ).forEach(([collectionIdNftId, era, value]) => {
+    console.log({
+        collectionIdNftId,
+        era,
+        value,
+    })
+})
+```
+Results
+```shell
+Current Era: 0
+{ collectionIdNftId: [ '1', '2' ], era: 0, value: 2 }
+{ collectionIdNftId: [ '1', '3' ], era: 0, value: 2 }
+{ collectionIdNftId: [ '1', '5' ], era: 0, value: 1 }
+{ collectionIdNftId: [ '1', '8' ], era: 0, value: 1 }
+{ collectionIdNftId: [ '1', '0' ], era: 0, value: 2 }
+{ collectionIdNftId: [ '1', '1' ], era: 0, value: 2 }
+{ collectionIdNftId: [ '1', '10' ], era: 0, value: 1 }
+{ collectionIdNftId: [ '1', '4' ], era: 0, value: 1 }
+```
+
+## [7] Reduce Top 10 Fed in Era
+This is a privileged function for the Overlord account to take the top 10 fed Origin of Shells of the Era.
+```javascript
+const originOfShells = api.createType('Vec<((u32,u32), u64)>', [[[1, 1], 10800], [[1,0], 7200], [[1, 3], 3600], [[1,2], 2400], [[1, 0], 2400], [[1, 4], 1400], [[1, 5], 1400], [[1, 8], 1400], [[1, 10], 1400]]);
+        await api.tx.pwIncubation.updateIncubationTime(originOfShells).signAndSend(overlord);
+```
+Here is a query with results of the Origin of Shell Hatch Times
+```javascript
+const currentEra = await api.query.pwNftSale.era();
+console.log(`Current Era: ${currentEra}`);
+// hatchTimes for the Collection ID
+const hatchTimes = await api.query.pwIncubation.hatchTimes.entries(1);
+hatchTimes
+    .map(([key, value]) =>
+        [key.args[0].toString(), key.args[1].toNumber(), value.toHuman()]
+    ).forEach(([collectionId, nftId, timestamp]) => {
+    console.log({
+        collectionId,
+        nftId,
+        timestamp,
+    })
+})
+```
+Results
+```shell
+Current Era: 0
+{ collectionId: '1', nftId: 0, timestamp: '1,654,375,860' }
+{ collectionId: '1', nftId: 10, timestamp: '1,654,384,060' }
+{ collectionId: '1', nftId: 4, timestamp: '1,654,384,060' }
+{ collectionId: '1', nftId: 2, timestamp: '1,654,383,060' }
+{ collectionId: '1', nftId: 5, timestamp: '1,654,384,060' }
+{ collectionId: '1', nftId: 8, timestamp: '1,654,384,060' }
+{ collectionId: '1', nftId: 1, timestamp: '1,654,374,660' }
+{ collectionId: '1', nftId: 3, timestamp: '1,654,381,860' }
+
+```
+## [8] Hatch Origin of Shells to Shell NFT
+This is a privileged function for the Overlord account that will burn the Origin of Shell NFT and mint the Shell NFT for the account.
+```javascript
+const metadata = api.createType('BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>', "https://a2l45nwayr2ij5g7aypdjw7sq2i4eceuowszzeqjw54fr3wu.arweave.net/BpfOtsDEdIT03wYeNNvy-hpHCCJR1pZySCbd4WO-7Uw/");
+        await api.tx.pwIncubation.hatchOriginOfShell(ferdie.address, 1, 0, metadata).signAndSend(overlord);
 ```
