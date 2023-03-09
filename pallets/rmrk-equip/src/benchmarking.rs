@@ -4,7 +4,7 @@
 
 use super::*;
 
-use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use pallet_rmrk_core::Pallet as RmrkCore;
