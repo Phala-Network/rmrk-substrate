@@ -24,7 +24,7 @@ pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
 		tokens::nonfungibles::*, AsEnsureOriginWithArg, Contains, KeyOwnerProofSystem, Randomness,
-		StorageInfo,
+		StorageInfo, ConstU32, ConstU64,
 	},
 	weights::{
 		constants::{
@@ -263,32 +263,30 @@ impl frame_system::Config for Runtime {
 
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
-parameter_types! {
-	pub const MaxAuthorities: u32 = 32;
-}
-
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
-	type MaxAuthorities = MaxAuthorities;
+	type MaxAuthorities = ConstU32<32>;
 }
 
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
+	type KeyOwnerProofSystem = ();
+
 	type KeyOwnerProof =
-		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+	<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
 	type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
 		KeyTypeId,
 		GrandpaId,
 	)>>::IdentificationTuple;
 
-	type KeyOwnerProofSystem = ();
-
 	type HandleEquivocation = ();
+
 	type WeightInfo = ();
-	type MaxAuthorities = MaxAuthorities;
+	type MaxAuthorities = ConstU32<32>;
+	type MaxSetIdSessionEntries = ConstU64<0>;
 }
 
 parameter_types! {
