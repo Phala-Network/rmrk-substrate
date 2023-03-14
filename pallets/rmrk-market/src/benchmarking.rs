@@ -4,9 +4,8 @@
 
 use super::*;
 
-use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_support::assert_ok;
-use frame_support::traits::Get;
+use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
+use frame_support::{assert_ok, traits::Get};
 use pallet_rmrk_core::Pallet as RmrkCore;
 use sp_runtime::{traits::Bounded, Permill};
 
@@ -60,15 +59,13 @@ fn create_test_collection<T: Config>(
 		&caller,
 		BalanceOf::<T>::max_value(),
 	);
-	assert_ok!(
-		RmrkCore::<T>::create_collection(
-			(RawOrigin::Signed(caller.clone())).into(),
-			collection_id.clone(),
-			metadata,
-			max,
-			symbol,
-		)
-	);
+	assert_ok!(RmrkCore::<T>::create_collection(
+		(RawOrigin::Signed(caller.clone())).into(),
+		collection_id.clone(),
+		metadata,
+		max,
+		symbol,
+	));
 	collection_id
 }
 
@@ -84,19 +81,17 @@ fn mint_test_nft<T: Config>(
 	let royalty = Permill::from_percent(1);
 	let nft_metadata = bvec![0u8; 20];
 	let resource = None;
-	assert_ok!(
-		RmrkCore::<T>::mint_nft(
-			RawOrigin::Signed(owner.clone()).into(),
-			mint_for,
-			nft_id,
-			collection_id,
-			Some(royalty_recipient),
-			Some(royalty),
-			nft_metadata,
-			true,
-			resource,
-		)
-	);
+	assert_ok!(RmrkCore::<T>::mint_nft(
+		RawOrigin::Signed(owner.clone()).into(),
+		mint_for,
+		nft_id,
+		collection_id,
+		Some(royalty_recipient),
+		Some(royalty),
+		nft_metadata,
+		true,
+		resource,
+	));
 	nft_id
 }
 
@@ -109,15 +104,13 @@ fn list_test_nft<T: Config>(
 ) -> <<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance
 {
 	let amount = u32_to_balance::<T>(price);
-	assert_ok!(
-		RmrkMarket::<T>::list(
-			RawOrigin::Signed(owner.clone()).into(),
-			collection_id,
-			nft_id,
-			amount,
-			None,
-		)
-	);
+	assert_ok!(RmrkMarket::<T>::list(
+		RawOrigin::Signed(owner.clone()).into(),
+		collection_id,
+		nft_id,
+		amount,
+		None,
+	));
 	amount.into()
 }
 

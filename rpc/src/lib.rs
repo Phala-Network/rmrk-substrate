@@ -4,7 +4,7 @@ use jsonrpsee::{
 	core::{async_trait, Error as JsonRpseeError, RpcResult},
 	proc_macros::rpc,
 };
-use sp_api::{ApiExt, BlockId, BlockT, Decode, Encode, ProvideRuntimeApi};
+use sp_api::{ApiExt, BlockT, Decode, Encode, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 
 use pallet_rmrk_rpc_runtime_api::{PropertyKey, RmrkApi as RmrkRuntimeApi, ThemeName};
@@ -28,7 +28,7 @@ macro_rules! pass_method {
 			at: Option<<Block as BlockT>::Hash>,
 		) -> RpcResult<$result> {
 			let api = self.client.runtime_api();
-			let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+			let at = at.unwrap_or_else(|| self.client.info().best_hash);
 			let _api_version = if let Ok(Some(api_version)) =
 				api.api_version::<
 					dyn RmrkRuntimeApi<
@@ -42,14 +42,14 @@ macro_rules! pass_method {
 						PartType,
 						Theme
 					>
-				>(&at)
+				>(at)
 			{
 				api_version
 			} else {
 				unreachable!("The RMRK API is always available; qed");
 			};
 
-			let result = api.$method_name(&at, $($((|$map_arg: $ty| $map))? ($name)),*);
+			let result = api.$method_name(at, $($((|$map_arg: $ty| $map))? ($name)),*);
 
 			let result = result.map_err(|e| JsonRpseeError::Custom(format!("sp_api error: {:?}", e)))?;
 
