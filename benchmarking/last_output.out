@@ -1,0 +1,462 @@
+rmrk-substrate git:(polkadot-v0.9.40) ✗ ./target/release/rmrk-substrate benchmark pallet     --chain dev     --execution=wasm     --wasm-execution=compiled     --pallet pallet_rmrk_equip     --extrinsic "*"     --steps 50     --repeat 20     --output pallets/rmrk-equip/src/weights.rs   --template ./benchmarking/frame-weight-template.hbs --detailed-log-output
+2023-03-24 12:32:06.921  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::change_base_issuer
+2023-03-24 12:32:06.929  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::equip
+2023-03-24 12:32:06.951  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::unequip
+2023-03-24 12:32:06.974  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::equippable
+Pallet: "pallet_rmrk_equip", Extrinsic: "change_base_issuer", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkEquip Bases (r:1 w:1)
+Proof: RmrkEquip Bases (max_values: None, max_size: Some(304), added: 2779, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       15
+              µs
+
+Reads = 1
+Writes = 1
+Recorded proof Size = 178
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       15
+              µs
+
+Reads = 1
+Writes = 1
+Recorded proof Size = 178
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "equip", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkCore Nfts (r:2 w:1)
+Proof: RmrkCore Nfts (max_values: None, max_size: Some(235), added: 2710, mode: MaxEncodedLen)
+Storage: RmrkCore Lock (r:2 w:0)
+Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
+Storage: RmrkEquip Equippings (r:1 w:1)
+Proof: RmrkEquip Equippings (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
+Storage: Uniques Asset (r:2 w:0)
+Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
+Storage: RmrkCore EquippableBases (r:1 w:0)
+Proof: RmrkCore EquippableBases (max_values: None, max_size: Some(60), added: 2535, mode: MaxEncodedLen)
+Storage: RmrkCore EquippableSlots (r:1 w:0)
+Proof: RmrkCore EquippableSlots (max_values: None, max_size: Some(100), added: 2575, mode: MaxEncodedLen)
+Storage: RmrkEquip Parts (r:1 w:0)
+Proof: RmrkEquip Parts (max_values: None, max_size: Some(567), added: 3042, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+1127 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       63
+              µs
+
+Reads = 10
+Writes = 2
+Recorded proof Size = 1127
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       63
+              µs
+
+Reads = 10
+Writes = 2
+Recorded proof Size = 1127
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "unequip", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkCore Lock (r:2 w:0)
+Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
+Storage: RmrkEquip Equippings (r:1 w:1)
+Proof: RmrkEquip Equippings (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
+Storage: RmrkCore Nfts (r:1 w:1)
+Proof: RmrkCore Nfts (max_values: None, max_size: Some(235), added: 2710, mode: MaxEncodedLen)
+Storage: Uniques Asset (r:2 w:0)
+Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+979 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       43
+              µs
+
+Reads = 6
+Writes = 2
+Recorded proof Size = 979
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       43
+              µs
+
+Reads = 6
+Writes = 2
+Recorded proof Size = 979
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "equippable", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkEquip Bases (r:1 w:0)
+Proof: RmrkEquip Bases (max_values: None, max_size: Some(304), added: 2779, mode: MaxEncodedLen)
+Storage: RmrkEquip Parts (r:1 w:1)
+Proof: RmrkEquip Parts (max_values: None, max_size: Some(567), added: 3042, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       17
+              µs
+
+Reads = 2
+Writes = 1
+Recorded proof Size = 246
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       17
+              µs
+
+Reads = 2
+Writes = 1
+Recorded proof Size = 246
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "equippable_add", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkEquip Bases (r:1 w:0)
+Proof: RmrkEquip Bases (max_values: None, max_size: Some(304), added: 2779, mode: MaxEncodedLen)
+Storage: RmrkEquip Parts (r:1 w:1)
+Proof: RmrkEquip Parts (max_values: None, max_size: Some(567), added: 3042, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       17
+              µs
+
+Reads = 2
+Writes = 1
+Recorded proof Size = 246
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       17
+              µs
+
+Reads = 2
+Writes = 1
+Recorded proof Size = 246
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "equippable_remove", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkEquip Bases (r:1 w:0)
+Proof: RmrkEquip Bases (max_values: None, max_size: Some(304), added: 2779, mode: MaxEncodedLen)
+Storage: RmrkEquip Parts (r:1 w:1)
+Proof: RmrkEquip Parts (max_values: None, max_size: Some(567), added: 3042, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+246 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       17
+              µs
+
+Reads = 2
+Writes = 1
+Recorded proof Size = 246
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       17
+              µs
+
+Reads = 2
+Writes = 1
+Recorded proof Size = 246
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "theme_add", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkEquip Bases (r:1 w:0)
+Proof: RmrkEquip Bases (max_values: None, max_size: Some(304), added: 2779, mode: MaxEncodedLen)
+Storage: RmrkEquip Themes (r:1 w:2)
+Proof: RmrkEquip Themes (max_values: None, max_size: Some(442), added: 2917, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+178 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       23
+              µs
+
+Reads = 2
+Writes = 2
+Recorded proof Size = 178
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       23
+              µs
+
+Reads = 2
+Writes = 2
+Recorded proof Size = 178
+
+Pallet: "pallet_rmrk_equip", Extrinsic: "create_base", Lowest values: [], Highest values: [], Steps: 50, Repeat: 20
+Raw Storage Info
+========
+Storage: RmrkEquip NextBaseId (r:1 w:1)
+Proof: RmrkEquip NextBaseId (max_values: Some(1), max_size: Some(4), added: 499, mode: MaxEncodedLen)
+Storage: RmrkEquip Bases (r:0 w:1)
+Proof: RmrkEquip Bases (max_values: None, max_size: Some(304), added: 2779, mode: MaxEncodedLen)
+
+-- Proof Sizes --
+
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+42 bytes
+
+Median Slopes Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       11
+              µs
+
+Reads = 1
+Writes = 2
+Recorded proof Size = 42
+
+Min Squares Analysis
+========
+-- Extrinsic Time --
+
+Model:
+Time ~=       11
+              µs
+
+Reads = 1
+Writes = 2
+Recorded proof Size = 42
+
+Created file: "pallets/rmrk-equip/src/weights.rs"
+2023-03-24 12:32:06.981  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::equippable_add
+2023-03-24 12:32:06.987  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::equippable_remove
+2023-03-24 12:32:06.993  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::theme_add
+2023-03-24 12:32:06.999  INFO main frame::benchmark::pallet: Starting benchmark: pallet_rmrk_equip::create_base
