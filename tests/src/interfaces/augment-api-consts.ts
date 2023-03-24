@@ -34,6 +34,15 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       maxAuthorities: u32 & AugmentedConst<ApiType>;
       /**
+       * The maximum number of entries to keep in the set id to session index mapping.
+       * 
+       * Since the `SetIdSession` map is only used for validating equivocations this
+       * value should relate to the bonding duration of whatever staking system is
+       * being used (if any). If equivocation handling is not enabled then this value
+       * can be zero.
+       **/
+      maxSetIdSessionEntries: u64 & AugmentedConst<ApiType>;
+      /**
        * Generic const
        **/
       [key: string]: Codec;

@@ -3,7 +3,7 @@
 
 import type { Bytes, Compact, Enum, Null, Option, Result, Struct, Text, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, Call, H256, MultiAddress, Perbill, Permill } from '@polkadot/types/interfaces/runtime';
+import type { AccountId32, Call, H256, MultiAddress, Permill } from '@polkadot/types/interfaces/runtime';
 import type { Event } from '@polkadot/types/interfaces/system';
 
 /** @name FinalityGrandpaEquivocationPrecommit */
@@ -104,10 +104,6 @@ export interface FrameSystemAccountInfo extends Struct {
 
 /** @name FrameSystemCall */
 export interface FrameSystemCall extends Enum {
-  readonly isFillBlock: boolean;
-  readonly asFillBlock: {
-    readonly ratio: Perbill;
-  } & Struct;
   readonly isRemark: boolean;
   readonly asRemark: {
     readonly remark: Bytes;
@@ -141,7 +137,7 @@ export interface FrameSystemCall extends Enum {
   readonly asRemarkWithEvent: {
     readonly remark: Bytes;
   } & Struct;
-  readonly type: 'FillBlock' | 'Remark' | 'SetHeapPages' | 'SetCode' | 'SetCodeWithoutChecks' | 'SetStorage' | 'KillStorage' | 'KillPrefix' | 'RemarkWithEvent';
+  readonly type: 'Remark' | 'SetHeapPages' | 'SetCode' | 'SetCodeWithoutChecks' | 'SetStorage' | 'KillStorage' | 'KillPrefix' | 'RemarkWithEvent';
 }
 
 /** @name FrameSystemError */
@@ -370,13 +366,6 @@ export interface PalletBalancesReasons extends Enum {
   readonly isMisc: boolean;
   readonly isAll: boolean;
   readonly type: 'Fee' | 'Misc' | 'All';
-}
-
-/** @name PalletBalancesReleases */
-export interface PalletBalancesReleases extends Enum {
-  readonly isV100: boolean;
-  readonly isV200: boolean;
-  readonly type: 'V100' | 'V200';
 }
 
 /** @name PalletBalancesReserveData */
@@ -681,6 +670,11 @@ export interface PalletRmrkCoreEvent extends Enum {
     readonly maybeNftId: Option<u32>;
     readonly key: Bytes;
   } & Struct;
+  readonly isPropertiesRemoved: boolean;
+  readonly asPropertiesRemoved: {
+    readonly collectionId: u32;
+    readonly maybeNftId: Option<u32>;
+  } & Struct;
   readonly isCollectionLocked: boolean;
   readonly asCollectionLocked: {
     readonly issuer: AccountId32;
@@ -721,7 +715,7 @@ export interface PalletRmrkCoreEvent extends Enum {
     readonly collectionId: u32;
     readonly nftId: u32;
   } & Struct;
-  readonly type: 'CollectionCreated' | 'NftMinted' | 'NftBurned' | 'CollectionDestroyed' | 'NftSent' | 'NftAccepted' | 'NftRejected' | 'IssuerChanged' | 'PropertySet' | 'PropertyRemoved' | 'CollectionLocked' | 'ResourceAdded' | 'ResourceReplaced' | 'ResourceAccepted' | 'ResourceRemoval' | 'ResourceRemovalAccepted' | 'PrioritySet';
+  readonly type: 'CollectionCreated' | 'NftMinted' | 'NftBurned' | 'CollectionDestroyed' | 'NftSent' | 'NftAccepted' | 'NftRejected' | 'IssuerChanged' | 'PropertySet' | 'PropertyRemoved' | 'PropertiesRemoved' | 'CollectionLocked' | 'ResourceAdded' | 'ResourceReplaced' | 'ResourceAccepted' | 'ResourceRemoval' | 'ResourceRemovalAccepted' | 'PrioritySet';
 }
 
 /** @name PalletRmrkEquipCall */
@@ -901,7 +895,9 @@ export interface PalletRmrkMarketError extends Enum {
   readonly isListingHasExpired: boolean;
   readonly isPriceDiffersFromExpected: boolean;
   readonly isNonTransferable: boolean;
-  readonly type: 'NoPermission' | 'TokenNotForSale' | 'CannotWithdrawOffer' | 'CannotUnlistToken' | 'CannotOfferOnOwnToken' | 'CannotBuyOwnToken' | 'UnknownOffer' | 'CannotListNftOwnedByNft' | 'TokenDoesNotExist' | 'OfferTooLow' | 'AlreadyOffered' | 'OfferHasExpired' | 'ListingHasExpired' | 'PriceDiffersFromExpected' | 'NonTransferable';
+  readonly isMarketplaceOwnerNotSet: boolean;
+  readonly isCannotListNft: boolean;
+  readonly type: 'NoPermission' | 'TokenNotForSale' | 'CannotWithdrawOffer' | 'CannotUnlistToken' | 'CannotOfferOnOwnToken' | 'CannotBuyOwnToken' | 'UnknownOffer' | 'CannotListNftOwnedByNft' | 'TokenDoesNotExist' | 'OfferTooLow' | 'AlreadyOffered' | 'OfferHasExpired' | 'ListingHasExpired' | 'PriceDiffersFromExpected' | 'NonTransferable' | 'MarketplaceOwnerNotSet' | 'CannotListNft';
 }
 
 /** @name PalletRmrkMarketEvent */
@@ -954,7 +950,23 @@ export interface PalletRmrkMarketEvent extends Enum {
     readonly collectionId: u32;
     readonly nftId: u32;
   } & Struct;
-  readonly type: 'TokenPriceUpdated' | 'TokenSold' | 'TokenListed' | 'TokenUnlisted' | 'OfferPlaced' | 'OfferWithdrawn' | 'OfferAccepted';
+  readonly isRoyaltyFeePaid: boolean;
+  readonly asRoyaltyFeePaid: {
+    readonly sender: AccountId32;
+    readonly royaltyOwner: AccountId32;
+    readonly collectionId: u32;
+    readonly nftId: u32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isMarketFeePaid: boolean;
+  readonly asMarketFeePaid: {
+    readonly sender: AccountId32;
+    readonly marketplaceOwner: AccountId32;
+    readonly collectionId: u32;
+    readonly nftId: u32;
+    readonly amount: u128;
+  } & Struct;
+  readonly type: 'TokenPriceUpdated' | 'TokenSold' | 'TokenListed' | 'TokenUnlisted' | 'OfferPlaced' | 'OfferWithdrawn' | 'OfferAccepted' | 'RoyaltyFeePaid' | 'MarketFeePaid';
 }
 
 /** @name PalletRmrkMarketListInfo */
@@ -1471,7 +1483,12 @@ export interface PalletUtilityCall extends Enum {
   readonly asForceBatch: {
     readonly calls: Vec<Call>;
   } & Struct;
-  readonly type: 'Batch' | 'AsDerivative' | 'BatchAll' | 'DispatchAs' | 'ForceBatch';
+  readonly isWithWeight: boolean;
+  readonly asWithWeight: {
+    readonly call: Call;
+    readonly weight: SpWeightsWeightV2Weight;
+  } & Struct;
+  readonly type: 'Batch' | 'AsDerivative' | 'BatchAll' | 'DispatchAs' | 'ForceBatch' | 'WithWeight';
 }
 
 /** @name PalletUtilityError */
@@ -1502,7 +1519,7 @@ export interface PalletUtilityEvent extends Enum {
 }
 
 /** @name PhantomTypePhantomType */
-export interface PhantomTypePhantomType extends Vec<Lookup178> {}
+export interface PhantomTypePhantomType extends Vec<Lookup176> {}
 
 /** @name RmrkSubstrateRuntimeOriginCaller */
 export interface RmrkSubstrateRuntimeOriginCaller extends Enum {
@@ -1660,6 +1677,14 @@ export interface RmrkTraitsThemeThemeProperty extends Struct {
   readonly value: Bytes;
 }
 
+/** @name SpArithmeticArithmeticError */
+export interface SpArithmeticArithmeticError extends Enum {
+  readonly isUnderflow: boolean;
+  readonly isOverflow: boolean;
+  readonly isDivisionByZero: boolean;
+  readonly type: 'Underflow' | 'Overflow' | 'DivisionByZero';
+}
+
 /** @name SpConsensusAuraSr25519AppSr25519Public */
 export interface SpConsensusAuraSr25519AppSr25519Public extends SpCoreSr25519Public {}
 
@@ -1702,14 +1727,6 @@ export interface SpFinalityGrandpaEquivocationProof extends Struct {
   readonly equivocation: SpFinalityGrandpaEquivocation;
 }
 
-/** @name SpRuntimeArithmeticError */
-export interface SpRuntimeArithmeticError extends Enum {
-  readonly isUnderflow: boolean;
-  readonly isOverflow: boolean;
-  readonly isDivisionByZero: boolean;
-  readonly type: 'Underflow' | 'Overflow' | 'DivisionByZero';
-}
-
 /** @name SpRuntimeDigest */
 export interface SpRuntimeDigest extends Struct {
   readonly logs: Vec<SpRuntimeDigestDigestItem>;
@@ -1742,7 +1759,7 @@ export interface SpRuntimeDispatchError extends Enum {
   readonly isToken: boolean;
   readonly asToken: SpRuntimeTokenError;
   readonly isArithmetic: boolean;
-  readonly asArithmetic: SpRuntimeArithmeticError;
+  readonly asArithmetic: SpArithmeticArithmeticError;
   readonly isTransactional: boolean;
   readonly asTransactional: SpRuntimeTransactionalError;
   readonly isExhausted: boolean;

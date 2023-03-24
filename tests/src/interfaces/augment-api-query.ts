@@ -94,6 +94,12 @@ declare module '@polkadot/api-base/types/storage' {
        * A mapping from grandpa set ID to the index of the *most recent* session for which its
        * members were responsible.
        * 
+       * This is only used for validating equivocation proofs. An equivocation proof must
+       * contains a key-ownership proof for a given session, therefore we need a way to tie
+       * together sessions and GRANDPA set ids, i.e. we need to validate that a validator
+       * was the owner of a given key on a given session, and what the active set ID was
+       * during that session.
+       * 
        * TWOX-NOTE: `SetId` is not under user control.
        **/
       setIdSession: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<u32>>, [u64]> & QueryableStorageEntry<ApiType, [u64]>;
@@ -105,18 +111,6 @@ declare module '@polkadot/api-base/types/storage' {
        * State of the current authority set.
        **/
       state: AugmentedQuery<ApiType, () => Observable<PalletGrandpaStoredState>, []> & QueryableStorageEntry<ApiType, []>;
-      /**
-       * Generic query
-       **/
-      [key: string]: QueryableStorageEntry<ApiType>;
-    };
-    randomnessCollectiveFlip: {
-      /**
-       * Series of block headers from the last 81 blocks that acts as random seed material. This
-       * is arranged as a ring buffer with `block_number % 81` being the index into the `Vec` of
-       * the oldest hash.
-       **/
-      randomMaterial: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> & QueryableStorageEntry<ApiType, []>;
       /**
        * Generic query
        **/
