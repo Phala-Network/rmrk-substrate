@@ -330,7 +330,7 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 }
 
-/// Configure the pallet-template in pallets/template.
+// Configure the pallet-template in pallets/template.
 // impl pallet_template::Config for Runtime {
 // 	type RuntimeEvent = RuntimeEvent;
 // 	type WeightInfo = ();

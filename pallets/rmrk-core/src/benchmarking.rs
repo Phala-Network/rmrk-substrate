@@ -233,9 +233,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_nft_directly_to_nft<T: Config>() {
-		let n = (T::NestingBudget::get() - 1);
-
+	fn mint_nft_directly_to_nft<T: Config>(n: Linear<1, { T::NestingBudget::get() - 1 }>) {
 		let owner: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
@@ -287,8 +285,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn send_to_account<T: Config>() {
-		let n = T::NestingBudget::get();
+	fn send_to_account<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let owner: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
@@ -316,8 +313,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn send_to_nft<T: Config>() {
-		let n = T::NestingBudget::get();
+	fn send_to_nft<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let alice: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(alice.clone(), collection_index);
@@ -350,10 +346,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn burn_nft<T: Config>() {
-		let n = T::NestingBudget::get();
-		let k = T::PropertiesLimit::get();
-
+	fn burn_nft<T: Config>(n: Linear<1, { T::NestingBudget::get() }>, k: Linear<0, { T::PropertiesLimit::get() }>) {
 		let owner: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
@@ -369,9 +362,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn accept_nft<T: Config>() {
-		let n = T::NestingBudget::get();
-
+	fn accept_nft<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let alice: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(alice.clone(), collection_index);
@@ -405,8 +396,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn reject_nft<T: Config>() {
-		let n = T::NestingBudget::get();
+	fn reject_nft<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let alice: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(alice.clone(), collection_index);
@@ -517,10 +507,9 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn add_basic_resource<T: Config>() {
+	fn add_basic_resource<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let (alice, _, collection_id, _, resource_id) = prepare_resource::<T>();
 
-		let n = T::NestingBudget::get();
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
@@ -533,10 +522,9 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn add_composable_resource<T: Config>() {
+	fn add_composable_resource<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let (alice, _, collection_id, _, resource_id) = prepare_resource::<T>();
 
-		let n = T::NestingBudget::get();
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
@@ -560,10 +548,10 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn add_slot_resource<T: Config>() {
+	fn add_slot_resource<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let (alice, _, collection_id, _, resource_id) = prepare_resource::<T>();
 
-		let n = T::NestingBudget::get();
+		let n = n as u32;
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
@@ -580,10 +568,9 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn accept_resource<T: Config>() {
+	fn accept_resource<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let (alice, bob, collection_id, _, resource_id) = prepare_resource::<T>();
 
-		let n = T::NestingBudget::get();
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
@@ -606,10 +593,10 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn remove_resource<T: Config>() {
+	fn remove_resource<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let (alice, bob, collection_id, _, resource_id) = prepare_resource::<T>();
 
-		let n = T::NestingBudget::get();
+		let n = n as u32;
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
@@ -640,10 +627,10 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn accept_resource_removal<T: Config>() {
+	fn accept_resource_removal<T: Config>(n: Linear<1, { T::NestingBudget::get() }>) {
 		let (alice, bob, collection_id, _, resource_id) = prepare_resource::<T>();
 
-		let n = T::NestingBudget::get();
+		let n = n as u32;
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
@@ -680,15 +667,14 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn set_priority<T: Config>() {
-		let n = T::MaxPriorities::get();
-		let k = T::NestingBudget::get();
-		let (alice, bob, collection_id, _, resource_id) = prepare_resource::<T>();
+	fn set_priority<T: Config>(n: Linear<1, { T::MaxPriorities::get() }>, k: Linear<1, { T::NestingBudget::get() }>) {
+		let (alice, bob, collection_id, _, _resource_id) = prepare_resource::<T>();
 
+		let k = k as u32;
 		mint_and_send_to_parent::<T>(alice.clone(), collection_id, k);
 		let nft_id = T::Helper::item(k - 1);
 
-		let basic_resource = BasicResource { metadata: stbd::<T>("basic test metadata") };
+		let _basic_resource = BasicResource { metadata: stbd::<T>("basic test metadata") };
 		let mut priorities: BoundedVec<ResourceId, T::MaxPriorities> = vec![].try_into().unwrap();
 		for resource_id in 1..n {
 			let _ = priorities.try_push(resource_id);
