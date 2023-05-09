@@ -20,7 +20,7 @@ use sp_std::prelude::*;
 pub use pallet::*;
 
 pub mod weights;
-pub use weights::WeightInfo;
+pub use weights::*;
 
 use rmrk_traits::{AccountIdOrCollectionNftTuple, NftInfo, RoyaltyInfo};
 
@@ -103,7 +103,6 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]

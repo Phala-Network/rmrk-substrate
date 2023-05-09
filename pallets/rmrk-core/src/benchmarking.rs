@@ -7,7 +7,10 @@ use super::*;
 use crate::Pallet as RmrkCore;
 
 use codec::alloc::string::ToString;
-use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
+use frame_benchmarking::{
+	benchmarks,
+	v2::{account, whitelisted_caller},
+};
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use rmrk_traits::{AccountIdOrCollectionNftTuple, BasicResource};

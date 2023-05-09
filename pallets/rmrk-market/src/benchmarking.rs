@@ -4,7 +4,7 @@
 
 use super::*;
 
-use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
+use frame_benchmarking::v2::*;
 use frame_support::{assert_ok, traits::Get};
 use pallet_rmrk_core::Pallet as RmrkCore;
 use sp_runtime::{traits::Bounded, Permill};
@@ -114,34 +114,54 @@ fn list_test_nft<T: Config>(
 	amount.into()
 }
 
-benchmarks! {
-	buy {
+#[benchmarks]
+mod benchmarks {
+	use super::*;
+
+	#[benchmark]
+	fn buy() {
 		let owner = funded_account::<T>("owner", 0);
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
 		let nft_id = mint_test_nft::<T>(owner.clone(), None, collection_id, 42);
-
 		let price = list_test_nft::<T>(owner.clone(), collection_id, nft_id, 100);
 		let caller: T::AccountId = whitelisted_caller();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
-	}: _(RawOrigin::Signed(caller.clone()), collection_id, nft_id, None)
-	verify {
-		assert_last_event::<T>(Event::TokenSold { owner, buyer: caller, collection_id, nft_id, price }.into());
+		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+			&owner,
+			BalanceOf::<T>::min_value(),
+		);
+		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+			&caller,
+			BalanceOf::<T>::max_value(),
+		);
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), collection_id, nft_id, None);
+
+		assert_last_event::<T>(
+			Event::TokenSold { owner, buyer: caller, collection_id, nft_id, price }.into(),
+		);
 	}
 
-	list {
+	#[benchmark]
+	fn list() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 
 		let collection_id = create_test_collection::<T>(caller.clone(), collection_index);
 		let nft_id = mint_test_nft::<T>(caller.clone(), None, collection_id, 42);
 		let price = u32_to_balance::<T>(100);
-	}: _(RawOrigin::Signed(caller.clone()), collection_id, nft_id, price, None)
-	verify {
-		assert_last_event::<T>(Event::TokenListed { owner: caller, collection_id, nft_id, price }.into());
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), collection_id, nft_id, price, None);
+
+		assert_last_event::<T>(
+			Event::TokenListed { owner: caller, collection_id, nft_id, price }.into(),
+		);
 	}
 
-	unlist {
+	#[benchmark]
+	fn unlist() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 
@@ -149,41 +169,67 @@ benchmarks! {
 		let nft_id = mint_test_nft::<T>(caller.clone(), None, collection_id, 42);
 
 		let _ = list_test_nft::<T>(caller.clone(), collection_id, nft_id, 100);
-	}: _(RawOrigin::Signed(caller.clone()), collection_id, nft_id)
-	verify {
-		assert_last_event::<T>(Event::TokenUnlisted { owner: caller, collection_id, nft_id }.into());
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), collection_id, nft_id);
+
+		assert_last_event::<T>(
+			Event::TokenUnlisted { owner: caller, collection_id, nft_id }.into(),
+		);
 	}
 
-	make_offer {
+	#[benchmark]
+	fn make_offer() {
 		let owner = funded_account::<T>("owner", 0);
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
 		let nft_id = mint_test_nft::<T>(owner.clone(), None, collection_id, 42);
 
 		let caller: T::AccountId = whitelisted_caller();
-		let amount =  T::MinimumOfferAmount::get();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
-	}: _(RawOrigin::Signed(caller.clone()), collection_id, nft_id, amount, None)
-	verify {
-		assert_last_event::<T>(Event::OfferPlaced { offerer: caller, collection_id, nft_id, price: amount }.into());
+		let amount = T::MinimumOfferAmount::get();
+		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+			&caller,
+			BalanceOf::<T>::max_value(),
+		);
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), collection_id, nft_id, amount, None);
+
+		assert_last_event::<T>(
+			Event::OfferPlaced { offerer: caller, collection_id, nft_id, price: amount }.into(),
+		);
 	}
 
-	withdraw_offer {
+	#[benchmark]
+	fn withdraw_offer() {
 		let owner = funded_account::<T>("owner", 0);
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
 		let nft_id = mint_test_nft::<T>(owner.clone(), None, collection_id, 42);
 
 		let caller: T::AccountId = whitelisted_caller();
-		let amount =  T::MinimumOfferAmount::get();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
-		let _ = RmrkMarket::<T>::make_offer(RawOrigin::Signed(caller.clone()).into(), collection_id, nft_id, amount, None);
-	}: _(RawOrigin::Signed(caller.clone()), collection_id, nft_id)
-	verify {
-		assert_last_event::<T>(Event::OfferWithdrawn { sender: caller, collection_id, nft_id }.into());
+		let amount = T::MinimumOfferAmount::get();
+		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+			&caller,
+			BalanceOf::<T>::max_value(),
+		);
+		let _ = RmrkMarket::<T>::make_offer(
+			RawOrigin::Signed(caller.clone()).into(),
+			collection_id,
+			nft_id,
+			amount,
+			None,
+		);
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), collection_id, nft_id);
+
+		assert_last_event::<T>(
+			Event::OfferWithdrawn { sender: caller, collection_id, nft_id }.into(),
+		);
 	}
 
-	accept_offer {
+	#[benchmark]
+	fn accept_offer() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 
@@ -191,11 +237,21 @@ benchmarks! {
 		let nft_id = mint_test_nft::<T>(caller.clone(), None, collection_id, 42);
 
 		let offerer = funded_account::<T>("offerer", 0);
-		let amount =  T::MinimumOfferAmount::get();
-		let _ = RmrkMarket::<T>::make_offer(RawOrigin::Signed(offerer.clone()).into(), collection_id, nft_id, amount, None);
-	}: _(RawOrigin::Signed(caller.clone()), collection_id, nft_id, offerer.clone())
-	verify {
-		assert_last_event::<T>(Event::OfferAccepted { owner: caller, buyer: offerer, collection_id, nft_id }.into());
+		let amount = T::MinimumOfferAmount::get();
+		let _ = RmrkMarket::<T>::make_offer(
+			RawOrigin::Signed(offerer.clone()).into(),
+			collection_id,
+			nft_id,
+			amount,
+			None,
+		);
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), collection_id, nft_id, offerer.clone());
+
+		assert_last_event::<T>(
+			Event::OfferAccepted { owner: caller, buyer: offerer, collection_id, nft_id }.into(),
+		);
 	}
 
 	impl_benchmark_test_suite!(RmrkMarket, crate::mock::new_test_ext(), crate::mock::Test);

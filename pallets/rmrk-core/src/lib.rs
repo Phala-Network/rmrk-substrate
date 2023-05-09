@@ -29,7 +29,7 @@ use sp_std::result::Result;
 
 mod functions;
 pub mod weights;
-pub use weights::WeightInfo;
+pub use weights::*;
 
 #[cfg(any(feature = "runtime-benchmarks"))]
 pub mod benchmarking;
@@ -286,7 +286,6 @@ pub mod pallet {
 	>;
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	// Pallets use events to inform users when important changes are made.

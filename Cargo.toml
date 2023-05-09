@@ -2,7 +2,6 @@
 edition = "2021"
 members = [
     'node',
-    'pallets/template',
     'pallets/rmrk-core',
     'pallets/rmrk-equip',
     'pallets/rmrk-market',

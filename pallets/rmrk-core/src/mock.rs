@@ -154,6 +154,10 @@ impl pallet_balances::Config for Test {
 	type MaxReserves = MaxReserves;
 	// type ReserveIdentifier = ReserveIdentifier;
 	type ReserveIdentifier = ();
+	type HoldIdentifier = ();
+	type FreezeIdentifier = ();
+	type MaxHolds = ();
+	type MaxFreezes = ();
 }
 
 pub const ALICE: AccountId = AccountId::new([1u8; 32]);
