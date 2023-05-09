@@ -11,7 +11,7 @@ use sp_runtime::{traits::Bounded, Permill};
 
 use crate::Pallet as RmrkMarket;
 
-pub type BalanceOf<T> = <<T as pallet_uniques::Config>::Currency as Currency<
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<
 	<T as frame_system::Config>::AccountId,
 >>::Balance;
 
@@ -39,10 +39,11 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
 
 fn funded_account<T: Config>(name: &'static str, index: u32) -> T::AccountId {
 	let caller: T::AccountId = account(name, index, SEED);
-	<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+	<T as Config>::Currency::make_free_balance_be(
 		&caller,
-		BalanceOf::<T>::max_value(),
+		BalanceOf::<T>::max_value() / 100u32.into(),
 	);
+
 	caller
 }
 
@@ -55,9 +56,9 @@ fn create_test_collection<T: Config>(
 	let metadata = bvec![0u8; 20];
 	let max = None;
 	let symbol = bvec![0u8; 15];
-	<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+	<T as Config>::Currency::make_free_balance_be(
 		&caller,
-		BalanceOf::<T>::max_value(),
+		BalanceOf::<T>::max_value() / 100u32.into(),
 	);
 	assert_ok!(RmrkCore::<T>::create_collection(
 		(RawOrigin::Signed(caller.clone())).into(),
@@ -120,15 +121,19 @@ mod benchmarks {
 
 	#[benchmark]
 	fn buy<T: Config>() {
-		let owner = whitelisted_caller();
+		let owner: T::AccountId = funded_account::<T>("owner", 0);
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
 		let nft_id = mint_test_nft::<T>(owner.clone(), None, collection_id, 42);
 		let price = list_test_nft::<T>(owner.clone(), collection_id, nft_id, 100);
 		let caller: T::AccountId = whitelisted_caller();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+		<T as Config>::Currency::make_free_balance_be(
+			&owner,
+			<T as Config>::Currency::minimum_balance(),
+		);
+		<T as Config>::Currency::make_free_balance_be(
 			&caller,
-			BalanceOf::<T>::max_value(),
+			BalanceOf::<T>::max_value() / 100u32.into(),
 		);
 
 		#[extrinsic_call]
@@ -182,9 +187,9 @@ mod benchmarks {
 
 		let caller: T::AccountId = whitelisted_caller();
 		let amount = T::MinimumOfferAmount::get();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+		<T as Config>::Currency::make_free_balance_be(
 			&caller,
-			BalanceOf::<T>::max_value(),
+			BalanceOf::<T>::max_value() / 100u32.into(),
 		);
 
 		#[extrinsic_call]
@@ -204,10 +209,11 @@ mod benchmarks {
 
 		let caller: T::AccountId = whitelisted_caller();
 		let amount = T::MinimumOfferAmount::get();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
+		<T as Config>::Currency::make_free_balance_be(
 			&caller,
-			BalanceOf::<T>::max_value(),
+			BalanceOf::<T>::max_value() / 100u32.into(),
 		);
+
 		let _ = RmrkMarket::<T>::make_offer(
 			RawOrigin::Signed(caller.clone()).into(),
 			collection_id,

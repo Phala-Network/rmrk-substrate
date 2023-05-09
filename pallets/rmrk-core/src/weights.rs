@@ -4,7 +4,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2023-05-09, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `wrlx-tun311-33`, CPU: `AMD Ryzen 9 5900HX with Radeon Graphics`
+//! HOSTNAME: `bogon`, CPU: `<UNKNOWN>`
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
@@ -41,24 +41,24 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
     fn create_collection() -> Weight;
     fn mint_nft() -> Weight;
-    fn mint_nft_directly_to_nft() -> Weight;
+    fn mint_nft_directly_to_nft(n: u32, ) -> Weight;
     fn destroy_collection() -> Weight;
-    fn send_to_account() -> Weight;
-    fn send_to_nft() -> Weight;
-    fn burn_nft() -> Weight;
-    fn accept_nft() -> Weight;
-    fn reject_nft() -> Weight;
+    fn send_to_account(n: u32, ) -> Weight;
+    fn send_to_nft(n: u32, ) -> Weight;
+    fn burn_nft(n: u32, k: u32, ) -> Weight;
+    fn accept_nft(n: u32, ) -> Weight;
+    fn reject_nft(n: u32, ) -> Weight;
     fn change_collection_issuer() -> Weight;
     fn set_property() -> Weight;
     fn lock_collection() -> Weight;
     fn replace_resource() -> Weight;
-    fn add_basic_resource() -> Weight;
-    fn add_composable_resource() -> Weight;
-    fn add_slot_resource() -> Weight;
-    fn accept_resource() -> Weight;
-    fn remove_resource() -> Weight;
-    fn accept_resource_removal() -> Weight;
-    fn set_priority() -> Weight;
+    fn add_basic_resource(n: u32, ) -> Weight;
+    fn add_composable_resource(n: u32, ) -> Weight;
+    fn add_slot_resource(n: u32, ) -> Weight;
+    fn accept_resource(n: u32, ) -> Weight;
+    fn remove_resource(n: u32, ) -> Weight;
+    fn accept_resource_removal(n: u32, ) -> Weight;
+    fn set_priority(n: u32, k: u32, ) -> Weight;
 }
 
 /// Weights for pallet_rmrk_core using the Substrate node and recommended hardware.
@@ -74,8 +74,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `142`
         //  Estimated: `3643`
-        // Minimum execution time: 48_531_000 picoseconds.
-        Weight::from_parts(49_452_000, 3643)
+        // Minimum execution time: 35_000_000 picoseconds.
+        Weight::from_parts(36_000_000, 3643)
             .saturating_add(T::DbWeight::get().reads(1_u64))
             .saturating_add(T::DbWeight::get().writes(3_u64))
         }
@@ -95,8 +95,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `499`
         //  Estimated: `3750`
-        // Minimum execution time: 69_881_000 picoseconds.
-        Weight::from_parts(72_235_000, 3750)
+        // Minimum execution time: 53_000_000 picoseconds.
+        Weight::from_parts(54_000_000, 3750)
             .saturating_add(T::DbWeight::get().reads(5_u64))
             .saturating_add(T::DbWeight::get().writes(5_u64))
         }
@@ -114,14 +114,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Children (max_values: None, max_size: Some(32), added: 2507, mode: MaxEncodedLen)
             /// Storage: Uniques Account (r:0 w:1)
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
-        fn mint_nft_directly_to_nft() -> Weight {
+            /// The range of component `n` is `[1, 19]`.
+        fn mint_nft_directly_to_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2537`
-        //  Estimated: `52930`
-        // Minimum execution time: 160_841_000 picoseconds.
-        Weight::from_parts(162_644_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(24_u64))
+        //  Measured:  `671 + n * (97 ±0)`
+        //  Estimated: `3750 + n * (2597 ±0)`
+        // Minimum execution time: 59_000_000 picoseconds.
+        Weight::from_parts(55_209_857, 3750)
+            // Standard Error: 42_785
+            .saturating_add(Weight::from_parts(4_285_939, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(5_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(6_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:1)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -139,8 +144,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `568`
         //  Estimated: `3750`
-        // Minimum execution time: 75_071_000 picoseconds.
-        Weight::from_parts(77_986_000, 3750)
+        // Minimum execution time: 56_000_000 picoseconds.
+        Weight::from_parts(57_000_000, 3750)
             .saturating_add(T::DbWeight::get().reads(3_u64))
             .saturating_add(T::DbWeight::get().writes(5_u64))
         }
@@ -158,14 +163,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:1)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn send_to_account() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn send_to_account(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2624`
-        //  Estimated: `52930`
-        // Minimum execution time: 147_557_000 picoseconds.
-        Weight::from_parts(149_099_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(23_u64))
+        //  Measured:  `655 + n * (97 ±0)`
+        //  Estimated: `3700 + n * (2597 ±0)`
+        // Minimum execution time: 44_000_000 picoseconds.
+        Weight::from_parts(42_414_410, 3700)
+            // Standard Error: 36_516
+            .saturating_add(Weight::from_parts(4_309_340, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(3_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(6_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:21 w:1)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -181,14 +191,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:1)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn send_to_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn send_to_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2780`
-        //  Estimated: `55527`
-        // Minimum execution time: 159_789_000 picoseconds.
-        Weight::from_parts(164_628_000, 55527)
-            .saturating_add(T::DbWeight::get().reads(25_u64))
+        //  Measured:  `774 + n * (104 ±0)`
+        //  Estimated: `6410 + n * (2597 ±0)`
+        // Minimum execution time: 55_000_000 picoseconds.
+        Weight::from_parts(52_893_637, 6410)
+            // Standard Error: 27_542
+            .saturating_add(Weight::from_parts(4_443_149, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(5_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(7_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:20)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -208,25 +223,38 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:20)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn burn_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+            /// The range of component `k` is `[0, 25]`.
+        fn burn_nft(n: u32, k: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `5378`
-        //  Estimated: `98763`
-        // Minimum execution time: 1_855_033_000 picoseconds.
-        Weight::from_parts(1_868_768_000, 98763)
-            .saturating_add(T::DbWeight::get().reads(126_u64))
-            .saturating_add(T::DbWeight::get().writes(126_u64))
+        //  Measured:  `660 + k * (25 ±0) + n * (203 ±0)`
+        //  Estimated: `3750 + k * (2823 ±0) + n * (4848 ±2)`
+        // Minimum execution time: 99_000_000 picoseconds.
+        Weight::from_parts(101_000_000, 3750)
+            // Standard Error: 102_469
+            .saturating_add(Weight::from_parts(73_544_531, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(1_u64))
+            .saturating_add(T::DbWeight::get().reads((5_u64).saturating_mul(n.into())))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(k.into())))
+            .saturating_add(T::DbWeight::get().writes(1_u64))
+            .saturating_add(T::DbWeight::get().writes((5_u64).saturating_mul(n.into())))
+            .saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(k.into())))
+            .saturating_add(Weight::from_parts(0, 2823).saturating_mul(k.into()))
+            .saturating_add(Weight::from_parts(0, 4848).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:2 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
             /// Storage: RmrkCore Nfts (r:1 w:1)
             /// Proof: RmrkCore Nfts (max_values: None, max_size: Some(235), added: 2710, mode: MaxEncodedLen)
-        fn accept_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn accept_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `1403`
+        //  Measured:  `664 + n * (42 ±0)`
         //  Estimated: `6184`
-        // Minimum execution time: 40_606_000 picoseconds.
-        Weight::from_parts(40_977_000, 6184)
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(28_655_906, 6184)
+            // Standard Error: 5_517
+            .saturating_add(Weight::from_parts(191_626, 0).saturating_mul(n.into()))
             .saturating_add(T::DbWeight::get().reads(3_u64))
             .saturating_add(T::DbWeight::get().writes(1_u64))
         }
@@ -246,12 +274,15 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:1)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn reject_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn reject_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2074`
+        //  Measured:  `913 + n * (64 ±0)`
         //  Estimated: `6184`
-        // Minimum execution time: 131_927_000 picoseconds.
-        Weight::from_parts(133_219_000, 6184)
+        // Minimum execution time: 90_000_000 picoseconds.
+        Weight::from_parts(92_998_122, 6184)
+            // Standard Error: 21_621
+            .saturating_add(Weight::from_parts(417_752, 0).saturating_mul(n.into()))
             .saturating_add(T::DbWeight::get().reads(7_u64))
             .saturating_add(T::DbWeight::get().writes(7_u64))
         }
@@ -269,8 +300,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `776`
         //  Estimated: `3750`
-        // Minimum execution time: 80_360_000 picoseconds.
-        Weight::from_parts(84_669_000, 3750)
+        // Minimum execution time: 60_000_000 picoseconds.
+        Weight::from_parts(64_000_000, 3750)
             .saturating_add(T::DbWeight::get().reads(4_u64))
             .saturating_add(T::DbWeight::get().writes(6_u64))
         }
@@ -286,8 +317,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `510`
         //  Estimated: `3750`
-        // Minimum execution time: 35_065_000 picoseconds.
-        Weight::from_parts(35_507_000, 3750)
+        // Minimum execution time: 24_000_000 picoseconds.
+        Weight::from_parts(26_000_000, 3750)
             .saturating_add(T::DbWeight::get().reads(3_u64))
             .saturating_add(T::DbWeight::get().writes(1_u64))
         }
@@ -297,8 +328,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `255`
         //  Estimated: `3750`
-        // Minimum execution time: 22_282_000 picoseconds.
-        Weight::from_parts(22_622_000, 3750)
+        // Minimum execution time: 16_000_000 picoseconds.
+        Weight::from_parts(16_000_000, 3750)
             .saturating_add(T::DbWeight::get().reads(1_u64))
             .saturating_add(T::DbWeight::get().writes(1_u64))
         }
@@ -308,8 +339,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `322`
         //  Estimated: `3777`
-        // Minimum execution time: 29_635_000 picoseconds.
-        Weight::from_parts(30_186_000, 3777)
+        // Minimum execution time: 21_000_000 picoseconds.
+        Weight::from_parts(22_000_000, 3777)
             .saturating_add(T::DbWeight::get().reads(1_u64))
             .saturating_add(T::DbWeight::get().writes(1_u64))
         }
@@ -321,14 +352,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn add_basic_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn add_basic_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2359`
-        //  Estimated: `52930`
-        // Minimum execution time: 123_722_000 picoseconds.
-        Weight::from_parts(125_064_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(23_u64))
+        //  Measured:  `440 + n * (98 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(23_894_169, 3777)
+            // Standard Error: 28_214
+            .saturating_add(Weight::from_parts(4_071_639, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(3_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:0)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -340,14 +376,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
             /// Storage: RmrkCore EquippableBases (r:0 w:1)
             /// Proof: RmrkCore EquippableBases (max_values: None, max_size: Some(60), added: 2535, mode: MaxEncodedLen)
-        fn add_composable_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn add_composable_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2359`
-        //  Estimated: `52930`
-        // Minimum execution time: 128_951_000 picoseconds.
-        Weight::from_parts(130_364_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(23_u64))
+        //  Measured:  `440 + n * (98 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 32_000_000 picoseconds.
+        Weight::from_parts(28_818_077, 3777)
+            // Standard Error: 25_205
+            .saturating_add(Weight::from_parts(4_011_169, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(3_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(2_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:0)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -359,14 +400,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
             /// Storage: RmrkCore EquippableSlots (r:0 w:1)
             /// Proof: RmrkCore EquippableSlots (max_values: None, max_size: Some(100), added: 2575, mode: MaxEncodedLen)
-        fn add_slot_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn add_slot_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2359`
-        //  Estimated: `52930`
-        // Minimum execution time: 133_009_000 picoseconds.
-        Weight::from_parts(135_754_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(23_u64))
+        //  Measured:  `440 + n * (98 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 33_000_000 picoseconds.
+        Weight::from_parts(30_371_400, 3777)
+            // Standard Error: 22_430
+            .saturating_add(Weight::from_parts(3_937_983, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(3_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(2_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -374,14 +420,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn accept_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn accept_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2044`
-        //  Estimated: `52930`
-        // Minimum execution time: 120_767_000 picoseconds.
-        Weight::from_parts(122_119_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(22_u64))
+        //  Measured:  `508 + n * (76 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 26_000_000 picoseconds.
+        Weight::from_parts(23_581_856, 3777)
+            // Standard Error: 24_322
+            .saturating_add(Weight::from_parts(3_953_706, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(2_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:0)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -389,27 +440,37 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn remove_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn remove_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2120`
-        //  Estimated: `52930`
-        // Minimum execution time: 122_880_000 picoseconds.
-        Weight::from_parts(124_994_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(22_u64))
+        //  Measured:  `584 + n * (76 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(24_219_883, 3777)
+            // Standard Error: 24_121
+            .saturating_add(Weight::from_parts(4_039_532, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(2_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn accept_resource_removal() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn accept_resource_removal(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2044`
-        //  Estimated: `52930`
-        // Minimum execution time: 122_770_000 picoseconds.
-        Weight::from_parts(124_173_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(21_u64))
+        //  Measured:  `508 + n * (76 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(23_733_266, 3777)
+            // Standard Error: 27_893
+            .saturating_add(Weight::from_parts(4_056_959, 0).saturating_mul(n.into()))
+            .saturating_add(T::DbWeight::get().reads(1_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(T::DbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -417,14 +478,22 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
             /// Storage: RmrkCore Priorities (r:0 w:24)
             /// Proof: RmrkCore Priorities (max_values: None, max_size: Some(64), added: 2539, mode: MaxEncodedLen)
-        fn set_priority() -> Weight {
+            /// The range of component `n` is `[1, 25]`.
+            /// The range of component `k` is `[1, 20]`.
+        fn set_priority(n: u32, k: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `1930`
-        //  Estimated: `52930`
-        // Minimum execution time: 223_879_000 picoseconds.
-        Weight::from_parts(226_715_000, 52930)
-            .saturating_add(T::DbWeight::get().reads(21_u64))
-            .saturating_add(T::DbWeight::get().writes(24_u64))
+        //  Measured:  `392 + k * (76 ±0)`
+        //  Estimated: `3482 + k * (2597 ±0)`
+        // Minimum execution time: 90_000_000 picoseconds.
+        Weight::from_parts(12_769_493, 3482)
+            // Standard Error: 28_091
+            .saturating_add(Weight::from_parts(3_588_341, 0).saturating_mul(n.into()))
+            // Standard Error: 35_482
+            .saturating_add(Weight::from_parts(4_286_156, 0).saturating_mul(k.into()))
+            .saturating_add(T::DbWeight::get().reads(1_u64))
+            .saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(k.into())))
+            .saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(k.into()))
         }
     }
 
@@ -440,8 +509,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `142`
         //  Estimated: `3643`
-        // Minimum execution time: 48_531_000 picoseconds.
-        Weight::from_parts(49_452_000, 3643)
+        // Minimum execution time: 35_000_000 picoseconds.
+        Weight::from_parts(36_000_000, 3643)
             .saturating_add(RocksDbWeight::get().reads(1_u64))
             .saturating_add(RocksDbWeight::get().writes(3_u64))
         }
@@ -461,8 +530,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `499`
         //  Estimated: `3750`
-        // Minimum execution time: 69_881_000 picoseconds.
-        Weight::from_parts(72_235_000, 3750)
+        // Minimum execution time: 53_000_000 picoseconds.
+        Weight::from_parts(54_000_000, 3750)
             .saturating_add(RocksDbWeight::get().reads(5_u64))
             .saturating_add(RocksDbWeight::get().writes(5_u64))
         }
@@ -480,14 +549,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Children (max_values: None, max_size: Some(32), added: 2507, mode: MaxEncodedLen)
             /// Storage: Uniques Account (r:0 w:1)
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
-        fn mint_nft_directly_to_nft() -> Weight {
+            /// The range of component `n` is `[1, 19]`.
+        fn mint_nft_directly_to_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2537`
-        //  Estimated: `52930`
-        // Minimum execution time: 160_841_000 picoseconds.
-        Weight::from_parts(162_644_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(24_u64))
+        //  Measured:  `671 + n * (97 ±0)`
+        //  Estimated: `3750 + n * (2597 ±0)`
+        // Minimum execution time: 59_000_000 picoseconds.
+        Weight::from_parts(55_209_857, 3750)
+            // Standard Error: 42_785
+            .saturating_add(Weight::from_parts(4_285_939, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(5_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(6_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:1)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -505,8 +579,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `568`
         //  Estimated: `3750`
-        // Minimum execution time: 75_071_000 picoseconds.
-        Weight::from_parts(77_986_000, 3750)
+        // Minimum execution time: 56_000_000 picoseconds.
+        Weight::from_parts(57_000_000, 3750)
             .saturating_add(RocksDbWeight::get().reads(3_u64))
             .saturating_add(RocksDbWeight::get().writes(5_u64))
         }
@@ -524,14 +598,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:1)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn send_to_account() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn send_to_account(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2624`
-        //  Estimated: `52930`
-        // Minimum execution time: 147_557_000 picoseconds.
-        Weight::from_parts(149_099_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(23_u64))
+        //  Measured:  `655 + n * (97 ±0)`
+        //  Estimated: `3700 + n * (2597 ±0)`
+        // Minimum execution time: 44_000_000 picoseconds.
+        Weight::from_parts(42_414_410, 3700)
+            // Standard Error: 36_516
+            .saturating_add(Weight::from_parts(4_309_340, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(3_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(6_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:21 w:1)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -547,14 +626,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:1)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn send_to_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn send_to_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2780`
-        //  Estimated: `55527`
-        // Minimum execution time: 159_789_000 picoseconds.
-        Weight::from_parts(164_628_000, 55527)
-            .saturating_add(RocksDbWeight::get().reads(25_u64))
+        //  Measured:  `774 + n * (104 ±0)`
+        //  Estimated: `6410 + n * (2597 ±0)`
+        // Minimum execution time: 55_000_000 picoseconds.
+        Weight::from_parts(52_893_637, 6410)
+            // Standard Error: 27_542
+            .saturating_add(Weight::from_parts(4_443_149, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(5_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(7_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:20)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -574,25 +658,38 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:20)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn burn_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+            /// The range of component `k` is `[0, 25]`.
+        fn burn_nft(n: u32, k: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `5378`
-        //  Estimated: `98763`
-        // Minimum execution time: 1_855_033_000 picoseconds.
-        Weight::from_parts(1_868_768_000, 98763)
-            .saturating_add(RocksDbWeight::get().reads(126_u64))
-            .saturating_add(RocksDbWeight::get().writes(126_u64))
+        //  Measured:  `660 + k * (25 ±0) + n * (203 ±0)`
+        //  Estimated: `3750 + k * (2823 ±0) + n * (4848 ±2)`
+        // Minimum execution time: 99_000_000 picoseconds.
+        Weight::from_parts(101_000_000, 3750)
+            // Standard Error: 102_469
+            .saturating_add(Weight::from_parts(73_544_531, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(1_u64))
+            .saturating_add(RocksDbWeight::get().reads((5_u64).saturating_mul(n.into())))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(k.into())))
+            .saturating_add(RocksDbWeight::get().writes(1_u64))
+            .saturating_add(RocksDbWeight::get().writes((5_u64).saturating_mul(n.into())))
+            .saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(k.into())))
+            .saturating_add(Weight::from_parts(0, 2823).saturating_mul(k.into()))
+            .saturating_add(Weight::from_parts(0, 4848).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:2 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
             /// Storage: RmrkCore Nfts (r:1 w:1)
             /// Proof: RmrkCore Nfts (max_values: None, max_size: Some(235), added: 2710, mode: MaxEncodedLen)
-        fn accept_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn accept_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `1403`
+        //  Measured:  `664 + n * (42 ±0)`
         //  Estimated: `6184`
-        // Minimum execution time: 40_606_000 picoseconds.
-        Weight::from_parts(40_977_000, 6184)
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(28_655_906, 6184)
+            // Standard Error: 5_517
+            .saturating_add(Weight::from_parts(191_626, 0).saturating_mul(n.into()))
             .saturating_add(RocksDbWeight::get().reads(3_u64))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
         }
@@ -612,12 +709,15 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
             /// Storage: Uniques ItemPriceOf (r:0 w:1)
             /// Proof: Uniques ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
-        fn reject_nft() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn reject_nft(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2074`
+        //  Measured:  `913 + n * (64 ±0)`
         //  Estimated: `6184`
-        // Minimum execution time: 131_927_000 picoseconds.
-        Weight::from_parts(133_219_000, 6184)
+        // Minimum execution time: 90_000_000 picoseconds.
+        Weight::from_parts(92_998_122, 6184)
+            // Standard Error: 21_621
+            .saturating_add(Weight::from_parts(417_752, 0).saturating_mul(n.into()))
             .saturating_add(RocksDbWeight::get().reads(7_u64))
             .saturating_add(RocksDbWeight::get().writes(7_u64))
         }
@@ -635,8 +735,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `776`
         //  Estimated: `3750`
-        // Minimum execution time: 80_360_000 picoseconds.
-        Weight::from_parts(84_669_000, 3750)
+        // Minimum execution time: 60_000_000 picoseconds.
+        Weight::from_parts(64_000_000, 3750)
             .saturating_add(RocksDbWeight::get().reads(4_u64))
             .saturating_add(RocksDbWeight::get().writes(6_u64))
         }
@@ -652,8 +752,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `510`
         //  Estimated: `3750`
-        // Minimum execution time: 35_065_000 picoseconds.
-        Weight::from_parts(35_507_000, 3750)
+        // Minimum execution time: 24_000_000 picoseconds.
+        Weight::from_parts(26_000_000, 3750)
             .saturating_add(RocksDbWeight::get().reads(3_u64))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
         }
@@ -663,8 +763,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `255`
         //  Estimated: `3750`
-        // Minimum execution time: 22_282_000 picoseconds.
-        Weight::from_parts(22_622_000, 3750)
+        // Minimum execution time: 16_000_000 picoseconds.
+        Weight::from_parts(16_000_000, 3750)
             .saturating_add(RocksDbWeight::get().reads(1_u64))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
         }
@@ -674,8 +774,8 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
         // Proof Size summary in bytes:
         //  Measured:  `322`
         //  Estimated: `3777`
-        // Minimum execution time: 29_635_000 picoseconds.
-        Weight::from_parts(30_186_000, 3777)
+        // Minimum execution time: 21_000_000 picoseconds.
+        Weight::from_parts(22_000_000, 3777)
             .saturating_add(RocksDbWeight::get().reads(1_u64))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
         }
@@ -687,14 +787,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn add_basic_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn add_basic_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2359`
-        //  Estimated: `52930`
-        // Minimum execution time: 123_722_000 picoseconds.
-        Weight::from_parts(125_064_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(23_u64))
+        //  Measured:  `440 + n * (98 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(23_894_169, 3777)
+            // Standard Error: 28_214
+            .saturating_add(Weight::from_parts(4_071_639, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(3_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:0)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -706,14 +811,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
             /// Storage: RmrkCore EquippableBases (r:0 w:1)
             /// Proof: RmrkCore EquippableBases (max_values: None, max_size: Some(60), added: 2535, mode: MaxEncodedLen)
-        fn add_composable_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn add_composable_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2359`
-        //  Estimated: `52930`
-        // Minimum execution time: 128_951_000 picoseconds.
-        Weight::from_parts(130_364_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(23_u64))
+        //  Measured:  `440 + n * (98 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 32_000_000 picoseconds.
+        Weight::from_parts(28_818_077, 3777)
+            // Standard Error: 25_205
+            .saturating_add(Weight::from_parts(4_011_169, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(3_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(2_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:0)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -725,14 +835,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
             /// Storage: RmrkCore EquippableSlots (r:0 w:1)
             /// Proof: RmrkCore EquippableSlots (max_values: None, max_size: Some(100), added: 2575, mode: MaxEncodedLen)
-        fn add_slot_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn add_slot_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2359`
-        //  Estimated: `52930`
-        // Minimum execution time: 133_009_000 picoseconds.
-        Weight::from_parts(135_754_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(23_u64))
+        //  Measured:  `440 + n * (98 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 33_000_000 picoseconds.
+        Weight::from_parts(30_371_400, 3777)
+            // Standard Error: 22_430
+            .saturating_add(Weight::from_parts(3_937_983, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(3_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(2_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -740,14 +855,19 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn accept_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn accept_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2044`
-        //  Estimated: `52930`
-        // Minimum execution time: 120_767_000 picoseconds.
-        Weight::from_parts(122_119_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(22_u64))
+        //  Measured:  `508 + n * (76 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 26_000_000 picoseconds.
+        Weight::from_parts(23_581_856, 3777)
+            // Standard Error: 24_322
+            .saturating_add(Weight::from_parts(3_953_706, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(2_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: RmrkCore Collections (r:1 w:0)
             /// Proof: RmrkCore Collections (max_values: None, max_size: Some(285), added: 2760, mode: MaxEncodedLen)
@@ -755,27 +875,37 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn remove_resource() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn remove_resource(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2120`
-        //  Estimated: `52930`
-        // Minimum execution time: 122_880_000 picoseconds.
-        Weight::from_parts(124_994_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(22_u64))
+        //  Measured:  `584 + n * (76 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(24_219_883, 3777)
+            // Standard Error: 24_121
+            .saturating_add(Weight::from_parts(4_039_532, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(2_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
             /// Storage: RmrkCore Resources (r:1 w:1)
             /// Proof: RmrkCore Resources (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
-        fn accept_resource_removal() -> Weight {
+            /// The range of component `n` is `[1, 20]`.
+        fn accept_resource_removal(n: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `2044`
-        //  Estimated: `52930`
-        // Minimum execution time: 122_770_000 picoseconds.
-        Weight::from_parts(124_173_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(21_u64))
+        //  Measured:  `508 + n * (76 ±0)`
+        //  Estimated: `3777 + n * (2597 ±0)`
+        // Minimum execution time: 27_000_000 picoseconds.
+        Weight::from_parts(23_733_266, 3777)
+            // Standard Error: 27_893
+            .saturating_add(Weight::from_parts(4_056_959, 0).saturating_mul(n.into()))
+            .saturating_add(RocksDbWeight::get().reads(1_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
             .saturating_add(RocksDbWeight::get().writes(1_u64))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(n.into()))
         }
             /// Storage: Uniques Asset (r:20 w:0)
             /// Proof: Uniques Asset (max_values: None, max_size: Some(122), added: 2597, mode: MaxEncodedLen)
@@ -783,13 +913,21 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
             /// Proof: RmrkCore Lock (max_values: None, max_size: Some(17), added: 2492, mode: MaxEncodedLen)
             /// Storage: RmrkCore Priorities (r:0 w:24)
             /// Proof: RmrkCore Priorities (max_values: None, max_size: Some(64), added: 2539, mode: MaxEncodedLen)
-        fn set_priority() -> Weight {
+            /// The range of component `n` is `[1, 25]`.
+            /// The range of component `k` is `[1, 20]`.
+        fn set_priority(n: u32, k: u32, ) -> Weight {
         // Proof Size summary in bytes:
-        //  Measured:  `1930`
-        //  Estimated: `52930`
-        // Minimum execution time: 223_879_000 picoseconds.
-        Weight::from_parts(226_715_000, 52930)
-            .saturating_add(RocksDbWeight::get().reads(21_u64))
-            .saturating_add(RocksDbWeight::get().writes(24_u64))
+        //  Measured:  `392 + k * (76 ±0)`
+        //  Estimated: `3482 + k * (2597 ±0)`
+        // Minimum execution time: 90_000_000 picoseconds.
+        Weight::from_parts(12_769_493, 3482)
+            // Standard Error: 28_091
+            .saturating_add(Weight::from_parts(3_588_341, 0).saturating_mul(n.into()))
+            // Standard Error: 35_482
+            .saturating_add(Weight::from_parts(4_286_156, 0).saturating_mul(k.into()))
+            .saturating_add(RocksDbWeight::get().reads(1_u64))
+            .saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(k.into())))
+            .saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(n.into())))
+            .saturating_add(Weight::from_parts(0, 2597).saturating_mul(k.into()))
         }
     }
