@@ -9,17 +9,17 @@ import type { Event } from '@polkadot/types/interfaces/system';
 /** @name FinalityGrandpaEquivocationPrecommit */
 export interface FinalityGrandpaEquivocationPrecommit extends Struct {
   readonly roundNumber: u64;
-  readonly identity: SpFinalityGrandpaAppPublic;
-  readonly first: ITuple<[FinalityGrandpaPrecommit, SpFinalityGrandpaAppSignature]>;
-  readonly second: ITuple<[FinalityGrandpaPrecommit, SpFinalityGrandpaAppSignature]>;
+  readonly identity: SpConsensusGrandpaAppPublic;
+  readonly first: ITuple<[FinalityGrandpaPrecommit, SpConsensusGrandpaAppSignature]>;
+  readonly second: ITuple<[FinalityGrandpaPrecommit, SpConsensusGrandpaAppSignature]>;
 }
 
 /** @name FinalityGrandpaEquivocationPrevote */
 export interface FinalityGrandpaEquivocationPrevote extends Struct {
   readonly roundNumber: u64;
-  readonly identity: SpFinalityGrandpaAppPublic;
-  readonly first: ITuple<[FinalityGrandpaPrevote, SpFinalityGrandpaAppSignature]>;
-  readonly second: ITuple<[FinalityGrandpaPrevote, SpFinalityGrandpaAppSignature]>;
+  readonly identity: SpConsensusGrandpaAppPublic;
+  readonly first: ITuple<[FinalityGrandpaPrevote, SpConsensusGrandpaAppSignature]>;
+  readonly second: ITuple<[FinalityGrandpaPrevote, SpConsensusGrandpaAppSignature]>;
 }
 
 /** @name FinalityGrandpaPrecommit */
@@ -378,12 +378,12 @@ export interface PalletBalancesReserveData extends Struct {
 export interface PalletGrandpaCall extends Enum {
   readonly isReportEquivocation: boolean;
   readonly asReportEquivocation: {
-    readonly equivocationProof: SpFinalityGrandpaEquivocationProof;
+    readonly equivocationProof: SpConsensusGrandpaEquivocationProof;
     readonly keyOwnerProof: SpCoreVoid;
   } & Struct;
   readonly isReportEquivocationUnsigned: boolean;
   readonly asReportEquivocationUnsigned: {
-    readonly equivocationProof: SpFinalityGrandpaEquivocationProof;
+    readonly equivocationProof: SpConsensusGrandpaEquivocationProof;
     readonly keyOwnerProof: SpCoreVoid;
   } & Struct;
   readonly isNoteStalled: boolean;
@@ -410,7 +410,7 @@ export interface PalletGrandpaError extends Enum {
 export interface PalletGrandpaEvent extends Enum {
   readonly isNewAuthorities: boolean;
   readonly asNewAuthorities: {
-    readonly authoritySet: Vec<ITuple<[SpFinalityGrandpaAppPublic, u64]>>;
+    readonly authoritySet: Vec<ITuple<[SpConsensusGrandpaAppPublic, u64]>>;
   } & Struct;
   readonly isPaused: boolean;
   readonly isResumed: boolean;
@@ -421,7 +421,7 @@ export interface PalletGrandpaEvent extends Enum {
 export interface PalletGrandpaStoredPendingChange extends Struct {
   readonly scheduledAt: u32;
   readonly delay: u32;
-  readonly nextAuthorities: Vec<ITuple<[SpFinalityGrandpaAppPublic, u64]>>;
+  readonly nextAuthorities: Vec<ITuple<[SpConsensusGrandpaAppPublic, u64]>>;
   readonly forced: Option<u32>;
 }
 
@@ -1519,7 +1519,7 @@ export interface PalletUtilityEvent extends Enum {
 }
 
 /** @name PhantomTypePhantomType */
-export interface PhantomTypePhantomType extends Vec<Lookup176> {}
+export interface PhantomTypePhantomType extends Vec<Lookup175> {}
 
 /** @name RmrkSubstrateRuntimeOriginCaller */
 export interface RmrkSubstrateRuntimeOriginCaller extends Enum {
@@ -1688,6 +1688,27 @@ export interface SpArithmeticArithmeticError extends Enum {
 /** @name SpConsensusAuraSr25519AppSr25519Public */
 export interface SpConsensusAuraSr25519AppSr25519Public extends SpCoreSr25519Public {}
 
+/** @name SpConsensusGrandpaAppPublic */
+export interface SpConsensusGrandpaAppPublic extends SpCoreEd25519Public {}
+
+/** @name SpConsensusGrandpaAppSignature */
+export interface SpConsensusGrandpaAppSignature extends SpCoreEd25519Signature {}
+
+/** @name SpConsensusGrandpaEquivocation */
+export interface SpConsensusGrandpaEquivocation extends Enum {
+  readonly isPrevote: boolean;
+  readonly asPrevote: FinalityGrandpaEquivocationPrevote;
+  readonly isPrecommit: boolean;
+  readonly asPrecommit: FinalityGrandpaEquivocationPrecommit;
+  readonly type: 'Prevote' | 'Precommit';
+}
+
+/** @name SpConsensusGrandpaEquivocationProof */
+export interface SpConsensusGrandpaEquivocationProof extends Struct {
+  readonly setId: u64;
+  readonly equivocation: SpConsensusGrandpaEquivocation;
+}
+
 /** @name SpCoreEcdsaSignature */
 export interface SpCoreEcdsaSignature extends U8aFixed {}
 
@@ -1705,27 +1726,6 @@ export interface SpCoreSr25519Signature extends U8aFixed {}
 
 /** @name SpCoreVoid */
 export interface SpCoreVoid extends Null {}
-
-/** @name SpFinalityGrandpaAppPublic */
-export interface SpFinalityGrandpaAppPublic extends SpCoreEd25519Public {}
-
-/** @name SpFinalityGrandpaAppSignature */
-export interface SpFinalityGrandpaAppSignature extends SpCoreEd25519Signature {}
-
-/** @name SpFinalityGrandpaEquivocation */
-export interface SpFinalityGrandpaEquivocation extends Enum {
-  readonly isPrevote: boolean;
-  readonly asPrevote: FinalityGrandpaEquivocationPrevote;
-  readonly isPrecommit: boolean;
-  readonly asPrecommit: FinalityGrandpaEquivocationPrecommit;
-  readonly type: 'Prevote' | 'Precommit';
-}
-
-/** @name SpFinalityGrandpaEquivocationProof */
-export interface SpFinalityGrandpaEquivocationProof extends Struct {
-  readonly setId: u64;
-  readonly equivocation: SpFinalityGrandpaEquivocation;
-}
 
 /** @name SpRuntimeDigest */
 export interface SpRuntimeDigest extends Struct {
