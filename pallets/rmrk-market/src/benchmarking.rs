@@ -119,17 +119,13 @@ mod benchmarks {
 	use super::*;
 
 	#[benchmark]
-	fn buy() {
-		let owner = funded_account::<T>("owner", 0);
+	fn buy<T: Config>() {
+		let owner = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
 		let nft_id = mint_test_nft::<T>(owner.clone(), None, collection_id, 42);
 		let price = list_test_nft::<T>(owner.clone(), collection_id, nft_id, 100);
 		let caller: T::AccountId = whitelisted_caller();
-		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
-			&owner,
-			BalanceOf::<T>::min_value(),
-		);
 		<T as pallet_uniques::Config>::Currency::make_free_balance_be(
 			&caller,
 			BalanceOf::<T>::max_value(),
@@ -144,7 +140,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn list() {
+	fn list<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 
@@ -161,7 +157,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn unlist() {
+	fn unlist<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 
@@ -178,7 +174,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn make_offer() {
+	fn make_offer<T: Config>() {
 		let owner = funded_account::<T>("owner", 0);
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
@@ -200,7 +196,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn withdraw_offer() {
+	fn withdraw_offer<T: Config>() {
 		let owner = funded_account::<T>("owner", 0);
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
@@ -229,7 +225,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn accept_offer() {
+	fn accept_offer<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 

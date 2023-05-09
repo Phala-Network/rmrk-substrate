@@ -4,10 +4,7 @@
 
 use super::*;
 
-use frame_benchmarking::{
-	benchmarks,
-	v2::{account, whitelisted_caller},
-};
+use frame_benchmarking::v2::*;
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use pallet_rmrk_core::Pallet as RmrkCore;
@@ -177,22 +174,27 @@ fn add_slot_resource<T: Config>(
 	);
 }
 
-benchmarks! {
-	change_base_issuer {
+#[benchmarks]
+mod benchmarks {
+	use super::*;
+
+	#[benchmark]
+	fn change_base_issuer<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let new_issuer = funded_account::<T>("new_issuer", 0);
 		let new_issuer_lookup = T::Lookup::unlookup(new_issuer.clone());
 		base_create::<T>(caller.clone(), bvec![]);
-	}: _(RawOrigin::Signed(caller.clone()), 0u32, new_issuer_lookup)
-	verify {
-		assert_last_event::<T>(Event::BaseIssuerChanged {
-			old_issuer: caller,
-			new_issuer: new_issuer,
-			base_id: 0u32,
-		}.into());
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), 0u32, new_issuer_lookup);
+
+		assert_last_event::<T>(
+			Event::BaseIssuerChanged { old_issuer: caller, new_issuer, base_id: 0u32 }.into(),
+		);
 	}
 
-	equip {
+	#[benchmark]
+	fn equip<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_id = create_test_collection::<T>(caller.clone(), 1);
 
@@ -201,24 +203,31 @@ benchmarks! {
 
 		let character = mint_test_nft::<T>(caller.clone(), None, collection_id, 0);
 		let sword = mint_test_nft::<T>(caller.clone(), None, collection_id, 1);
-		let new_owner = AccountIdOrCollectionNftTuple::CollectionAndNftTuple(collection_id, character);
+		let new_owner =
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(collection_id, character);
 		send_test_nft::<T>(caller.clone(), collection_id, sword, new_owner);
 
 		add_composable_resource::<T>(caller.clone(), collection_id, character, 0, vec![201]);
 		add_slot_resource::<T>(caller.clone(), collection_id, sword, 0, 201);
 		let item = (collection_id, sword);
 		let equipper = (collection_id, character);
-	}: _(RawOrigin::Signed(caller.clone()), item, equipper, 0u32, 0, 201)
-	verify {
-		assert_last_event::<T>(Event::SlotEquipped {
-			item_collection: collection_id,
-			item_nft: item.1,
-			base_id: 0,
-			slot_id: 201,
-		}.into())
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), item, equipper, 0u32, 0, 201);
+
+		assert_last_event::<T>(
+			Event::SlotEquipped {
+				item_collection: collection_id,
+				item_nft: item.1,
+				base_id: 0,
+				slot_id: 201,
+			}
+			.into(),
+		)
 	}
 
-	unequip {
+	#[benchmark]
+	fn unequip<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_id = create_test_collection::<T>(caller.clone(), 1);
 
@@ -227,7 +236,8 @@ benchmarks! {
 
 		let character = mint_test_nft::<T>(caller.clone(), None, collection_id, 0);
 		let sword = mint_test_nft::<T>(caller.clone(), None, collection_id, 1);
-		let new_owner = AccountIdOrCollectionNftTuple::CollectionAndNftTuple(collection_id, character);
+		let new_owner =
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(collection_id, character);
 		send_test_nft::<T>(caller.clone(), collection_id, sword, new_owner);
 
 		add_composable_resource::<T>(caller.clone(), collection_id, character, 0, vec![201]);
@@ -235,18 +245,31 @@ benchmarks! {
 		let item = (collection_id, sword);
 		// the equipper is going to be the unequipper.
 		let equipper = (collection_id, character);
-		let _ = RmrkEquip::<T>::equip(RawOrigin::Signed(caller.clone()).into(), item, equipper, 0u32, 0, 201);
-	}: _(RawOrigin::Signed(caller.clone()), item, equipper, 0, 201)
-	verify {
-		assert_last_event::<T>(Event::SlotUnequipped {
-			item_collection: collection_id,
-			item_nft: item.1,
-			base_id: 0,
-			slot_id: 201,
-		}.into())
+		let _ = RmrkEquip::<T>::equip(
+			RawOrigin::Signed(caller.clone()).into(),
+			item,
+			equipper,
+			0u32,
+			0,
+			201,
+		);
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), item, equipper, 0, 201);
+
+		assert_last_event::<T>(
+			Event::SlotUnequipped {
+				item_collection: collection_id,
+				item_nft: item.1,
+				base_id: 0,
+				slot_id: 201,
+			}
+			.into(),
+		)
 	}
 
-	equippable {
+	#[benchmark]
+	fn equippable<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_0 = <T as pallet::Config>::Helper::collection(0);
 
@@ -254,12 +277,15 @@ benchmarks! {
 		base_create::<T>(caller.clone(), bvec![PartType::SlotPart(slot_part_hand)]);
 
 		let collection_1 = <T as pallet::Config>::Helper::collection(1);
-	}: _(RawOrigin::Signed(caller.clone()), 0, 201, EquippableList::Custom(bvec![collection_1]))
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), 0, 201, EquippableList::Custom(bvec![collection_1]));
+
 		assert_last_event::<T>(Event::EquippablesUpdated { base_id: 0, slot_id: 201 }.into())
 	}
 
-	equippable_add {
+	#[benchmark]
+	fn equippable_add<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_0 = <T as pallet::Config>::Helper::collection(0);
 
@@ -267,23 +293,29 @@ benchmarks! {
 		base_create::<T>(caller.clone(), bvec![PartType::SlotPart(slot_part_hand)]);
 
 		let collection_1 = <T as pallet::Config>::Helper::collection(1);
-	}: _(RawOrigin::Signed(caller.clone()), 0, 201, collection_1)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), 0, 201, collection_1);
+
 		assert_last_event::<T>(Event::EquippablesUpdated { base_id: 0, slot_id: 201 }.into())
 	}
 
-	equippable_remove {
+	#[benchmark]
+	fn equippable_remove<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_0 = <T as pallet::Config>::Helper::collection(0);
 
 		let slot_part_hand = hand_slot_part::<T>(collection_0, 201);
 		base_create::<T>(caller.clone(), bvec![PartType::SlotPart(slot_part_hand)]);
-	}: _(RawOrigin::Signed(caller.clone()), 0, 201, collection_0)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), 0, 201, collection_0);
+
 		assert_last_event::<T>(Event::EquippablesUpdated { base_id: 0, slot_id: 201 }.into())
 	}
 
-	theme_add {
+	#[benchmark]
+	fn theme_add<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let default_theme = Theme {
 			name: stb::<T>("default"),
@@ -294,19 +326,26 @@ benchmarks! {
 			inherit: false,
 		};
 		base_create::<T>(caller.clone(), bvec![]);
-	}: _(RawOrigin::Signed(caller.clone()), 0, default_theme)
-	verify {
 
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), 0, default_theme);
 	}
 
-	create_base {
+	#[benchmark]
+	fn create_base<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
-	}: _(RawOrigin::Signed(caller.clone()), bvec![42u8; 20], bvec![25u8; 20], bvec![])
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller.clone()), bvec![42u8; 20], bvec![25u8; 20], bvec![]);
+
 		assert_last_event::<T>(Event::BaseCreated { issuer: caller, base_id: 0 }.into())
 	}
 
-	impl_benchmark_test_suite!(RmrkEquip, crate::benchmarking::tests::new_test_ext(), crate::mock::Test);
+	impl_benchmark_test_suite!(
+		RmrkEquip,
+		crate::benchmarking::tests::new_test_ext(),
+		crate::mock::Test
+	);
 }
 
 #[cfg(test)]
