@@ -246,7 +246,11 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<T as pallet_uniques::Config>::CollectionId: Copy,
+		<T as pallet_uniques::Config>::ItemId: Copy,
+	{
 		/// Change the issuer of a Base
 		///
 		/// Parameters:

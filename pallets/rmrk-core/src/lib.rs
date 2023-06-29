@@ -427,7 +427,11 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<T as pallet_uniques::Config>::CollectionId: Copy,
+		<T as pallet_uniques::Config>::ItemId: Copy,
+	{
 		/// Mints an NFT in the specified collection
 		/// Sets metadata and the royalty attribute
 		///

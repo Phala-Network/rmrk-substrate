@@ -103,6 +103,9 @@ impl<T: Config>
 		BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>,
 		BoundedVec<ThemeProperty<BoundedVec<u8, T::StringLimit>>, T::MaxPropertiesPerTheme>,
 	> for Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
 {
 	/// Implementation of the base_create function for the Base trait
 	/// Called by the create_base extrinsic to create a new Base.

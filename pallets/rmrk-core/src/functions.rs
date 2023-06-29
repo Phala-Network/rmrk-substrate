@@ -31,6 +31,9 @@ impl<T: Config>
 		T::CollectionId,
 		T::ItemId,
 	> for Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
 {
 	fn priority_set(
 		_sender: T::AccountId,
@@ -56,6 +59,9 @@ impl<T: Config>
 
 impl<T: Config> Property<KeyLimitOf<T>, ValueLimitOf<T>, T::AccountId, T::CollectionId, T::ItemId>
 	for Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
 {
 	fn property_set(
 		sender: T::AccountId,
@@ -130,6 +136,9 @@ impl<T: Config>
 		T::CollectionId,
 		T::ItemId,
 	> for Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
 {
 	fn resource_add(
 		_sender: T::AccountId,
@@ -302,6 +311,9 @@ impl<T: Config>
 impl<T: Config>
 	Collection<StringLimitOf<T>, BoundedCollectionSymbolOf<T>, T::AccountId, T::CollectionId>
 	for Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
 {
 	fn issuer(_collection_id: T::CollectionId) -> Option<T::AccountId> {
 		None
@@ -389,6 +401,9 @@ impl<T: Config>
 impl<T: Config>
 	Nft<T::AccountId, StringLimitOf<T>, BoundedResourceInfoTypeOf<T>, T::CollectionId, T::ItemId>
 	for Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
 {
 	fn nft_mint(
 		sender: T::AccountId,
@@ -820,7 +835,11 @@ impl<T: Config> Locker<T::CollectionId, T::ItemId> for Pallet<T> {
 	}
 }
 
-impl<T: Config> Pallet<T> {
+impl<T: Config> Pallet<T>
+where
+	T::CollectionId: Copy,
+	T::ItemId: Copy,
+{
 	pub fn iterate_nft_children(
 		collection_id: T::CollectionId,
 		nft_id: T::ItemId,
