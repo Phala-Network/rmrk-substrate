@@ -31,7 +31,7 @@ type Balance = u128;
 frame_support::construct_runtime!(
 	pub enum Test
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Uniques: pallet_uniques::{Pallet, Storage, Event<T>},
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
@@ -148,7 +148,7 @@ impl pallet_balances::Config for Test {
 	type MaxReserves = MaxReserves;
 	// type ReserveIdentifier = ReserveIdentifier;
 	type ReserveIdentifier = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
 	type MaxHolds = ();
 	type MaxFreezes = ();

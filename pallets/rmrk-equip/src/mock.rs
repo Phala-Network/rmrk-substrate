@@ -28,7 +28,7 @@ type Balance = u128;
 frame_support::construct_runtime!(
 	pub enum Test
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Uniques: pallet_uniques::{Pallet, Storage, Event<T>},
 		RmrkEquip: pallet_rmrk_equip::{Pallet, Call, Event<T>},
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>},
@@ -114,7 +114,7 @@ impl pallet_uniques::Config for Test {
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: Weight = Weight::from_ref_time(1024);
+	pub const MaximumBlockWeight: Weight = Weight::from_parts(1024, 0);
 	pub const MaximumBlockLength: u32 = 2 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
@@ -160,7 +160,7 @@ impl pallet_balances::Config for Test {
 	type MaxReserves = MaxReserves;
 	// type ReserveIdentifier = ReserveIdentifier;
 	type ReserveIdentifier = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
 	type MaxHolds = ();
 	type MaxFreezes = ();
