@@ -12,7 +12,7 @@ use frame_support::{
 	traits::{Currency, ExistenceRequirement, Get, ReservableCurrency},
 	transactional, BoundedVec,
 };
-use frame_system::{ensure_signed, RawOrigin};
+use frame_system::{ensure_signed, pallet_prelude::BlockNumberFor, RawOrigin};
 use sp_runtime::{Permill, Saturating};
 
 use sp_std::prelude::*;
@@ -60,17 +60,11 @@ pub mod pallet {
 	pub type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-	pub type ListInfoOf<T> = ListInfo<
-		<T as frame_system::Config>::AccountId,
-		BalanceOf<T>,
-		<T as frame_system::Config>::BlockNumber,
-	>;
+	pub type ListInfoOf<T> =
+		ListInfo<<T as frame_system::Config>::AccountId, BalanceOf<T>, BlockNumberFor<T>>;
 
-	pub type OfferOf<T> = Offer<
-		<T as frame_system::Config>::AccountId,
-		BalanceOf<T>,
-		<T as frame_system::Config>::BlockNumber,
-	>;
+	pub type OfferOf<T> =
+		Offer<<T as frame_system::Config>::AccountId, BalanceOf<T>, BlockNumberFor<T>>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -283,7 +277,7 @@ pub mod pallet {
 			collection_id: T::CollectionId,
 			nft_id: T::ItemId,
 			amount: BalanceOf<T>,
-			expires: Option<T::BlockNumber>,
+			expires: Option<BlockNumberFor<T>>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let owner = pallet_uniques::Pallet::<T>::owner(collection_id.into(), nft_id)
@@ -377,7 +371,7 @@ pub mod pallet {
 			collection_id: T::CollectionId,
 			nft_id: T::ItemId,
 			amount: BalanceOf<T>,
-			expires: Option<T::BlockNumber>,
+			expires: Option<BlockNumberFor<T>>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			// Ensure amount is above the minimum threshold

@@ -21,7 +21,7 @@ use sp_version::RuntimeVersion;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
-		tokens::nonfungibles::*, AsEnsureOriginWithArg, ConstU32, ConstU64, Contains,
+		tokens::nonfungibles::*, AsEnsureOriginWithArg, ConstBool, ConstU32, ConstU64, Contains,
 		KeyOwnerProofSystem, Randomness, StorageInfo,
 	},
 	weights::{
@@ -73,7 +73,7 @@ pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::Account
 pub type Balance = u128;
 
 /// Index of a transaction in the chain.
-pub type Index = u32;
+pub type Nonce = u32;
 
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
@@ -209,6 +209,8 @@ impl Contains<RuntimeCall> for BaseFilter {
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
 	type BaseCallFilter = BaseFilter;
+	/// The block type for the runtime.
+	type Block = Block;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -217,10 +219,6 @@ impl frame_system::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type RuntimeCall = RuntimeCall;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
@@ -229,8 +227,8 @@ impl frame_system::Config for Runtime {
 	type AccountId = AccountId;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	/// The type for storing how many extrinsics an account has signed.
+	type Nonce = Nonce;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
@@ -262,6 +260,7 @@ impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -305,7 +304,7 @@ impl pallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
 	type MaxHolds = ();
 	type MaxFreezes = ();
@@ -433,11 +432,7 @@ impl pallet_utility::Config for Runtime {
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
+	pub struct Runtime {
 		System: frame_system,
 		Timestamp: pallet_timestamp,
 		Aura: pallet_aura,
@@ -445,8 +440,6 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		// Include the custom logic from the pallet-template in the runtime.
-		//TemplateModule: pallet_template,
 		RmrkEquip: pallet_rmrk_equip::{Pallet, Call, Event<T>, Storage},
 		RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>, Storage},
 		RmrkMarket: pallet_rmrk_market::{Pallet, Call, Storage, Event<T>},
@@ -721,8 +714,8 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
-		fn account_nonce(account: AccountId) -> Index {
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce> for Runtime {
+		fn account_nonce(account: AccountId) -> Nonce {
 			System::account_nonce(account)
 		}
 	}

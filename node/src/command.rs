@@ -6,9 +6,12 @@ use crate::{
 };
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use rmrk_substrate_runtime::{Block, EXISTENTIAL_DEPOSIT};
-use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
+use sc_cli::SubstrateCli;
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
+
+#[cfg(feature = "try-runtime")]
+use try_runtime_cli::block_building_info::timestamp_with_aura_info;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -42,10 +45,6 @@ impl SubstrateCli for Cli {
 			path =>
 				Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?),
 		})
-	}
-
-	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&rmrk_substrate_runtime::VERSION
 	}
 }
 
@@ -121,7 +120,7 @@ pub fn run() -> sc_cli::Result<()> {
 							)
 						}
 
-						cmd.run::<Block, service::ExecutorDispatch>(config)
+						cmd.run::<Block, ()>(config)
 					},
 					BenchmarkCmd::Block(cmd) => {
 						let PartialComponents { client, .. } = service::new_partial(&config)?;

@@ -22,7 +22,7 @@ first be sent to an account before being listed.
     collection_id: CollectionId,
     nft_id: NftId,
     amount: BalanceOf<T>,
-    expires: Option<T::BlockNumber>
+    expires: Option<BlockNumberFor<T>>
 ```
 
 
@@ -41,7 +41,7 @@ Make an offer on a RMRK NFT for purchase. An offer can be set with an expiration
     collection_id: CollectionId,
     nft_id: NftId,
     amount: BalanceOf<T>,
-    expires: Option<T::BlockNumber>
+    expires: Option<BlockNumberFor<T>>
 ```
 
 ### **withdraw_offer**
