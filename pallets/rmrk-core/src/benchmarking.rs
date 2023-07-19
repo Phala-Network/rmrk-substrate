@@ -346,7 +346,10 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn burn_nft<T: Config>(n: Linear<1, { T::NestingBudget::get() }>, k: Linear<0, { T::PropertiesLimit::get() }>) {
+	fn burn_nft<T: Config>(
+		n: Linear<1, { T::NestingBudget::get() }>,
+		k: Linear<0, { T::PropertiesLimit::get() }>,
+	) {
 		let owner: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
@@ -667,7 +670,10 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn set_priority<T: Config>(n: Linear<1, { T::MaxPriorities::get() }>, k: Linear<1, { T::NestingBudget::get() }>) {
+	fn set_priority<T: Config>(
+		n: Linear<1, { T::MaxPriorities::get() }>,
+		k: Linear<1, { T::NestingBudget::get() }>,
+	) {
 		let (alice, bob, collection_id, _, _resource_id) = prepare_resource::<T>();
 
 		let k = k as u32;

@@ -11,9 +11,8 @@ use sp_runtime::{traits::Bounded, Permill};
 
 use crate::Pallet as RmrkMarket;
 
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<
-	<T as frame_system::Config>::AccountId,
->>::Balance;
+pub type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 const SEED: u32 = 0;
 
