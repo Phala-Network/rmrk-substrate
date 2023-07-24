@@ -50,8 +50,8 @@ pub type InstanceInfoOf<T> = NftInfo<
 	<T as frame_system::Config>::AccountId,
 	Permill,
 	BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
-	<T as pallet_uniques::Config>::CollectionId,
-	<T as pallet_uniques::Config>::ItemId,
+	<T as Config>::CollectionId,
+	<T as Config>::ItemId,
 >;
 pub type ResourceInfoOf<T> = ResourceInfo<
 	BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
@@ -124,6 +124,9 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type ProtocolOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
+		type CollectionId: IsType<<Self as pallet_uniques::Config>::CollectionId> + Member + Parameter + MaxEncodedLen + Copy;
+		type ItemId: IsType<<Self as pallet_uniques::Config>::ItemId> + Member + Parameter + MaxEncodedLen + Copy;
+
 		/// The maximum resource symbol length
 		#[pallet::constant]
 		type ResourceSymbolLimit: Get<u32>;
@@ -152,10 +155,10 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		#[cfg(feature = "runtime-benchmarks")]
-		type Helper: BenchmarkHelper<Self::CollectionId, Self::ItemId>;
+		type Helper: BenchmarkHelper<<Self as Config>::CollectionId, <Self as Config>::ItemId>;
 
 		/// Transfer hooks to be implemented downstream.
-		type TransferHooks: TransferHooks<Self::AccountId, Self::CollectionId, Self::ItemId>;
+		type TransferHooks: TransferHooks<Self::AccountId, <Self as Config>::CollectionId, <Self as Config>::ItemId>;
 	}
 
 	#[pallet::storage]
@@ -164,7 +167,7 @@ pub mod pallet {
 	pub type Collections<T: Config> = StorageMap<
 		_,
 		Twox64Concat,
-		T::CollectionId,
+		<T as Config>::CollectionId,
 		CollectionInfo<StringLimitOf<T>, BoundedCollectionSymbolOf<T>, T::AccountId>,
 	>;
 
@@ -174,9 +177,9 @@ pub mod pallet {
 	pub type Nfts<T: Config> = StorageDoubleMap<
 		_,
 		Twox64Concat,
-		T::CollectionId,
+		<T as Config>::CollectionId,
 		Twox64Concat,
-		T::ItemId,
+		<T as Config>::ItemId,
 		InstanceInfoOf<T>,
 	>;
 
@@ -186,8 +189,8 @@ pub mod pallet {
 	pub type Priorities<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, T::CollectionId>,
-			NMapKey<Blake2_128Concat, T::ItemId>,
+			NMapKey<Blake2_128Concat, <T as Config>::CollectionId>,
+			NMapKey<Blake2_128Concat, <T as Config>::ItemId>,
 			NMapKey<Blake2_128Concat, ResourceId>,
 		),
 		u32,
@@ -200,9 +203,9 @@ pub mod pallet {
 	pub type Children<T: Config> = StorageDoubleMap<
 		_,
 		Twox64Concat,
-		(T::CollectionId, T::ItemId),
+		(<T as Config>::CollectionId, <T as Config>::ItemId),
 		Twox64Concat,
-		(T::CollectionId, T::ItemId),
+		(<T as Config>::CollectionId, <T as Config>::ItemId),
 		(),
 	>;
 
@@ -212,8 +215,8 @@ pub mod pallet {
 	pub type Resources<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, T::CollectionId>,
-			NMapKey<Blake2_128Concat, T::ItemId>,
+			NMapKey<Blake2_128Concat, <T as Config>::CollectionId>,
+			NMapKey<Blake2_128Concat, <T as Config>::ItemId>,
 			NMapKey<Blake2_128Concat, ResourceId>,
 		),
 		ResourceInfoOf<T>,
@@ -228,8 +231,8 @@ pub mod pallet {
 	pub type EquippableBases<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, T::CollectionId>,
-			NMapKey<Blake2_128Concat, T::ItemId>,
+			NMapKey<Blake2_128Concat, <T as Config>::CollectionId>,
+			NMapKey<Blake2_128Concat, <T as Config>::ItemId>,
 			NMapKey<Blake2_128Concat, BaseId>,
 		),
 		(),
@@ -244,8 +247,8 @@ pub mod pallet {
 	pub type EquippableSlots<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, T::CollectionId>,
-			NMapKey<Blake2_128Concat, T::ItemId>,
+			NMapKey<Blake2_128Concat, <T as Config>::CollectionId>,
+			NMapKey<Blake2_128Concat, <T as Config>::ItemId>,
 			NMapKey<Blake2_128Concat, ResourceId>,
 			NMapKey<Blake2_128Concat, BaseId>,
 			NMapKey<Blake2_128Concat, SlotId>,
@@ -259,8 +262,8 @@ pub mod pallet {
 	pub type Properties<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, T::CollectionId>,
-			NMapKey<Blake2_128Concat, Option<T::ItemId>>,
+			NMapKey<Blake2_128Concat, <T as Config>::CollectionId>,
+			NMapKey<Blake2_128Concat, Option<<T as Config>::ItemId>>,
 			NMapKey<Blake2_128Concat, KeyLimitOf<T>>,
 		),
 		ValueLimitOf<T>,
@@ -271,7 +274,7 @@ pub mod pallet {
 	#[pallet::getter(fn lock)]
 	/// Lock for NFTs
 	pub type Lock<T: Config> =
-		StorageMap<_, Twox64Concat, (T::CollectionId, T::ItemId), bool, ValueQuery>;
+		StorageMap<_, Twox64Concat, (<T as Config>::CollectionId, <T as Config>::ItemId), bool, ValueQuery>;
 
 	/// This storage is not used by the chain.
 	/// It is need only for PolkadotJS types generation.
@@ -281,7 +284,7 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type DummyStorage<T: Config> = StorageValue<
 		_,
-		(NftChild<T::CollectionId, T::ItemId>, PhantomType<PropertyInfoOf<T>>),
+		(NftChild<<T as Config>::CollectionId, <T as Config>::ItemId>, PhantomType<PropertyInfoOf<T>>),
 		OptionQuery,
 	>;
 
@@ -295,92 +298,92 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		CollectionCreated {
 			issuer: T::AccountId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		NftMinted {
-			owner: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			owner: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		},
 		NFTBurned {
 			owner: T::AccountId,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		},
 		CollectionDestroyed {
 			issuer: T::AccountId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		NFTSent {
 			sender: T::AccountId,
-			recipient: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			recipient: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			approval_required: bool,
 		},
 		NFTAccepted {
 			sender: T::AccountId,
-			recipient: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			recipient: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		},
 		NFTRejected {
 			sender: T::AccountId,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		},
 		IssuerChanged {
 			old_issuer: T::AccountId,
 			new_issuer: T::AccountId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		PropertySet {
-			collection_id: T::CollectionId,
-			maybe_nft_id: Option<T::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			maybe_nft_id: Option<<T as Config>::ItemId>,
 			key: KeyLimitOf<T>,
 			value: ValueLimitOf<T>,
 		},
 		PropertyRemoved {
-			collection_id: T::CollectionId,
-			maybe_nft_id: Option<T::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			maybe_nft_id: Option<<T as Config>::ItemId>,
 			key: KeyLimitOf<T>,
 		},
 		PropertiesRemoved {
-			collection_id: T::CollectionId,
-			maybe_nft_id: Option<T::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			maybe_nft_id: Option<<T as Config>::ItemId>,
 		},
 		CollectionLocked {
 			issuer: T::AccountId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		ResourceAdded {
-			nft_id: T::ItemId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		ResourceReplaced {
-			nft_id: T::ItemId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		ResourceAccepted {
-			nft_id: T::ItemId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		ResourceRemoval {
-			nft_id: T::ItemId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		ResourceRemovalAccepted {
-			nft_id: T::ItemId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		},
 		PrioritySet {
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		},
 	}
 
@@ -427,11 +430,7 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	where
-		<T as pallet_uniques::Config>::CollectionId: Copy,
-		<T as pallet_uniques::Config>::ItemId: Copy,
-	{
+	impl<T: Config> Pallet<T> {
 		/// Mints an NFT in the specified collection
 		/// Sets metadata and the royalty attribute
 		///
@@ -447,8 +446,8 @@ pub mod pallet {
 		pub fn mint_nft(
 			origin: OriginFor<T>,
 			owner: Option<T::AccountId>,
-			nft_id: T::ItemId,
-			collection_id: T::CollectionId,
+			nft_id: <T as Config>::ItemId,
+			collection_id: <T as Config>::CollectionId,
 			royalty_recipient: Option<T::AccountId>,
 			royalty: Option<Permill>,
 			metadata: BoundedVec<u8, T::StringLimit>,
@@ -457,7 +456,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			if let Some(collection_issuer) =
-				pallet_uniques::Pallet::<T>::collection_owner(collection_id)
+				pallet_uniques::Pallet::<T>::collection_owner(collection_id.into())
 			{
 				ensure!(collection_issuer == sender, Error::<T>::NoPermission);
 			} else {
@@ -500,9 +499,9 @@ pub mod pallet {
 		#[transactional]
 		pub fn mint_nft_directly_to_nft(
 			origin: OriginFor<T>,
-			owner: (T::CollectionId, T::ItemId),
-			nft_id: T::ItemId,
-			collection_id: T::CollectionId,
+			owner: (<T as Config>::CollectionId, <T as Config>::ItemId),
+			nft_id: <T as Config>::ItemId,
+			collection_id: <T as Config>::CollectionId,
 			royalty_recipient: Option<T::AccountId>,
 			royalty: Option<Permill>,
 			metadata: BoundedVec<u8, T::StringLimit>,
@@ -513,7 +512,7 @@ pub mod pallet {
 
 			// Collection must exist and sender must be issuer of collection
 			if let Some(collection_issuer) =
-				pallet_uniques::Pallet::<T>::collection_owner(collection_id)
+				pallet_uniques::Pallet::<T>::collection_owner(collection_id.into())
 			{
 				ensure!(collection_issuer == sender, Error::<T>::NoPermission);
 			} else {
@@ -542,7 +541,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn create_collection(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 			metadata: BoundedVec<u8, T::StringLimit>,
 			max: Option<u32>,
 			symbol: BoundedCollectionSymbolOf<T>,
@@ -560,8 +559,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn burn_nft(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			let budget = budget::Value::new(T::NestingBudget::get());
@@ -577,7 +576,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn destroy_collection(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -599,9 +598,9 @@ pub mod pallet {
 		#[transactional]
 		pub fn send(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
-			new_owner: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
+			new_owner: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -624,9 +623,9 @@ pub mod pallet {
 		#[transactional]
 		pub fn accept_nft(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
-			new_owner: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
+			new_owner: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -636,7 +635,7 @@ pub mod pallet {
 			// Check ownership
 			ensure!(sender == root_owner, Error::<T>::NoPermission);
 
-			let _owner = match pallet_uniques::Pallet::<T>::owner(collection_id, nft_id) {
+			let _owner = match pallet_uniques::Pallet::<T>::owner(collection_id.into(), nft_id.into()) {
 				Some(owner) => {
 					let owner_account =
 						match Pallet::<T>::decode_nft_account_id::<T::AccountId>(owner.clone()) {
@@ -666,8 +665,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn reject_nft(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 
@@ -684,7 +683,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_collection_issuer())]
 		pub fn change_collection_issuer(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 			new_issuer: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
@@ -701,7 +700,7 @@ pub mod pallet {
 			let (new_owner, collection_id) =
 				Self::collection_change_issuer(collection_id, new_owner)?;
 
-			pallet_uniques::Pallet::<T>::transfer_ownership(origin, collection_id, new_issuer)?;
+			pallet_uniques::Pallet::<T>::transfer_ownership(origin, collection_id.into(), new_issuer)?;
 
 			Self::deposit_event(Event::IssuerChanged {
 				old_issuer: sender,
@@ -717,8 +716,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn set_property(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			maybe_nft_id: Option<T::ItemId>,
+			collection_id: <T as Config>::CollectionId,
+			maybe_nft_id: Option<<T as Config>::ItemId>,
 			key: KeyLimitOf<T>,
 			value: ValueLimitOf<T>,
 		) -> DispatchResult {
@@ -735,7 +734,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn lock_collection(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
+			collection_id: <T as Config>::CollectionId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let collection =
@@ -753,8 +752,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn add_basic_resource(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource: BasicResource<StringLimitOf<T>>,
 			resource_id: ResourceId,
 		) -> DispatchResult {
@@ -791,8 +790,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn add_composable_resource(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource: ComposableResource<StringLimitOf<T>, BoundedVec<PartId, T::PartsLimit>>,
 			resource_id: ResourceId,
 		) -> DispatchResult {
@@ -830,8 +829,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn add_slot_resource(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource: SlotResource<StringLimitOf<T>>,
 			resource_id: ResourceId,
 		) -> DispatchResult {
@@ -868,8 +867,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn replace_resource(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource: ResourceTypes<StringLimitOf<T>, BoundedVec<PartId, T::PartsLimit>>,
 			resource_id: ResourceId,
 		) -> DispatchResult {
@@ -885,8 +884,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn accept_resource(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -907,8 +906,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn remove_resource(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -932,8 +931,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn accept_resource_removal(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			resource_id: ResourceId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -952,8 +951,8 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_priority(T::MaxPriorities::get(), T::NestingBudget::get()))]
 		pub fn set_priority(
 			origin: OriginFor<T>,
-			collection_id: T::CollectionId,
-			nft_id: T::ItemId,
+			collection_id: <T as Config>::CollectionId,
+			nft_id: <T as Config>::ItemId,
 			priorities: BoundedVec<ResourceId, T::MaxPriorities>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;

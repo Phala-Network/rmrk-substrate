@@ -37,7 +37,7 @@ impl<T: Config> Pallet<T> {
 	/// If the Equippings storage contains the Base/Slot for the Collection+NFT ID, the item is
 	/// already equipped
 	pub fn slot_is_equipped(
-		item: (T::CollectionId, T::ItemId),
+		item: (<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId),
 		base_id: BaseId,
 		slot_id: SlotId,
 	) -> bool {
@@ -90,22 +90,22 @@ impl<T: Config> Pallet<T> {
 impl<T: Config>
 	Base<
 		T::AccountId,
-		T::CollectionId,
-		T::ItemId,
+		<T as pallet_rmrk_core::Config>::CollectionId,
+		<T as pallet_rmrk_core::Config>::ItemId,
 		StringLimitOf<T>,
 		BoundedVec<
 			PartType<
 				StringLimitOf<T>,
-				BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>,
+				BoundedVec<<T as pallet_rmrk_core::Config>::CollectionId, T::MaxCollectionsEquippablePerPart>,
 			>,
 			T::PartsLimit,
 		>,
-		BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>,
+		BoundedVec<<T as pallet_rmrk_core::Config>::CollectionId, T::MaxCollectionsEquippablePerPart>,
 		BoundedVec<ThemeProperty<BoundedVec<u8, T::StringLimit>>, T::MaxPropertiesPerTheme>,
 	> for Pallet<T>
 where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
+	<T as pallet_rmrk_core::Config>::CollectionId: Copy,
+	<T as pallet_rmrk_core::Config>::ItemId: Copy,
 {
 	/// Implementation of the base_create function for the Base trait
 	/// Called by the create_base extrinsic to create a new Base.
@@ -123,7 +123,7 @@ where
 		parts: BoundedVec<
 			PartType<
 				StringLimitOf<T>,
-				BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>,
+				BoundedVec<<T as pallet_rmrk_core::Config>::CollectionId, T::MaxCollectionsEquippablePerPart>,
 			>,
 			T::PartsLimit,
 		>,
@@ -180,12 +180,12 @@ where
 	/// - slot_id: ID of the slot which the item and equipper must each have a resource referencing
 	fn do_equip(
 		issuer: T::AccountId,
-		item: (T::CollectionId, T::ItemId),
-		equipper: (T::CollectionId, T::ItemId),
+		item: (<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId),
+		equipper: (<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId),
 		resource_id: ResourceId,
 		base_id: BaseId,
 		slot_id: SlotId,
-	) -> Result<(T::CollectionId, T::ItemId, BaseId, SlotId), DispatchError> {
+	) -> Result<(<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId, BaseId, SlotId), DispatchError> {
 		let item_collection_id = item.0;
 		let item_nft_id = item.1;
 		let equipper_collection_id = equipper.0;
@@ -354,11 +354,11 @@ where
 	/// - slot_id: ID of the equipped item's slot
 	fn do_unequip(
 		issuer: T::AccountId,
-		item: (T::CollectionId, T::ItemId),
-		equipper: (T::CollectionId, T::ItemId),
+		item: (<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId),
+		equipper: (<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId),
 		base_id: BaseId,
 		slot_id: SlotId,
-	) -> Result<(T::CollectionId, T::ItemId, BaseId, SlotId), DispatchError> {
+	) -> Result<(<T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId, BaseId, SlotId), DispatchError> {
 		let item_collection_id = item.0;
 		let item_nft_id = item.1;
 		let equipper_collection_id = equipper.0;
@@ -458,8 +458,8 @@ where
 		base_id: BaseId,
 		part_id: PartId,
 		operation: EquippableOperation<
-			T::CollectionId,
-			BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>,
+			<T as pallet_rmrk_core::Config>::CollectionId,
+			BoundedVec<<T as pallet_rmrk_core::Config>::CollectionId, T::MaxCollectionsEquippablePerPart>,
 		>,
 	) -> Result<(BaseId, SlotId), DispatchError> {
 		// Caller must be issuer of base

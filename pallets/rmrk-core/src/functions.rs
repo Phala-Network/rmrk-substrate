@@ -28,17 +28,13 @@ impl<T: Config>
 		StringLimitOf<T>,
 		T::AccountId,
 		BoundedVec<ResourceId, T::MaxPriorities>,
-		T::CollectionId,
-		T::ItemId,
-	> for Pallet<T>
-where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
-{
+		<T as Config>::CollectionId,
+		<T as Config>::ItemId,
+	> for Pallet<T> {
 	fn priority_set(
 		_sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		priorities: BoundedVec<ResourceId, T::MaxPriorities>,
 	) -> DispatchResultWithPostInfo {
 		let _multi_removal_results =
@@ -57,16 +53,16 @@ where
 	}
 }
 
-impl<T: Config> Property<KeyLimitOf<T>, ValueLimitOf<T>, T::AccountId, T::CollectionId, T::ItemId>
+impl<T: Config> Property<KeyLimitOf<T>, ValueLimitOf<T>, T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>
 	for Pallet<T>
 where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
+	<T as Config>::CollectionId: Copy,
+	<T as Config>::ItemId: Copy,
 {
 	fn property_set(
 		sender: T::AccountId,
-		collection_id: T::CollectionId,
-		maybe_nft_id: Option<T::ItemId>,
+		collection_id: <T as Config>::CollectionId,
+		maybe_nft_id: Option<<T as Config>::ItemId>,
 		key: KeyLimitOf<T>,
 		value: ValueLimitOf<T>,
 	) -> DispatchResult {
@@ -89,8 +85,8 @@ where
 
 	// Internal function to set a property for downstream `Origin::root()` calls.
 	fn do_set_property(
-		collection_id: T::CollectionId,
-		maybe_nft_id: Option<T::ItemId>,
+		collection_id: <T as Config>::CollectionId,
+		maybe_nft_id: Option<<T as Config>::ItemId>,
 		key: KeyLimitOf<T>,
 		value: ValueLimitOf<T>,
 	) -> sp_runtime::DispatchResult {
@@ -104,8 +100,8 @@ where
 
 	// Internal function to remove a property for downstream `Origin::root()` calls.
 	fn do_remove_property(
-		collection_id: T::CollectionId,
-		maybe_nft_id: Option<T::ItemId>,
+		collection_id: <T as Config>::CollectionId,
+		maybe_nft_id: Option<<T as Config>::ItemId>,
 		key: KeyLimitOf<T>,
 	) -> sp_runtime::DispatchResult {
 		Properties::<T>::remove((&collection_id, maybe_nft_id, &key));
@@ -117,8 +113,8 @@ where
 	// Internal function to remove all of the properties for downstream
 	// `Origin::root()` calls.
 	fn do_remove_properties(
-		collection_id: T::CollectionId,
-		maybe_nft_id: Option<T::ItemId>,
+		collection_id: <T as Config>::CollectionId,
+		maybe_nft_id: Option<<T as Config>::ItemId>,
 		limit: u32,
 	) -> sp_runtime::DispatchResult {
 		let _ = Properties::<T>::clear_prefix((&collection_id, maybe_nft_id), limit, None);
@@ -133,17 +129,17 @@ impl<T: Config>
 		BoundedVec<u8, T::StringLimit>,
 		T::AccountId,
 		BoundedVec<PartId, T::PartsLimit>,
-		T::CollectionId,
-		T::ItemId,
+		<T as Config>::CollectionId,
+		<T as Config>::ItemId,
 	> for Pallet<T>
 where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
+	<T as Config>::CollectionId: Copy,
+	<T as Config>::ItemId: Copy,
 {
 	fn resource_add(
 		_sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		resource: ResourceTypes<BoundedVec<u8, T::StringLimit>, BoundedVec<PartId, T::PartsLimit>>,
 		pending: bool,
 		resource_id: ResourceId,
@@ -188,8 +184,8 @@ where
 
 	fn accept(
 		_sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		resource_id: ResourceId,
 	) -> DispatchResult {
 		ensure!(
@@ -214,8 +210,8 @@ where
 
 	fn resource_remove(
 		_sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		resource_id: ResourceId,
 		pending_resource: bool,
 	) -> DispatchResult {
@@ -254,8 +250,8 @@ where
 
 	fn resource_replace(
 		_sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		resource: ResourceTypes<BoundedVec<u8, T::StringLimit>, BoundedVec<PartId, T::PartsLimit>>,
 		resource_id: ResourceId,
 	) -> DispatchResult {
@@ -281,8 +277,8 @@ where
 
 	fn accept_removal(
 		_sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		resource_id: ResourceId,
 	) -> DispatchResult {
 		ensure!(
@@ -309,18 +305,18 @@ where
 }
 
 impl<T: Config>
-	Collection<StringLimitOf<T>, BoundedCollectionSymbolOf<T>, T::AccountId, T::CollectionId>
+	Collection<StringLimitOf<T>, BoundedCollectionSymbolOf<T>, T::AccountId, <T as Config>::CollectionId>
 	for Pallet<T>
 where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
+	<T as Config>::CollectionId: Copy,
+	<T as Config>::ItemId: Copy,
 {
-	fn issuer(_collection_id: T::CollectionId) -> Option<T::AccountId> {
+	fn issuer(_collection_id: <T as Config>::CollectionId) -> Option<T::AccountId> {
 		None
 	}
 	fn collection_create(
 		issuer: T::AccountId,
-		collection_id: T::CollectionId,
+		collection_id: <T as Config>::CollectionId,
 		metadata: StringLimitOf<T>,
 		max: Option<u32>,
 		symbol: BoundedCollectionSymbolOf<T>,
@@ -330,13 +326,13 @@ where
 
 		// Call the pallet_uniques function to create collection
 		pallet_uniques::Pallet::<T>::do_create_collection(
-			collection_id,
+			collection_id.into(),
 			issuer.clone(),
 			issuer.clone(),
 			T::CollectionDeposit::get(),
 			false,
 			pallet_uniques::Event::Created {
-				collection: collection_id,
+				collection: collection_id.into(),
 				creator: issuer.clone(),
 				owner: issuer.clone(),
 			},
@@ -346,18 +342,18 @@ where
 		Ok(())
 	}
 
-	fn collection_burn(issuer: T::AccountId, collection_id: T::CollectionId) -> DispatchResult {
+	fn collection_burn(issuer: T::AccountId, collection_id: <T as Config>::CollectionId) -> DispatchResult {
 		let collection = Self::collections(collection_id).ok_or(Error::<T>::CollectionUnknown)?;
 		ensure!(collection.nfts_count == 0, Error::<T>::CollectionNotEmpty);
 		// Get DestroyWitness for Uniques pallet
-		let witness = pallet_uniques::Pallet::<T>::get_destroy_witness(&collection_id)
+		let witness = pallet_uniques::Pallet::<T>::get_destroy_witness(&collection_id.into())
 			.ok_or(Error::<T>::NoWitness)?;
 		ensure!(witness.items == 0u32, Error::<T>::CollectionNotEmpty);
 		// Remove from RMRK storage
 		Collections::<T>::remove(collection_id);
 
 		pallet_uniques::Pallet::<T>::do_destroy_collection(
-			collection_id,
+			collection_id.into(),
 			witness,
 			issuer.clone().into(),
 		)?;
@@ -367,9 +363,9 @@ where
 	}
 
 	fn collection_change_issuer(
-		collection_id: T::CollectionId,
+		collection_id: <T as Config>::CollectionId,
 		new_issuer: T::AccountId,
-	) -> Result<(T::AccountId, T::CollectionId), DispatchError> {
+	) -> Result<(T::AccountId, <T as Config>::CollectionId), DispatchError> {
 		ensure!(Collections::<T>::contains_key(collection_id), Error::<T>::NoAvailableCollectionId);
 
 		Collections::<T>::try_mutate_exists(collection_id, |collection| -> DispatchResult {
@@ -384,8 +380,8 @@ where
 
 	fn collection_lock(
 		sender: T::AccountId,
-		collection_id: T::CollectionId,
-	) -> Result<T::CollectionId, DispatchError> {
+		collection_id: <T as Config>::CollectionId,
+	) -> Result<<T as Config>::CollectionId, DispatchError> {
 		Collections::<T>::try_mutate_exists(collection_id, |collection| -> DispatchResult {
 			let collection = collection.as_mut().ok_or(Error::<T>::CollectionUnknown)?;
 			collection.max = Some(0);
@@ -399,23 +395,23 @@ where
 }
 
 impl<T: Config>
-	Nft<T::AccountId, StringLimitOf<T>, BoundedResourceInfoTypeOf<T>, T::CollectionId, T::ItemId>
+	Nft<T::AccountId, StringLimitOf<T>, BoundedResourceInfoTypeOf<T>, <T as Config>::CollectionId, <T as Config>::ItemId>
 	for Pallet<T>
 where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
+	<T as Config>::CollectionId: Copy,
+	<T as Config>::ItemId: Copy,
 {
 	fn nft_mint(
 		sender: T::AccountId,
 		owner: T::AccountId,
-		nft_id: T::ItemId,
-		collection_id: T::CollectionId,
+		nft_id: <T as Config>::ItemId,
+		collection_id: <T as Config>::CollectionId,
 		royalty_recipient: Option<T::AccountId>,
 		royalty_amount: Option<Permill>,
 		metadata: StringLimitOf<T>,
 		transferable: bool,
 		resources: Option<BoundedResourceInfoTypeOf<T>>,
-	) -> sp_std::result::Result<(T::CollectionId, T::ItemId), DispatchError> {
+	) -> sp_std::result::Result<(<T as Config>::CollectionId, <T as Config>::ItemId), DispatchError> {
 		ensure!(!Self::nft_exists((collection_id, nft_id)), Error::<T>::NftAlreadyExists);
 		let collection = Self::collections(collection_id).ok_or(Error::<T>::CollectionUnknown)?;
 
@@ -461,7 +457,7 @@ where
 		})?;
 
 		// Call do_mint for pallet_uniques
-		pallet_uniques::Pallet::<T>::do_mint(collection_id, nft_id, owner.clone(), |_details| {
+		pallet_uniques::Pallet::<T>::do_mint(collection_id.into(), nft_id.into(), owner.clone(), |_details| {
 			Ok(())
 		})?;
 
@@ -490,15 +486,15 @@ where
 
 	fn nft_mint_directly_to_nft(
 		sender: T::AccountId,
-		owner: (T::CollectionId, T::ItemId),
-		nft_id: T::ItemId,
-		collection_id: T::CollectionId,
+		owner: (<T as Config>::CollectionId, <T as Config>::ItemId),
+		nft_id: <T as Config>::ItemId,
+		collection_id: <T as Config>::CollectionId,
 		royalty_recipient: Option<T::AccountId>,
 		royalty_amount: Option<Permill>,
 		metadata: StringLimitOf<T>,
 		transferable: bool,
 		resources: Option<BoundedResourceInfoTypeOf<T>>,
-	) -> sp_std::result::Result<(T::CollectionId, T::ItemId), DispatchError> {
+	) -> sp_std::result::Result<(<T as Config>::CollectionId, <T as Config>::ItemId), DispatchError> {
 		ensure!(!Self::nft_exists((collection_id, nft_id)), Error::<T>::NftAlreadyExists);
 		let collection = Self::collections(collection_id).ok_or(Error::<T>::CollectionUnknown)?;
 
@@ -551,7 +547,7 @@ where
 
 		Pallet::<T>::add_child((owner.0, owner.1), (collection_id, nft_id));
 
-		pallet_uniques::Pallet::<T>::do_mint(collection_id, nft_id, uniques_owner, |_details| {
+		pallet_uniques::Pallet::<T>::do_mint(collection_id.into(), nft_id.into(), uniques_owner, |_details| {
 			Ok(())
 		})?;
 
@@ -580,8 +576,8 @@ where
 
 	fn nft_burn(
 		owner: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		budget: &dyn Budget,
 	) -> DispatchResultWithPostInfo {
 		// Check Lock to prevent locked NFTs from being burned. Owner must unlock the NFT before
@@ -622,7 +618,7 @@ where
 		})?;
 
 		// Call pallet uniques to ensure NFT is burned
-		pallet_uniques::Pallet::<T>::do_burn(collection_id, nft_id, |_, _| Ok(()))?;
+		pallet_uniques::Pallet::<T>::do_burn(collection_id.into(), nft_id.into(), |_, _| Ok(()))?;
 
 		Self::deposit_event(Event::NFTBurned { owner, nft_id, collection_id });
 
@@ -635,12 +631,12 @@ where
 
 	fn nft_send(
 		sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
-		new_owner: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
+		new_owner: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
 	) -> Result<(T::AccountId, bool), DispatchError> {
 		// Get current owner for child removal later
-		let parent = pallet_uniques::Pallet::<T>::owner(collection_id, nft_id);
+		let parent = pallet_uniques::Pallet::<T>::owner(collection_id.into(), nft_id.into());
 		// Check if parent returns None which indicates the NFT is not available
 		ensure!(parent.is_some(), Error::<T>::NoAvailableNftId); // <- is this error wrong?
 
@@ -730,8 +726,8 @@ where
 		}
 
 		pallet_uniques::Pallet::<T>::do_transfer(
-			collection_id,
-			nft_id,
+			collection_id.into(),
+			nft_id.into(),
 			new_owner_account.clone(),
 			|_class_details, _details| Ok(()),
 		)?;
@@ -755,10 +751,10 @@ where
 
 	fn nft_accept(
 		sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
-		new_owner: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
-	) -> Result<(T::AccountId, T::CollectionId, T::ItemId), DispatchError> {
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
+		new_owner: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
+	) -> Result<(T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId), DispatchError> {
 		// Check NFT exists
 		ensure!(Pallet::<T>::nft_exists((collection_id, nft_id)), Error::<T>::NoAvailableNftId);
 
@@ -787,8 +783,8 @@ where
 
 	fn nft_reject(
 		sender: T::AccountId,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 	) -> DispatchResultWithPostInfo {
 		// Look up root owner in Uniques to ensure permissions
 		let budget = budget::Value::new(T::NestingBudget::get());
@@ -807,8 +803,8 @@ where
 		ensure!(sender == root_owner, Error::<T>::CannotRejectNonOwnedNft);
 
 		// Get current owner, which we will use to remove the Children storage
-		if let Some(parent_account_id) = pallet_uniques::Pallet::<T>::owner(collection_id, nft_id) {
-			// Decode the parent_account_id to extract the parent (T::CollectionId, T::ItemId)
+		if let Some(parent_account_id) = pallet_uniques::Pallet::<T>::owner(collection_id.into(), nft_id.into()) {
+			// Decode the parent_account_id to extract the parent (<T as Config>::CollectionId, <T as Config>::ItemId)
 			if let Some(parent) =
 				Pallet::<T>::decode_nft_account_id::<T::AccountId>(parent_account_id)
 			{
@@ -829,23 +825,23 @@ where
 	}
 }
 
-impl<T: Config> Locker<T::CollectionId, T::ItemId> for Pallet<T> {
-	fn is_locked(collection_id: T::CollectionId, nft_id: T::ItemId) -> bool {
+impl<T: Config> Locker<<T as Config>::CollectionId, <T as Config>::ItemId> for Pallet<T> {
+	fn is_locked(collection_id: <T as Config>::CollectionId, nft_id: <T as Config>::ItemId) -> bool {
 		Lock::<T>::get((collection_id, nft_id))
 	}
 }
 
 impl<T: Config> Pallet<T>
 where
-	T::CollectionId: Copy,
-	T::ItemId: Copy,
+	<T as Config>::CollectionId: Copy,
+	<T as Config>::ItemId: Copy,
 {
 	pub fn iterate_nft_children(
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
-	) -> impl Iterator<Item = NftChild<T::CollectionId, T::ItemId>> {
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
+	) -> impl Iterator<Item = NftChild<<T as Config>::CollectionId, <T as Config>::ItemId>> {
 		Children::<T>::iter_key_prefix((collection_id, nft_id)).into_iter().map(
-			|(collection_id, nft_id)| NftChild::<T::CollectionId, T::ItemId> {
+			|(collection_id, nft_id)| NftChild::<<T as Config>::CollectionId, <T as Config>::ItemId> {
 				collection_id,
 				nft_id,
 			},
@@ -853,15 +849,15 @@ where
 	}
 
 	pub fn iterate_resources(
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 	) -> impl Iterator<Item = ResourceInfoOf<T>> {
 		Resources::<T>::iter_prefix_values((collection_id, nft_id))
 	}
 
 	pub fn query_properties(
-		collection_id: T::CollectionId,
-		nft_id: Option<T::ItemId>,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: Option<<T as Config>::ItemId>,
 		filter_keys: Option<BTreeSet<BoundedVec<u8, <T as pallet_uniques::Config>::KeyLimit>>>,
 	) -> impl Iterator<Item = PropertyInfoOf<T>> {
 		Properties::<T>::iter_prefix((collection_id, nft_id))
@@ -884,8 +880,8 @@ where
 	/// Output:
 	/// `AccountId`: Encoded virtual account that represents the NFT
 	pub fn nft_to_account_id<AccountId: Codec>(
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 	) -> AccountId {
 		(SALT_RMRK_NFT, collection_id, nft_id)
 			.using_encoded(|b| AccountId::decode(&mut TrailingZeroInput::new(b)))
@@ -893,22 +889,22 @@ where
 	}
 
 	/// Decodes a RMRK NFT a suspected virtual account
-	/// then returns an `Option<(T::CollectionId,  T::ItemId)>
+	/// then returns an `Option<(<T as Config>::CollectionId,  <T as Config>::ItemId)>
 	/// where `None` is returned when there is an actual account
-	/// and `Some(tuple)` returns tuple of `CollectionId` & ` T::ItemId`
+	/// and `Some(tuple)` returns tuple of `CollectionId` & ` <T as Config>::ItemId`
 	///
 	/// Parameters:
 	/// - `account_id`: Encoded NFT virtual account or account owner
 	///
 	/// Output:
-	/// `Option<(T::CollectionId,  T::ItemId)>`
+	/// `Option<(<T as Config>::CollectionId,  <T as Config>::ItemId)>`
 	pub fn decode_nft_account_id<AccountId: Codec>(
 		account_id: T::AccountId,
-	) -> Option<(T::CollectionId, T::ItemId)> {
+	) -> Option<(<T as Config>::CollectionId, <T as Config>::ItemId)> {
 		let (prefix, tuple, suffix) = account_id
 			.using_encoded(|mut b| {
 				let slice = &mut b;
-				let r = <([u8; 8], (T::CollectionId, T::ItemId))>::decode(slice);
+				let r = <([u8; 8], (<T as Config>::CollectionId, <T as Config>::ItemId))>::decode(slice);
 				r.map(|(prefix, tuple)| (prefix, tuple, slice.to_vec()))
 			})
 			.ok()?;
@@ -921,7 +917,7 @@ where
 	}
 
 	/// Looks up the root owner of an NFT and returns a `Result` with an AccountId and
-	/// a tuple of the root `(T::CollectionId,  T::ItemId)`
+	/// a tuple of the root `(<T as Config>::CollectionId,  <T as Config>::ItemId)`
 	/// or an `Error::<T>::NoAvailableNftId` in the case that the NFT is already burned
 	///
 	/// Parameters:
@@ -929,15 +925,15 @@ where
 	/// - `nft_id`: NFT ID that is to be looked up for the root owner
 	///
 	/// Output:
-	/// - `Result<(T::AcccountId, (T::CollectionId,  T::ItemId)), Error<T>>`
+	/// - `Result<(T::AcccountId, (<T as Config>::CollectionId,  <T as Config>::ItemId)), Error<T>>`
 	// #[allow(clippy::type_complexity)]
 	pub fn lookup_root_owner(
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		budget: &dyn Budget,
-	) -> Result<(T::AccountId, (T::CollectionId, T::ItemId)), DispatchError> {
+	) -> Result<(T::AccountId, (<T as Config>::CollectionId, <T as Config>::ItemId)), DispatchError> {
 		// Check if parent returns None which indicates the NFT is not available
-		if let Some(parent) = pallet_uniques::Pallet::<T>::owner(collection_id, nft_id) {
+		if let Some(parent) = pallet_uniques::Pallet::<T>::owner(collection_id.into(), nft_id.into()) {
 			match Self::decode_nft_account_id::<T::AccountId>(parent.clone()) {
 				None => Ok((parent, (collection_id, nft_id))),
 				Some((cid, nid)) => {
@@ -953,24 +949,24 @@ where
 	/// Add a child to a parent NFT
 	///
 	/// Parameters:
-	/// - `parent`: Tuple of (T::CollectionId,  T::ItemId) of the parent NFT
-	/// - `child`: Tuple of (T::CollectionId,  T::ItemId) of the child NFT to be added
+	/// - `parent`: Tuple of (<T as Config>::CollectionId,  <T as Config>::ItemId) of the parent NFT
+	/// - `child`: Tuple of (<T as Config>::CollectionId,  <T as Config>::ItemId) of the child NFT to be added
 	///
 	/// Output:
 	/// - Adding a `child` to the Children StorageMap of the `parent`
-	pub fn add_child(parent: (T::CollectionId, T::ItemId), child: (T::CollectionId, T::ItemId)) {
+	pub fn add_child(parent: (<T as Config>::CollectionId, <T as Config>::ItemId), child: (<T as Config>::CollectionId, <T as Config>::ItemId)) {
 		Children::<T>::insert((parent.0, parent.1), (child.0, child.1), ());
 	}
 
 	/// Remove a child from a parent NFT
 	///
 	/// Parameters:
-	/// - `parent`: Tuple of (T::CollectionId,  T::ItemId) of the parent NFT
-	/// - `child`: Tuple of (T::CollectionId,  T::ItemId) of the child NFT to be removed
+	/// - `parent`: Tuple of (<T as Config>::CollectionId,  <T as Config>::ItemId) of the parent NFT
+	/// - `child`: Tuple of (<T as Config>::CollectionId,  <T as Config>::ItemId) of the child NFT to be removed
 	///
 	/// Output:
 	/// - Removing a `child` from the Children StorageMap of the `parent`
-	pub fn remove_child(parent: (T::CollectionId, T::ItemId), child: (T::CollectionId, T::ItemId)) {
+	pub fn remove_child(parent: (<T as Config>::CollectionId, <T as Config>::ItemId), child: (<T as Config>::CollectionId, <T as Config>::ItemId)) {
 		Children::<T>::remove((parent.0, parent.1), (child.0, child.1));
 	}
 
@@ -985,15 +981,15 @@ where
 	/// Output:
 	/// - `bool`
 	pub fn is_x_descendent_of_y(
-		child_collection_id: T::CollectionId,
-		child_nft_id: T::ItemId,
-		parent_collection_id: T::CollectionId,
-		parent_nft_id: T::ItemId,
+		child_collection_id: <T as Config>::CollectionId,
+		child_nft_id: <T as Config>::ItemId,
+		parent_collection_id: <T as Config>::CollectionId,
+		parent_nft_id: <T as Config>::ItemId,
 	) -> bool {
 		let mut found_child = false;
 
 		// Check if parent returns None which indicates the NFT is not available
-		let parent = match pallet_uniques::Pallet::<T>::owner(child_collection_id, child_nft_id) {
+		let parent = match pallet_uniques::Pallet::<T>::owner(child_collection_id.into(), child_nft_id.into()) {
 			Some(parent) => parent,
 			None => return found_child,
 		};
@@ -1016,7 +1012,7 @@ where
 		}
 	}
 
-	pub fn set_lock(nft: (T::CollectionId, T::ItemId), lock_status: bool) -> bool {
+	pub fn set_lock(nft: (<T as Config>::CollectionId, <T as Config>::ItemId), lock_status: bool) -> bool {
 		if lock_status {
 			Lock::<T>::mutate(nft, |lock| {
 				*lock = lock_status;
@@ -1035,7 +1031,7 @@ where
 	}
 
 	/// Helper function for checking if an NFT exists
-	pub fn nft_exists(item: (T::CollectionId, T::ItemId)) -> bool {
+	pub fn nft_exists(item: (<T as Config>::CollectionId, <T as Config>::ItemId)) -> bool {
 		let (item_collection_id, item_nft_id) = item;
 		Nfts::<T>::get(item_collection_id, item_nft_id).is_some()
 	}
@@ -1048,8 +1044,8 @@ where
 
 	pub fn do_remove_resource_from_bases_and_equippable_slots(
 		res: ResourceInfoOf<T>,
-		collection_id: T::CollectionId,
-		nft_id: T::ItemId,
+		collection_id: <T as Config>::CollectionId,
+		nft_id: <T as Config>::ItemId,
 		resource_id: ResourceId,
 	) -> () {
 		match res.resource {

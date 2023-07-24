@@ -56,7 +56,7 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
 fn create_test_collection<T: Config>(
 	caller: T::AccountId,
 	collection_index: u32,
-) -> T::CollectionId {
+) -> <T as Config>::CollectionId {
 	let collection_id = T::Helper::collection(collection_index);
 	let metadata = bvec![0u8; 20];
 	let max = None;
@@ -80,9 +80,9 @@ fn create_test_collection<T: Config>(
 fn mint_test_nft<T: Config>(
 	owner: T::AccountId,
 	mint_for: Option<T::AccountId>,
-	collection_id: T::CollectionId,
+	collection_id: <T as Config>::CollectionId,
 	nft_index: u32,
-) -> T::ItemId {
+) -> <T as Config>::ItemId {
 	let nft_id = T::Helper::item(nft_index);
 	let royalty_recipient = owner.clone();
 	let royalty = Permill::from_percent(1);
@@ -103,7 +103,7 @@ fn mint_test_nft<T: Config>(
 }
 
 // premint nfts & make deep nested chain of nfts ( send child to parent )
-fn mint_and_send_to_parent<T: Config>(owner: T::AccountId, collection_id: T::CollectionId, n: u32) {
+fn mint_and_send_to_parent<T: Config>(owner: T::AccountId, collection_id: <T as Config>::CollectionId, n: u32) {
 	for i in 1..n {
 		let id = mint_test_nft::<T>(owner.clone(), None, collection_id, i);
 		let parent_nft_id = T::Helper::item(i.saturating_sub(1));
@@ -116,7 +116,7 @@ fn mint_and_send_to_parent<T: Config>(owner: T::AccountId, collection_id: T::Col
 // premint nfts & make deep nested chain of nfts ( send child to the specified parent )
 fn mint_and_send_to<T: Config>(
 	owner: T::AccountId,
-	collection_id: T::CollectionId,
+	collection_id: <T as Config>::CollectionId,
 	n: u32,
 	parent: u32,
 ) {
@@ -132,9 +132,9 @@ fn mint_and_send_to<T: Config>(
 // Send nft to Account or to another nft
 fn send_test_nft<T: Config>(
 	owner: T::AccountId,
-	collection_id: T::CollectionId,
-	nft_id: T::ItemId,
-	new_owner_enum: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
+	collection_id: <T as Config>::CollectionId,
+	nft_id: <T as Config>::ItemId,
+	new_owner_enum: AccountIdOrCollectionNftTuple<T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId>,
 ) {
 	let _ = RmrkCore::<T>::send(
 		RawOrigin::Signed(owner.clone()).into(),
@@ -146,7 +146,7 @@ fn send_test_nft<T: Config>(
 
 // create collection, mint 1 nft and initialize resource_id
 fn prepare_resource<T: Config>(
-) -> (T::AccountId, T::AccountId, T::CollectionId, T::ItemId, ResourceId) {
+) -> (T::AccountId, T::AccountId, <T as Config>::CollectionId, <T as Config>::ItemId, ResourceId) {
 	let alice: T::AccountId = whitelisted_caller();
 	let bob = funded_account::<T>("bob", 0);
 	let collection_index = 1;
@@ -158,8 +158,8 @@ fn prepare_resource<T: Config>(
 
 fn set_properties<T: Config>(
 	caller: T::AccountId,
-	collection_id: T::CollectionId,
-	maybe_nft_id: Option<T::ItemId>,
+	collection_id: <T as Config>::CollectionId,
+	maybe_nft_id: Option<<T as Config>::ItemId>,
 	n: u32,
 ) {
 	(0..n).for_each(|i| {
@@ -181,7 +181,7 @@ mod benchmarks {
 	fn create_collection<T: Config>() {
 		let caller: T::AccountId = whitelisted_caller();
 		let collection_index = 42;
-		let collection_id: <T as pallet_uniques::Config>::CollectionId =
+		let collection_id: <T as Config>::CollectionId =
 			T::Helper::collection(collection_index);
 		let metadata = bvec![0u8; 20];
 		let max = None;
@@ -202,7 +202,7 @@ mod benchmarks {
 		let owner: T::AccountId = whitelisted_caller();
 		let collection_index = 1;
 		let collection_id = create_test_collection::<T>(owner.clone(), collection_index);
-		let nft_id: <T as pallet_uniques::Config>::ItemId = T::Helper::item(42);
+		let nft_id: <T as Config>::ItemId = T::Helper::item(42);
 		let royalty_recipient: T::AccountId = owner.clone();
 		let royalty = Permill::from_percent(1);
 		let nft_metadata = bvec![0u8; 20];
@@ -242,7 +242,7 @@ mod benchmarks {
 		mint_and_send_to_parent::<T>(owner.clone(), collection_id, n);
 		let nft_id = T::Helper::item(n - 1);
 
-		let nft_child_id: <T as pallet_uniques::Config>::ItemId = T::Helper::item(n);
+		let nft_child_id: <T as Config>::ItemId = T::Helper::item(n);
 		let owner_tuple =
 			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(collection_id, nft_id);
 		let nft_owner_tuple = (collection_id, nft_id);
@@ -437,7 +437,7 @@ mod benchmarks {
 		let target_lookup = T::Lookup::unlookup(target.clone());
 		T::Currency::make_free_balance_be(&target, BalanceOf::<T>::max_value());
 		let origin = RawOrigin::Signed(target.clone()).into();
-		pallet_uniques::Pallet::<T>::set_accept_ownership(origin, Some(collection_id))
+		pallet_uniques::Pallet::<T>::set_accept_ownership(origin, Some(collection_id.into()))
 			.expect("expect ok");
 
 		#[extrinsic_call]

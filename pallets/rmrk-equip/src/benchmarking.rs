@@ -46,7 +46,7 @@ fn funded_account<T: Config>(name: &'static str, index: u32) -> T::AccountId {
 fn create_test_collection<T: Config>(
 	caller: T::AccountId,
 	collection_index: u32,
-) -> T::CollectionId {
+) -> <T as pallet_rmrk_core::Config>::CollectionId {
 	let collection_id = <T as pallet::Config>::Helper::collection(collection_index);
 	let metadata = bvec![0u8; 20];
 	let max = None;
@@ -69,9 +69,9 @@ fn create_test_collection<T: Config>(
 fn mint_test_nft<T: Config>(
 	owner: T::AccountId,
 	mint_for: Option<T::AccountId>,
-	collection_id: T::CollectionId,
+	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
 	nft_index: u32,
-) -> T::ItemId {
+) -> <T as pallet_rmrk_core::Config>::ItemId {
 	let nft_id = <T as pallet::Config>::Helper::item(nft_index);
 	let royalty_recipient = owner.clone();
 	let royalty = Permill::from_percent(1);
@@ -94,9 +94,9 @@ fn mint_test_nft<T: Config>(
 // Send nft to Account or to another nft
 fn send_test_nft<T: Config>(
 	owner: T::AccountId,
-	collection_id: T::CollectionId,
-	nft_id: T::ItemId,
-	new_owner_enum: AccountIdOrCollectionNftTuple<T::AccountId, T::CollectionId, T::ItemId>,
+	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
+	nft_id: <T as pallet_rmrk_core::Config>::ItemId,
+	new_owner_enum: AccountIdOrCollectionNftTuple<T::AccountId, <T as pallet_rmrk_core::Config>::CollectionId, <T as pallet_rmrk_core::Config>::ItemId>,
 ) {
 	let _ =
 		RmrkCore::<T>::send(RawOrigin::Signed(owner).into(), collection_id, nft_id, new_owner_enum);
@@ -106,7 +106,7 @@ fn send_test_nft<T: Config>(
 fn base_create<T: Config>(
 	creator: T::AccountId,
 	parts: BoundedVec<
-		PartType<StringLimitOf<T>, BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>>,
+		PartType<StringLimitOf<T>, BoundedVec<<T as pallet_rmrk_core::Config>::CollectionId, T::MaxCollectionsEquippablePerPart>>,
 		T::PartsLimit,
 	>,
 ) {
@@ -119,11 +119,11 @@ fn base_create<T: Config>(
 }
 
 fn hand_slot_part<T: Config>(
-	collection_id: T::CollectionId,
+	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
 	id: u32,
 ) -> SlotPart<
 	BoundedVec<u8, T::StringLimit>,
-	BoundedVec<T::CollectionId, T::MaxCollectionsEquippablePerPart>,
+	BoundedVec<<T as pallet_rmrk_core::Config>::CollectionId, T::MaxCollectionsEquippablePerPart>,
 > {
 	SlotPart {
 		id,
@@ -135,8 +135,8 @@ fn hand_slot_part<T: Config>(
 
 fn add_composable_resource<T: Config>(
 	caller: T::AccountId,
-	collection_id: T::CollectionId,
-	item: T::ItemId,
+	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
+	item: <T as pallet_rmrk_core::Config>::ItemId,
 	base_id: BaseId,
 	parts: Vec<u32>,
 ) {
@@ -158,8 +158,8 @@ fn add_composable_resource<T: Config>(
 
 fn add_slot_resource<T: Config>(
 	caller: T::AccountId,
-	collection_id: T::CollectionId,
-	item: T::ItemId,
+	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
+	item: <T as pallet_rmrk_core::Config>::ItemId,
 	base_id: BaseId,
 	slot: u32,
 ) {
