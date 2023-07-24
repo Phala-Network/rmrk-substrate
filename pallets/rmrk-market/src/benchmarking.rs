@@ -50,7 +50,7 @@ fn funded_account<T: Config>(name: &'static str, index: u32) -> T::AccountId {
 fn create_test_collection<T: Config>(
 	caller: T::AccountId,
 	collection_index: u32,
-) -> <T as pallet_rmrk_core::Config>::CollectionId {
+) -> CollectionIdOf<T> {
 	let collection_id = <T as pallet::Config>::Helper::collection(collection_index);
 	let metadata = bvec![0u8; 20];
 	let max = None;
@@ -73,9 +73,9 @@ fn create_test_collection<T: Config>(
 fn mint_test_nft<T: Config>(
 	owner: T::AccountId,
 	mint_for: Option<T::AccountId>,
-	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
+	collection_id: CollectionIdOf<T>,
 	nft_index: u32,
-) -> <T as pallet_rmrk_core::Config>::ItemId {
+) -> ItemIdOf<T> {
 	let nft_id = <T as pallet::Config>::Helper::item(nft_index);
 	let royalty_recipient = owner.clone();
 	let royalty = Permill::from_percent(1);
@@ -98,8 +98,8 @@ fn mint_test_nft<T: Config>(
 /// Lists an Nft
 fn list_test_nft<T: Config>(
 	owner: T::AccountId,
-	collection_id: <T as pallet_rmrk_core::Config>::CollectionId,
-	nft_id: <T as pallet_rmrk_core::Config>::ItemId,
+	collection_id: CollectionIdOf<T>,
+	nft_id: ItemIdOf<T>,
 	price: u32,
 ) -> <<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance
 {
