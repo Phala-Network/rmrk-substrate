@@ -240,8 +240,8 @@ export interface FrameSystemPhase extends Enum {
 export interface PalletBalancesAccountData extends Struct {
   readonly free: u128;
   readonly reserved: u128;
-  readonly miscFrozen: u128;
-  readonly feeFrozen: u128;
+  readonly frozen: u128;
+  readonly flags: u128;
 }
 
 /** @name PalletBalancesBalanceLock */
@@ -253,16 +253,16 @@ export interface PalletBalancesBalanceLock extends Struct {
 
 /** @name PalletBalancesCall */
 export interface PalletBalancesCall extends Enum {
-  readonly isTransfer: boolean;
-  readonly asTransfer: {
+  readonly isTransferAllowDeath: boolean;
+  readonly asTransferAllowDeath: {
     readonly dest: MultiAddress;
     readonly value: Compact<u128>;
   } & Struct;
-  readonly isSetBalance: boolean;
-  readonly asSetBalance: {
+  readonly isSetBalanceDeprecated: boolean;
+  readonly asSetBalanceDeprecated: {
     readonly who: MultiAddress;
     readonly newFree: Compact<u128>;
-    readonly newReserved: Compact<u128>;
+    readonly oldReserved: Compact<u128>;
   } & Struct;
   readonly isForceTransfer: boolean;
   readonly asForceTransfer: {
@@ -285,7 +285,21 @@ export interface PalletBalancesCall extends Enum {
     readonly who: MultiAddress;
     readonly amount: u128;
   } & Struct;
-  readonly type: 'Transfer' | 'SetBalance' | 'ForceTransfer' | 'TransferKeepAlive' | 'TransferAll' | 'ForceUnreserve';
+  readonly isUpgradeAccounts: boolean;
+  readonly asUpgradeAccounts: {
+    readonly who: Vec<AccountId32>;
+  } & Struct;
+  readonly isTransfer: boolean;
+  readonly asTransfer: {
+    readonly dest: MultiAddress;
+    readonly value: Compact<u128>;
+  } & Struct;
+  readonly isForceSetBalance: boolean;
+  readonly asForceSetBalance: {
+    readonly who: MultiAddress;
+    readonly newFree: Compact<u128>;
+  } & Struct;
+  readonly type: 'TransferAllowDeath' | 'SetBalanceDeprecated' | 'ForceTransfer' | 'TransferKeepAlive' | 'TransferAll' | 'ForceUnreserve' | 'UpgradeAccounts' | 'Transfer' | 'ForceSetBalance';
 }
 
 /** @name PalletBalancesError */
@@ -294,11 +308,13 @@ export interface PalletBalancesError extends Enum {
   readonly isLiquidityRestrictions: boolean;
   readonly isInsufficientBalance: boolean;
   readonly isExistentialDeposit: boolean;
-  readonly isKeepAlive: boolean;
+  readonly isExpendability: boolean;
   readonly isExistingVestingSchedule: boolean;
   readonly isDeadAccount: boolean;
   readonly isTooManyReserves: boolean;
-  readonly type: 'VestingBalance' | 'LiquidityRestrictions' | 'InsufficientBalance' | 'ExistentialDeposit' | 'KeepAlive' | 'ExistingVestingSchedule' | 'DeadAccount' | 'TooManyReserves';
+  readonly isTooManyHolds: boolean;
+  readonly isTooManyFreezes: boolean;
+  readonly type: 'VestingBalance' | 'LiquidityRestrictions' | 'InsufficientBalance' | 'ExistentialDeposit' | 'Expendability' | 'ExistingVestingSchedule' | 'DeadAccount' | 'TooManyReserves' | 'TooManyHolds' | 'TooManyFreezes';
 }
 
 /** @name PalletBalancesEvent */
@@ -323,7 +339,6 @@ export interface PalletBalancesEvent extends Enum {
   readonly asBalanceSet: {
     readonly who: AccountId32;
     readonly free: u128;
-    readonly reserved: u128;
   } & Struct;
   readonly isReserved: boolean;
   readonly asReserved: {
@@ -357,7 +372,65 @@ export interface PalletBalancesEvent extends Enum {
     readonly who: AccountId32;
     readonly amount: u128;
   } & Struct;
-  readonly type: 'Endowed' | 'DustLost' | 'Transfer' | 'BalanceSet' | 'Reserved' | 'Unreserved' | 'ReserveRepatriated' | 'Deposit' | 'Withdraw' | 'Slashed';
+  readonly isMinted: boolean;
+  readonly asMinted: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isBurned: boolean;
+  readonly asBurned: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isSuspended: boolean;
+  readonly asSuspended: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isRestored: boolean;
+  readonly asRestored: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isUpgraded: boolean;
+  readonly asUpgraded: {
+    readonly who: AccountId32;
+  } & Struct;
+  readonly isIssued: boolean;
+  readonly asIssued: {
+    readonly amount: u128;
+  } & Struct;
+  readonly isRescinded: boolean;
+  readonly asRescinded: {
+    readonly amount: u128;
+  } & Struct;
+  readonly isLocked: boolean;
+  readonly asLocked: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isUnlocked: boolean;
+  readonly asUnlocked: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isFrozen: boolean;
+  readonly asFrozen: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly isThawed: boolean;
+  readonly asThawed: {
+    readonly who: AccountId32;
+    readonly amount: u128;
+  } & Struct;
+  readonly type: 'Endowed' | 'DustLost' | 'Transfer' | 'BalanceSet' | 'Reserved' | 'Unreserved' | 'ReserveRepatriated' | 'Deposit' | 'Withdraw' | 'Slashed' | 'Minted' | 'Burned' | 'Suspended' | 'Restored' | 'Upgraded' | 'Issued' | 'Rescinded' | 'Locked' | 'Unlocked' | 'Frozen' | 'Thawed';
+}
+
+/** @name PalletBalancesIdAmount */
+export interface PalletBalancesIdAmount extends Struct {
+  readonly id: Null;
+  readonly amount: u128;
 }
 
 /** @name PalletBalancesReasons */
@@ -1029,30 +1102,6 @@ export interface PalletSudoEvent extends Enum {
   readonly type: 'Sudid' | 'KeyChanged' | 'SudoAsDone';
 }
 
-/** @name PalletTemplateCall */
-export interface PalletTemplateCall extends Enum {
-  readonly isDoSomething: boolean;
-  readonly asDoSomething: {
-    readonly something: u32;
-  } & Struct;
-  readonly isCauseError: boolean;
-  readonly type: 'DoSomething' | 'CauseError';
-}
-
-/** @name PalletTemplateError */
-export interface PalletTemplateError extends Enum {
-  readonly isNoneValue: boolean;
-  readonly isStorageOverflow: boolean;
-  readonly type: 'NoneValue' | 'StorageOverflow';
-}
-
-/** @name PalletTemplateEvent */
-export interface PalletTemplateEvent extends Enum {
-  readonly isSomethingStored: boolean;
-  readonly asSomethingStored: ITuple<[u32, AccountId32]>;
-  readonly type: 'SomethingStored';
-}
-
 /** @name PalletTimestampCall */
 export interface PalletTimestampCall extends Enum {
   readonly isSet: boolean;
@@ -1519,7 +1568,7 @@ export interface PalletUtilityEvent extends Enum {
 }
 
 /** @name PhantomTypePhantomType */
-export interface PhantomTypePhantomType extends Vec<Lookup175> {}
+export interface PhantomTypePhantomType extends Vec<Lookup177> {}
 
 /** @name RmrkSubstrateRuntimeOriginCaller */
 export interface RmrkSubstrateRuntimeOriginCaller extends Enum {
@@ -1765,7 +1814,8 @@ export interface SpRuntimeDispatchError extends Enum {
   readonly isExhausted: boolean;
   readonly isCorruption: boolean;
   readonly isUnavailable: boolean;
-  readonly type: 'Other' | 'CannotLookup' | 'BadOrigin' | 'Module' | 'ConsumerRemaining' | 'NoProviders' | 'TooManyConsumers' | 'Token' | 'Arithmetic' | 'Transactional' | 'Exhausted' | 'Corruption' | 'Unavailable';
+  readonly isRootNotAllowed: boolean;
+  readonly type: 'Other' | 'CannotLookup' | 'BadOrigin' | 'Module' | 'ConsumerRemaining' | 'NoProviders' | 'TooManyConsumers' | 'Token' | 'Arithmetic' | 'Transactional' | 'Exhausted' | 'Corruption' | 'Unavailable' | 'RootNotAllowed';
 }
 
 /** @name SpRuntimeModuleError */
@@ -1787,14 +1837,17 @@ export interface SpRuntimeMultiSignature extends Enum {
 
 /** @name SpRuntimeTokenError */
 export interface SpRuntimeTokenError extends Enum {
-  readonly isNoFunds: boolean;
-  readonly isWouldDie: boolean;
+  readonly isFundsUnavailable: boolean;
+  readonly isOnlyProvider: boolean;
   readonly isBelowMinimum: boolean;
   readonly isCannotCreate: boolean;
   readonly isUnknownAsset: boolean;
   readonly isFrozen: boolean;
   readonly isUnsupported: boolean;
-  readonly type: 'NoFunds' | 'WouldDie' | 'BelowMinimum' | 'CannotCreate' | 'UnknownAsset' | 'Frozen' | 'Unsupported';
+  readonly isCannotCreateHold: boolean;
+  readonly isNotExpendable: boolean;
+  readonly isBlocked: boolean;
+  readonly type: 'FundsUnavailable' | 'OnlyProvider' | 'BelowMinimum' | 'CannotCreate' | 'UnknownAsset' | 'Frozen' | 'Unsupported' | 'CannotCreateHold' | 'NotExpendable' | 'Blocked';
 }
 
 /** @name SpRuntimeTransactionalError */
