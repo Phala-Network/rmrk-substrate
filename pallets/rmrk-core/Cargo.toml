@@ -26,7 +26,6 @@ frame-benchmarking = { default-features = false, version = "4.0.0-dev", git = "h
 pallet-uniques = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
 pallet-balances = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
 
-
 # Local Dependencies
 rmrk-traits = { default-features = false, version = "0.0.1", path = "../../traits" }
 

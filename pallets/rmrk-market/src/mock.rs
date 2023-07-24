@@ -121,6 +121,8 @@ impl pallet_rmrk_core::Config for Test {
 	#[cfg(feature = "runtime-benchmarks")]
 	type Helper = RmrkBenchmark;
 	type TransferHooks = ();
+	type CollectionId = u32;
+	type ItemId = u32;
 }
 
 parameter_types! {
