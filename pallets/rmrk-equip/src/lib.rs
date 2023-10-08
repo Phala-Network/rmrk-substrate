@@ -6,7 +6,8 @@
 #![allow(dead_code)]
 
 use frame_support::{
-	dispatch::{DispatchError, DispatchResult},
+	pallet_prelude::DispatchError,
+	dispatch::DispatchResult,
 	ensure, BoundedVec,
 };
 
