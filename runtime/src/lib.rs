@@ -176,6 +176,7 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
+	pub const MaxNominatorRewardedPerValidator: u32 = 256;
 }
 
 pub struct BaseFilter;
@@ -268,6 +269,7 @@ impl pallet_grandpa::Config for Runtime {
 
 	type WeightInfo = ();
 	type MaxAuthorities = ConstU32<32>;
+	type MaxNominators = MaxNominatorRewardedPerValidator;
 	type MaxSetIdSessionEntries = ConstU64<0>;
 	type KeyOwnerProof = sp_core::Void;
 	type EquivocationReportSystem = ();
