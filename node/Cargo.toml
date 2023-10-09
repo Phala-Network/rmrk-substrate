@@ -17,8 +17,8 @@ name = "rmrk-substrate"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-clap = { version = "4.4.6", features = ["derive"] }
-futures = { version = "0.3.28", features = ["thread-pool"]}
+clap = { version = "4.4.2", features = ["derive"] }
+futures = { version = "0.3.21", features = ["thread-pool"]}
 
 sc-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
@@ -47,7 +47,7 @@ frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", branch 
 pallet-transaction-payment = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
 
 # These dependencies are used for the node template"s RPCs
-jsonrpsee = { version = "0.20.1", features = ["server"] }
+jsonrpsee = { version = "0.16.3", features = ["server"] }
 sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
 sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
 sc-rpc-api = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
