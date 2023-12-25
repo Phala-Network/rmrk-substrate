@@ -142,6 +142,8 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Test>;
@@ -150,7 +152,6 @@ impl pallet_balances::Config for Test {
 	type MaxReserves = MaxReserves;
 	// type ReserveIdentifier = ReserveIdentifier;
 	type ReserveIdentifier = ();
-	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
 	type MaxHolds = ();
 	type MaxFreezes = ();

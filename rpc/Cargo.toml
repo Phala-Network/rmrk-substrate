@@ -6,17 +6,17 @@ edition = "2021"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.6.1" }
-scale-info = { version = "2.9.0" }
+scale-info = { version = "2.10.0" }
 jsonrpsee = { version = "0.16.2", features = ["server"] }
 
 # primitives
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.2.0" }
-sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.2.0" }
-sp-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.2.0" }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.5.0" }
+sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.5.0" }
+sp-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.5.0" }
 
 # client dependencies
-sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.2.0" }
-sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.2.0" }
+sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.5.0" }
+sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.5.0" }
 
 rmrk-traits = { default-features = false, path = "../traits" }
 pallet-rmrk-rpc-runtime-api = { path = "../rpc-runtime-api" }

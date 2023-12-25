@@ -10,7 +10,6 @@ use frame_support::{
 	traits::{AsEnsureOriginWithArg, ConstU32, Everything},
 	weights::Weight,
 };
-use frame_system as system;
 use frame_system::EnsureRoot;
 use sp_core::{crypto::AccountId32, H256};
 
@@ -79,15 +78,16 @@ parameter_types! {
 
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
-	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Test>;
 	type WeightInfo = ();
 	type MaxLocks = ();
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
-	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
 	type MaxHolds = ();
 	type MaxFreezes = ();

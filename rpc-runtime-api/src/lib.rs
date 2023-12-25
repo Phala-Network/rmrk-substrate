@@ -4,7 +4,7 @@ use rmrk_traits::{
 	primitives::{BaseId, CollectionId, NftId, ResourceId},
 	NftChild,
 };
-use sp_api::{Decode, Encode};
+use codec::{Decode, Encode};
 use sp_runtime::DispatchError;
 use sp_std::vec::Vec;
 

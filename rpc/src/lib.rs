@@ -1,11 +1,13 @@
 use std::{marker::PhantomData, sync::Arc};
 
+use codec::{Decode, Encode};
 use jsonrpsee::{
 	core::{async_trait, Error as JsonRpseeError, RpcResult},
 	proc_macros::rpc,
 };
-use sp_api::{ApiExt, BlockT, Decode, Encode, ProvideRuntimeApi};
+use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
+use sp_runtime::traits::Block as BlockT;
 
 use pallet_rmrk_rpc_runtime_api::{PropertyKey, RmrkApi as RmrkRuntimeApi, ThemeName};
 use rmrk_traits::{
